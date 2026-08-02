@@ -1,6 +1,7 @@
 # Repository policy and effective schema v1 — proposed specification
 
-- **Status:** Proposed
+- **Status:** Accepted
+- **Accepted:** 2026-08-02 by `@nomed`
 - **Governing issue:** [#10](https://github.com/nomed/yukh-projects/issues/10)
 - **Security boundary:** reviewed policy plus bounded observed state to a deterministic, non-executable plan
 
