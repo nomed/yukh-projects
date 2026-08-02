@@ -1,0 +1,38 @@
+{
+  "name": "@nomed/yukh-projects",
+  "version": "0.0.0-private",
+  "description": "Declarative, secure, and consumer-neutral reconciliation for GitHub Projects",
+  "main": "dist/src/index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "build": "tsc -p tsconfig.json",
+    "audit": "npm audit --audit-level=moderate"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nomed/yukh-projects.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/nomed/yukh-projects/issues"
+  },
+  "homepage": "https://github.com/nomed/yukh-projects#readme",
+  "dependencies": {
+    "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.5.2",
+    "typescript": "5.9.3"
+  },
+  "type": "module",
+  "types": "dist/src/index.d.ts",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "private": true
+}
