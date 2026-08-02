@@ -27,7 +27,8 @@ This repository currently contains the public project foundation. Functional cod
 - [Clean-room migration plan](docs/migration/clean-room-plan.md)
 - [Candidate capability inventory](docs/migration/module-inventory.md)
 - [Accepted issue contract v1](docs/contracts/issue-contract-v1.md)
-- [Proposed repository policy and effective schema v1](docs/contracts/repository-policy-v1.md)
+- [Accepted repository policy and effective schema v1](docs/contracts/repository-policy-v1.md)
+- [Proposed reconciliation plan and report v1](docs/contracts/reconciliation-plan-v1.md)
 - [Provenance ledger](docs/migration/provenance-ledger.yml)
 
 ## Project policies
