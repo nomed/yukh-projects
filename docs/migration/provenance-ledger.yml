@@ -36,8 +36,13 @@ slices:
       - rollback_impact
   - id: policy-and-effective-schema
     disposition: re-author
-    status: planned
-    evidence: []
+    status: specified
+    evidence:
+      - rights_confirmed
+      - public_specification
+      - synthetic_fixtures
+      - compatibility_impact
+      - rollback_impact
   - id: deterministic-planning
     disposition: re-author
     status: planned
