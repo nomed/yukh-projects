@@ -1,6 +1,7 @@
 # Issue contract v1 — proposed public specification
 
-- **Status:** Proposed
+- **Status:** Accepted
+- **Accepted:** 2026-08-02 by `@nomed`
 - **Governing issue:** [#4](https://github.com/nomed/yukh-projects/issues/4)
 - **Security boundary:** untrusted issue text to validated immutable data
 
