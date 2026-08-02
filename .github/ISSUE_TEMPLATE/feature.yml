@@ -1,0 +1,66 @@
+name: Capability proposal
+description: Propose a reusable, consumer-neutral capability
+title: "[Proposal]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the reusable problem. Do not identify the environment or organization that originated the request.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - enhancement
+        - architecture
+        - documentation
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - reconciliation
+        - configuration
+        - authentication
+        - security
+        - documentation
+        - release
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Generic problem
+      description: What reusable problem should the project solve?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe observable behavior without prescribing implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and trade-offs
+  - type: textarea
+    id: security
+    attributes:
+      label: Security and permission impact
+      description: Consider credentials, trust boundaries, input, network behavior, and failure modes.
+    validations:
+      required: true
+  - type: checkboxes
+    id: attestations
+    attributes:
+      label: Neutrality checks
+      options:
+        - label: The proposal is reusable and contains no consumer-specific context.
+          required: true
+        - label: Every example in this proposal is intentionally synthetic.
+          required: true
