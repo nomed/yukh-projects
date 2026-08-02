@@ -25,7 +25,9 @@ flowchart TB
     B --> P
     P --> G{"Explicit mode gate"}
     G -->|dry-run| R["Redacted report"]
-    G -->|apply| A["Least-privilege API adapter"]
+    G -->|apply| Q["Verified approval and fresh preflight"]
+    Q --> A["Allowlisted mutation adapter"]
+    A --> Z["Fresh convergence verification"]
 ~~~
 
 The issue body, labels, event payload, repository policy, API responses, and workflow inputs are untrusted. The planner is trusted only after validation. The credential and GitHub API boundary are privileged.
@@ -129,6 +131,43 @@ Controls:
 - define idempotency keys, retry classes, partial-failure output, and convergence checks;
 - reject destructive operations until separately specified and approved.
 
+### Approval replay and substitution
+
+An attacker reuses an approval, replaces its plan or scope, authorizes a subset, or resumes a partially completed run.
+
+Controls:
+
+- authenticate approval artifacts through an injected verifier;
+- bind claims to the complete plan ID, operation-set digest, subject, repository, Project, issue, and `apply` environment;
+- enforce a maximum 15-minute lifetime and atomically consume a strong nonce before mutation;
+- reject subset, superset, reordering, scope substitution, replay, continuation, and partial-plan authorization;
+- require a fresh plan and approval after any interruption or failure.
+
+### Stale plan and time-of-check/time-of-use
+
+State changes after planning or between operations make approved intent unsafe.
+
+Controls:
+
+- hold a fail-closed repository–Project–issue lease for the complete apply;
+- reproduce the approved plan ID from a fresh complete read before mutation;
+- reread the affected resource and check exact preconditions before every operation;
+- treat exact convergence as no-mutation success and any other mismatch as failure;
+- stop when the lease is lost and never assume the lease replaces state checks.
+
+### Partial failure and false success
+
+Some mutations succeed before a provider, network, or verification failure, or a successful response does not produce intended state.
+
+Controls:
+
+- execute in deterministic dependency order and stop on the first failure;
+- perform exactly one request per attempt with no automatic retry;
+- reread and verify each affected resource after mutation;
+- report verified, already-converged, failed, and not-attempted outcomes separately;
+- never automatically compensate additive writes with destructive rollback;
+- require a fresh final read whose reconciliation has zero remaining operations.
+
 ### Credential disclosure or misuse
 
 Tokens leak through errors, summaries, process arguments, artifacts, caches, or malicious input.
@@ -177,7 +216,10 @@ Controls:
 - zero automatic retry and full-read restart after retryable classification;
 - dry-run with a write-capable token still performs zero mutations;
 - apply without both gates fails closed;
-- retry and concurrent-run convergence;
+- approval plan/scope mismatch, expiry, nonce replay, subset, superset, and interrupted-run rejection;
+- fresh-plan mismatch, precondition drift, lease contention, and lease-loss rejection;
+- stop-on-first-failure, accurate partial outcomes, zero retry, and concurrent-run convergence;
+- post-operation verification and final zero-operation reconciliation;
 - redaction of tokens, URLs, identifiers, and API error bodies;
 - tampered bundle, lockfile, and action-pin detection.
 
