@@ -1,0 +1,75 @@
+name: Bug report
+description: Report reproducible incorrect behavior using synthetic data
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a problem. Never include private repository names, production data, credentials, internal URLs, or consumer identifiers.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - bug
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - reconciliation
+        - configuration
+        - authentication
+        - security
+        - documentation
+        - release
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what impact does it have?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Synthetic reproduction
+      description: Provide the smallest reproduction using invented names and data.
+      placeholder: Steps, minimal configuration, and commands
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or revision
+      placeholder: Release version or commit SHA
+    validations:
+      required: true
+  - type: checkboxes
+    id: attestations
+    attributes:
+      label: Safety checks
+      options:
+        - label: I confirm that this report contains no secrets or private identifiers.
+          required: true
+        - label: I confirm that all examples and attached material are synthetic.
+          required: true
+        - label: This is not a security vulnerability requiring private disclosure.
+          required: true
