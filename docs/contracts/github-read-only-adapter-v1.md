@@ -1,6 +1,7 @@
-# GitHub read-only adapter v1 — proposed specification
+# GitHub read-only adapter v1 — accepted specification
 
-- **Status:** Proposed
+- **Status:** Accepted
+- **Accepted:** 2026-08-02 by `@nomed`
 - **Governing issue:** [#18](https://github.com/nomed/yukh-projects/issues/18)
 - **Security boundary:** authenticated GitHub responses to validated, scope-bound planner observations
 
