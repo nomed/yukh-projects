@@ -1,6 +1,7 @@
-# GitHub mutation transport v1 — proposed specification
+# GitHub mutation transport v1 — accepted specification
 
-- **Status:** Proposed
+- **Status:** Accepted
+- **Accepted:** 2026-08-02 by `@nomed`
 - **Governing issue:** [#28](https://github.com/nomed/yukh-projects/issues/28)
 - **Security boundary:** approved internal mutation discriminator to one bounded GitHub GraphQL mutation request
 
