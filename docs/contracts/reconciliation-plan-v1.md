@@ -1,6 +1,7 @@
 # Reconciliation plan and redacted report v1 — proposed specification
 
-- **Status:** Proposed
+- **Status:** Accepted
+- **Accepted:** 2026-08-02 by `@nomed`
 - **Governing issue:** [#14](https://github.com/nomed/yukh-projects/issues/14)
 - **Security boundary:** validated immutable state to a deterministic plan and redacted report
 
