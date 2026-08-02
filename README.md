@@ -18,7 +18,15 @@ Yukh Projects turns reviewed configuration into predictable GitHub Projects stat
 
 ## Repository status
 
-This repository currently contains the public project foundation. Functional code will enter through a clean-room migration: each file must be reviewed for neutrality, security, provenance, and continued relevance before it is proposed here.
+This repository currently contains the public project foundation. Functional code enters through a clean-room migration: each capability must pass neutrality, security, provenance, and continued-relevance gates before implementation.
+
+## Architecture and migration
+
+- [Threat model](docs/security/threat-model.md)
+- [Repository hardening baseline](docs/security/repository-hardening.md)
+- [Clean-room migration plan](docs/migration/clean-room-plan.md)
+- [Candidate capability inventory](docs/migration/module-inventory.md)
+- [Provenance ledger](docs/migration/provenance-ledger.yml)
 
 ## Project policies
 

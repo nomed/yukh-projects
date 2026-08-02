@@ -1,0 +1,46 @@
+schema: 1
+
+policy:
+  history_import: forbidden
+  direct_fixture_copy: forbidden
+  production_derived_material: forbidden
+  consumer_identifiers: forbidden
+  runtime_dependency_installation: forbidden
+
+required_evidence:
+  - rights_confirmed
+  - public_specification
+  - neutrality_review
+  - security_review
+  - synthetic_fixtures
+  - validation_results
+  - permission_delta
+  - dependency_delta
+  - compatibility_impact
+  - rollback_impact
+
+slices:
+  - id: contract-and-diagnostics
+    disposition: re-author
+    status: planned
+    evidence: []
+  - id: policy-and-effective-schema
+    disposition: re-author
+    status: planned
+    evidence: []
+  - id: deterministic-planning
+    disposition: re-author
+    status: planned
+    evidence: []
+  - id: read-only-github-adapter
+    disposition: redesign
+    status: planned
+    evidence: []
+  - id: controlled-mutations
+    disposition: redesign
+    status: planned
+    evidence: []
+  - id: action-and-release
+    disposition: rebuild
+    status: planned
+    evidence: []
