@@ -36,7 +36,7 @@ slices:
       - rollback_impact
   - id: policy-and-effective-schema
     disposition: re-author
-    status: specified
+    status: implemented
     evidence:
       - rights_confirmed
       - public_specification
