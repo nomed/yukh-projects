@@ -31,7 +31,7 @@ This repository currently contains the public project foundation. Functional cod
 - [Accepted reconciliation plan and report v1](docs/contracts/reconciliation-plan-v1.md)
 - [Accepted GitHub read-only adapter v1](docs/contracts/github-read-only-adapter-v1.md)
 - [Accepted controlled mutations v1](docs/contracts/controlled-mutations-v1.md)
-- [Proposed GitHub mutation transport v1](docs/contracts/github-mutation-transport-v1.md)
+- [Accepted GitHub mutation transport v1](docs/contracts/github-mutation-transport-v1.md)
 - [Provenance ledger](docs/migration/provenance-ledger.yml)
 
 ## Project policies
