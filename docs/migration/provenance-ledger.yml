@@ -104,6 +104,18 @@ slices:
       - dependency_delta
       - compatibility_impact
       - rollback_impact
+  - id: github-graphql-mutation-transport
+    disposition: redesign
+    status: specified
+    evidence:
+      - rights_confirmed
+      - public_specification
+      - neutrality_review
+      - security_review
+      - permission_delta
+      - dependency_delta
+      - compatibility_impact
+      - rollback_impact
   - id: action-and-release
     disposition: rebuild
     status: planned

@@ -168,6 +168,30 @@ Controls:
 - never automatically compensate additive writes with destructive rollback;
 - require a fresh final read whose reconciliation has zero remaining operations.
 
+### Mutation document or variable substitution
+
+A caller smuggles an additional mutation, changes the endpoint or selection, overrides `clientMutationId`, or injects unrelated provider IDs.
+
+Controls:
+
+- compile exactly five immutable named single-field mutation documents;
+- validate document ASTs against exact operation, input, and receipt allowlists;
+- accept typed bounded variables only and reject unknown keys before HTTP;
+- derive `clientMutationId` inside the executor and prevent per-call credentials, documents, URLs, methods, or headers;
+- resolve every provider ID from fresh scope-bound state.
+
+### Overprivileged write credential and false provider success
+
+A broad credential expands blast radius, or a successful provider response is treated as convergence despite a wrong or partial payload.
+
+Controls:
+
+- compute operation-specific permission requirements and keep read and write credentials separate;
+- deny attestable excess permissions unless the exact delta is independently approved;
+- require bounded JSON, no GraphQL errors, matching client mutation ID, and exact receipt IDs;
+- classify a valid receipt only as provider acceptance;
+- require independent fresh post-operation and final convergence reads.
+
 ### Credential disclosure or misuse
 
 Tokens leak through errors, summaries, process arguments, artifacts, caches, or malicious input.
@@ -220,6 +244,9 @@ Controls:
 - fresh-plan mismatch, precondition drift, lease contention, and lease-loss rejection;
 - stop-on-first-failure, accurate partial outcomes, zero retry, and concurrent-run convergence;
 - post-operation verification and final zero-operation reconciliation;
+- mutation AST and exact single-field allowlist validation;
+- unknown-variable, provider-ID substitution, client-mutation override, and receipt-mismatch rejection;
+- write-permission delta denial and separate read/write credential construction;
 - redaction of tokens, URLs, identifiers, and API error bodies;
 - tampered bundle, lockfile, and action-pin detection.
 
