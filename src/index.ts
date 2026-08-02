@@ -250,3 +250,5 @@ export function parseIssueContract(body: string, options: ParseOptions = {}): Pa
   const contract = semantic(value, options, diagnostics);
   return finish(contract, diagnostics);
 }
+
+export * from "./policy.js";
