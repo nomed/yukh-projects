@@ -1,3 +1,4 @@
-# Public GitHub repositories permitted in committed URLs.
+# Public GitHub references permitted in committed URLs.
 # Additions require maintainer review and a public, reusable rationale.
 nomed/yukh-projects
+sponsors/eemeli

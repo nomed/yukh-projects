@@ -22,7 +22,7 @@ required_evidence:
 slices:
   - id: contract-and-diagnostics
     disposition: re-author
-    status: specified
+    status: implemented
     evidence:
       - rights_confirmed
       - public_specification
