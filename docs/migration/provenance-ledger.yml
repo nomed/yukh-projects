@@ -64,8 +64,16 @@ slices:
       - rollback_impact
   - id: read-only-github-adapter
     disposition: redesign
-    status: planned
-    evidence: []
+    status: specified
+    evidence:
+      - rights_confirmed
+      - public_specification
+      - neutrality_review
+      - security_review
+      - permission_delta
+      - dependency_delta
+      - compatibility_impact
+      - rollback_impact
   - id: controlled-mutations
     disposition: redesign
     status: planned
