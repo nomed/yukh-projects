@@ -1,6 +1,7 @@
-# Controlled mutations v1 — proposed specification
+# Controlled mutations v1 — accepted specification
 
-- **Status:** Proposed
+- **Status:** Accepted
+- **Accepted:** 2026-08-02 by `@nomed`
 - **Governing issue:** [#24](https://github.com/nomed/yukh-projects/issues/24)
 - **Security boundary:** accepted complete plan and explicit approval to bounded GitHub mutations and verified convergence
 

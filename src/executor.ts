@@ -1,0 +1,49 @@
+import { createHash } from "node:crypto";
+import { canonicalJson, type BoundScope, type PlannedOperation, type ReconciliationPlan } from "./planner.js";
+
+export type MutationKind="create_project_field"|"update_project_field_options"|"update_project_item_field_value"|"add_sub_issue"|"add_blocked_by";
+export type ApplyCode=`YKP-APPLY-${"001"|"002"|"003"|"004"|"005"|"006"|"007"|"008"|"009"|"010"|"011"|"012"}`;
+export interface ApplyDiagnostic{code:ApplyCode;severity:"error";message:string}
+export interface ApprovalClaims{schema:1;issuerRef:string;subjectRef:string;scopeDigest:string;planId:string;operationDigest:string;environment:"apply";issuedAtMs:number;expiresAtMs:number;nonce:string}
+export interface Lease{valid():Promise<boolean>;release():Promise<void>}
+export interface ExecutorPorts{
+ nowMs():number;
+ verifyApproval(artifact:unknown):Promise<ApprovalClaims|null>;
+ acquireLease(scopeDigest:string):Promise<Lease|null>;
+ consumeNonce(nonce:string):Promise<boolean>;
+ replan():Promise<ReconciliationPlan>;
+ inspect(operation:PlannedOperation):Promise<"ready"|"already_converged"|"mismatch">;
+ mutate(kind:MutationKind,operation:PlannedOperation,clientMutationId:string):Promise<void>;
+ verify(operation:PlannedOperation):Promise<boolean>;
+ audit(event:{type:string;planId:string;operationKey?:string;outcome:string}):Promise<void>;
+}
+export interface ApplyRequest{plan:ReconciliationPlan;scope:BoundScope;approval:unknown;enablement:string}
+export type OperationOutcome="already_converged"|"verified"|"failed"|"not_attempted";
+export interface ApplyResult{schema:1;status:"success"|"error";planId:string;outcomes:readonly{operationKey:string;outcome:OperationOutcome}[];remaining:number;diagnostics:readonly ApplyDiagnostic[]}
+export interface PublicApplyReport{schema:1;status:"success"|"error";planId:string;counts:Record<OperationOutcome,number>;remaining:number;diagnostics:readonly ApplyDiagnostic[]}
+
+const MESSAGE:Record<ApplyCode,string>={"YKP-APPLY-001":"apply request is invalid","YKP-APPLY-002":"apply is not explicitly enabled","YKP-APPLY-003":"approval is invalid or does not match","YKP-APPLY-004":"approval is expired or has invalid lifetime","YKP-APPLY-005":"operation is unsupported","YKP-APPLY-006":"scope lease is unavailable or lost","YKP-APPLY-007":"fresh preflight does not match approved plan","YKP-APPLY-008":"approval nonce is already consumed","YKP-APPLY-009":"operation precondition does not match","YKP-APPLY-010":"mutation attempt failed","YKP-APPLY-011":"operation verification failed","YKP-APPLY-012":"final convergence verification failed"};
+const MAP:Record<PlannedOperation["type"],MutationKind>={create_field:"create_project_field",add_option:"update_project_field_options",set_field_value:"update_project_item_field_value",set_parent:"add_sub_issue",add_dependency:"add_blocked_by"};
+function hash(v:unknown):string{return createHash("sha256").update(canonicalJson(v)).digest("hex");}
+function integrity(plan:ReconciliationPlan):boolean{if(!plan||plan.schema!==1||!plan.executable||plan.diagnostics.length!==0||!Array.isArray(plan.operations)||!Array.isArray(plan.observations))return false;const {planId,...base}=plan;return /^[a-f0-9]{64}$/u.test(planId)&&hash(base)===planId;}
+function bounded(v:unknown):v is string{return typeof v==="string"&&[...v].length>0&&[...v].length<=256&&!/[\u0000-\u001f\u007f]/u.test(v);}
+function validScope(s:BoundScope):boolean{return !!s&&bounded(s.subjectRef)&&bounded(s.repositoryRef)&&bounded(s.projectRef)&&bounded(s.issueRef)&&Number.isSafeInteger(s.issueNumber)&&s.issueNumber>0;}
+function diag(code:ApplyCode):ApplyDiagnostic{return{code,severity:"error",message:MESSAGE[code]};}
+function result(planId:string,ops:readonly PlannedOperation[],states:Map<string,OperationOutcome>,code?:ApplyCode,remaining=ops.length):ApplyResult{return{schema:1,status:code?"error":"success",planId,outcomes:ops.map(o=>({operationKey:o.operationKey,outcome:states.get(o.operationKey)??"not_attempted"})),remaining,diagnostics:code?[diag(code)]:[]};}
+function claimsValid(c:ApprovalClaims|null,request:ApplyRequest,now:number,scopeDigest:string,operationDigest:string):boolean{return !!c&&c.schema===1&&bounded(c.issuerRef)&&c.subjectRef===request.scope.subjectRef&&c.scopeDigest===scopeDigest&&c.planId===request.plan.planId&&c.operationDigest===operationDigest&&c.environment==="apply"&&Number.isSafeInteger(c.issuedAtMs)&&Number.isSafeInteger(c.expiresAtMs)&&c.issuedAtMs<=now&&c.expiresAtMs>=now&&c.expiresAtMs-c.issuedAtMs<=15*60*1000&&bounded(c.nonce)&&[...c.nonce].length>=22;}
+function dependenciesValid(ops:readonly PlannedOperation[]):boolean{const prior=new Set<string>();for(const op of ops){if(!bounded(op.operationKey)||op.environment!=="dry-run"||op.dependsOn.some(d=>!prior.has(d)))return false;prior.add(op.operationKey);}return prior.size===ops.length;}
+function operationsMatchScope(ops:readonly PlannedOperation[],scope:BoundScope):boolean{return ops.every(op=>op.subject.ref===scope.subjectRef&&(op.resource.scopeRef===scope.repositoryRef||op.resource.scopeRef===scope.projectRef));}
+
+export async function executeControlledPlan(request:ApplyRequest,ports:ExecutorPorts):Promise<ApplyResult>{
+ const planId=request?.plan?.planId??"invalid";const operations=request?.plan?.operations??[];const states=new Map<string,OperationOutcome>();
+ if(!validScope(request?.scope)||!integrity(request?.plan)||!dependenciesValid(operations)||!operationsMatchScope(operations,request.scope))return result(planId,operations,states,"YKP-APPLY-001");
+ if(request.enablement!=="apply-explicitly-enabled")return result(planId,operations,states,"YKP-APPLY-002");
+ if(operations.some(op=>!MAP[op.type]))return result(planId,operations,states,"YKP-APPLY-005");
+ const scopeDigest=hash(request.scope),operationDigest=hash(operations);let approval:ApprovalClaims|null;try{approval=await ports.verifyApproval(request.approval);}catch{return result(planId,operations,states,"YKP-APPLY-003");}
+ const now=ports.nowMs();if(!claimsValid(approval,request,now,scopeDigest,operationDigest))return result(planId,operations,states,approval&&approval.expiresAtMs<now?"YKP-APPLY-004":"YKP-APPLY-003");
+ let lease:Lease|null=null;try{lease=await ports.acquireLease(scopeDigest);if(!lease||!await lease.valid())return result(planId,operations,states,"YKP-APPLY-006");const fresh=await ports.replan();if(!integrity(fresh)||fresh.planId!==planId||hash(fresh.operations)!==operationDigest)return result(planId,operations,states,"YKP-APPLY-007");if(!await ports.consumeNonce(approval!.nonce))return result(planId,operations,states,"YKP-APPLY-008");await ports.audit({type:"apply_started",planId,outcome:"approved"});
+  for(const op of operations){if(!await lease.valid()){await ports.audit({type:"apply_stopped",planId,operationKey:op.operationKey,outcome:"lease_lost"});return result(planId,operations,states,"YKP-APPLY-006");}if(op.dependsOn.some(d=>!(["verified","already_converged"] as OperationOutcome[]).includes(states.get(d)??"not_attempted")))return result(planId,operations,states,"YKP-APPLY-009");let observed:Awaited<ReturnType<ExecutorPorts["inspect"]>>;try{observed=await ports.inspect(op);}catch{return result(planId,operations,states,"YKP-APPLY-009");}if(observed==="already_converged"){states.set(op.operationKey,"already_converged");await ports.audit({type:"operation",planId,operationKey:op.operationKey,outcome:"already_converged"});continue;}if(observed!=="ready"){states.set(op.operationKey,"failed");return result(planId,operations,states,"YKP-APPLY-009");}try{await ports.mutate(MAP[op.type],op,hash([planId,op.operationKey]).slice(0,64));}catch{states.set(op.operationKey,"failed");await ports.audit({type:"operation",planId,operationKey:op.operationKey,outcome:"failed"});return result(planId,operations,states,"YKP-APPLY-010");}let verified=false;try{verified=await ports.verify(op);}catch{verified=false;}if(!verified){states.set(op.operationKey,"failed");return result(planId,operations,states,"YKP-APPLY-011");}states.set(op.operationKey,"verified");await ports.audit({type:"operation",planId,operationKey:op.operationKey,outcome:"verified"});}
+  const finalPlan=await ports.replan();if(!integrity(finalPlan)||!finalPlan.executable||finalPlan.operations.length!==0||finalPlan.diagnostics.length!==0)return result(planId,operations,states,"YKP-APPLY-012",finalPlan.operations.length);await ports.audit({type:"apply_finished",planId,outcome:"verified"});return result(planId,operations,states,undefined,0);
+ }catch{return result(planId,operations,states,"YKP-APPLY-012");}finally{if(lease)try{await lease.release();}catch{/* release cannot turn an unsafe result into success */}}
+}
+export function renderPublicApplyReport(value:ApplyResult):PublicApplyReport{const counts:Record<OperationOutcome,number>={already_converged:0,verified:0,failed:0,not_attempted:0};for(const item of value.outcomes)counts[item.outcome]++;return{schema:1,status:value.status,planId:value.planId,counts,remaining:value.remaining,diagnostics:value.diagnostics.map(d=>({...d}))};}
