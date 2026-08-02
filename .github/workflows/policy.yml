@@ -16,6 +16,8 @@ concurrency:
 jobs:
   consumer-neutrality:
     name: Consumer neutrality
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
