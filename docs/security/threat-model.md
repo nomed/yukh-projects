@@ -21,12 +21,16 @@ Yukh Projects reads untrusted issue content and repository policy, discovers Git
 flowchart TB
     U["Untrusted issue and policy"] --> V["Bounded validation"]
     V --> P["Deterministic plan"]
+    H["GitHub API responses"] --> B["Read-only scope binding"]
+    B --> P
     P --> G{"Explicit mode gate"}
     G -->|dry-run| R["Redacted report"]
     G -->|apply| A["Least-privilege API adapter"]
 ~~~
 
 The issue body, labels, event payload, repository policy, API responses, and workflow inputs are untrusted. The planner is trusted only after validation. The credential and GitHub API boundary are privileged.
+
+The read-only GitHub adapter is the first network boundary. Its injected transport owns authentication and HTTP. The adapter owns fixed named queries, resource limits, scope verification, response validation, and redaction. Provider success is not evidence that the requested subject or resources were authorized or correctly bound.
 
 ## Assets
 
@@ -50,6 +54,43 @@ Controls:
 - reject redirects and configurable API hosts unless an explicit enterprise mode validates them;
 - verify that discovered nodes belong to the bound scope;
 - never accept arbitrary GraphQL documents or mutation names from configuration.
+
+These controls also apply before any read is admitted as planning evidence. Every page remains anchored to the resolved repository, Project, issue, item, and authenticated subject. Cross-repository relationships and duplicate Project items fail closed.
+
+### Malicious or compromised API responses
+
+A proxy, provider defect, compromised transport, or schema change returns malformed, duplicated, cross-scope, reordered, or adversarial data that becomes trusted observed state.
+
+Controls:
+
+- use fixed named query documents and a transport that cannot accept caller-provided GraphQL or endpoints;
+- reject redirects, response-shape drift, unknown required variants, duplicate nodes, inconsistent anchors, and ambiguous mappings;
+- validate every page before canonicalization and return observations atomically;
+- retain provider IDs only inside the adapter boundary and derive a canonical observation fingerprint;
+- treat unsupported relationship capability as unavailable, not as an empty graph.
+
+### Pagination and rate exhaustion
+
+Unbounded or non-advancing connections consume memory, API quota, or runtime, while truncation masquerades as complete state.
+
+Controls:
+
+- use forward pagination with fixed page size and explicit page, byte, node, edge, and error limits;
+- require advancing cursors and unique nodes;
+- fail the complete read on truncation or limit exhaustion;
+- perform no silent retry, sleep, or partial-page continuation after failure;
+- expose only a bounded retry classification and require a fresh complete read.
+
+### Provider-error disclosure
+
+Raw GraphQL errors, headers, variables, URLs, IDs, stack traces, or transport messages reveal credentials or consumer identity.
+
+Controls:
+
+- construct stable diagnostics from allowlisted classifications before logging or serialization;
+- never retain or return raw bodies, headers, provider messages, query variables, cursors, or correlation IDs;
+- collapse unclassifiable errors to a static redaction failure;
+- keep public evidence synthetic and consumer-neutral.
 
 ### Workflow and expression injection
 
@@ -130,6 +171,10 @@ Controls:
 - path traversal and symbolic-link escape rejection;
 - shell and workflow metacharacters preserved as inert data;
 - repository, owner, Project, and installation binding failures;
+- fixed-query allowlisting and structural rejection of arbitrary documents, endpoints, redirects, and mutations;
+- cursor progression, duplicate-node, page, byte, collection, and GraphQL-error limits;
+- malicious and cross-scope API response rejection with atomic zero-output failure;
+- zero automatic retry and full-read restart after retryable classification;
 - dry-run with a write-capable token still performs zero mutations;
 - apply without both gates fails closed;
 - retry and concurrent-run convergence;
