@@ -35,7 +35,7 @@ jobs:
           cache: npm
       - name: Build exact candidate
         env:
-          GITHUB_TOKEN: ${{ secrets.IMMUTABLE_RELEASES_READ_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PROTECTED_RELEASE_TOKEN }}
           RELEASE_VERSION: ${{ inputs.version }}
           RELEASE_COMMIT: ${{ inputs.commit }}
         shell: bash
@@ -95,8 +95,8 @@ jobs:
           path: release-assets
       - name: Recheck binding and publish once
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-          IMMUTABLE_RELEASES_READ_TOKEN: ${{ secrets.IMMUTABLE_RELEASES_READ_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PROTECTED_RELEASE_TOKEN }}
+          IMMUTABLE_RELEASES_READ_TOKEN: ${{ secrets.PROTECTED_RELEASE_TOKEN }}
           RELEASE_VERSION: ${{ inputs.version }}
           RELEASE_COMMIT: ${{ inputs.commit }}
         shell: bash
