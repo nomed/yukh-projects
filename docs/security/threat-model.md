@@ -83,6 +83,25 @@ Controls:
 - perform no silent retry, sleep, or partial-page continuation after failure;
 - expose only a bounded retry classification and require a fresh complete read.
 
+The REST-first v2 snapshot additionally treats quota as a shared security and
+availability resource. Re-reading immutable Project schema for every issue,
+duplicating identical concurrent requests, or consuming the final provider
+reserve can deny unrelated sessions access to governance state.
+
+Additional controls:
+
+- build one immutable Project-scope snapshot and reuse shared schema within a run;
+- route every supported operation through fixed versioned REST endpoints;
+- permit GraphQL only through an explicit capability matrix and cost reserve;
+- coalesce identical in-process reads under a subject- and scope-bound key;
+- accept conditional `304` responses only for the exact complete cached representation;
+- invalidate affected entries before post-mutation verification;
+- stop before crossing REST, GraphQL, page, byte, or request reserves;
+- return a stable deferred result without polling, retry, sleep, or credential substitution.
+
+Cache poisoning, cross-subject reuse, stale authorization, validator confusion,
+mixed-page snapshots and post-mutation stale reads fail the complete observation.
+
 ### Provider-error disclosure
 
 Raw GraphQL errors, headers, variables, URLs, IDs, stack traces, or transport messages reveal credentials or consumer identity.
@@ -261,6 +280,10 @@ Controls:
 - repository, owner, Project, and installation binding failures;
 - fixed-query allowlisting and structural rejection of arbitrary documents, endpoints, redirects, and mutations;
 - cursor progression, duplicate-node, page, byte, collection, and GraphQL-error limits;
+- exact request ceilings for 1, 10, and 100 issue REST-first snapshots;
+- conditional-cache freshness, `304`, invalidation, and validator-confusion rejection;
+- single-flight failure, cancellation, and subject/scope isolation;
+- GraphQL-zero operation, reserve deferral, and forbidden REST-to-GraphQL fallback;
 - malicious and cross-scope API response rejection with atomic zero-output failure;
 - zero automatic retry and full-read restart after retryable classification;
 - dry-run with a write-capable token still performs zero mutations;
