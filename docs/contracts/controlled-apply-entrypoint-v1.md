@@ -35,6 +35,7 @@ The apply Action accepts only these named inputs:
 | `policy-path` | no | bounded workspace-relative regular file |
 | `approved-plan-id` | yes | exact 64-character lowercase digest |
 | `approval-file` | yes | workspace-relative, non-symlink, exclusively read bounded artifact |
+| `approval-public-key-file` | yes | protected-host Ed25519 public key, read separately from the approval |
 | `environment` | yes | exact configured protected environment name |
 
 The CLI uses the same long options, with both credentials read from distinct
@@ -54,6 +55,20 @@ claims containing issuer and subject references; repository, Project and issue
 bindings; plan ID and ordered operation-set digest; exact environment; issued-at,
 expiry of at most 15 minutes and a nonce with at least 128 bits of entropy; and
 contract, planner, snapshot and entrypoint versions.
+
+The envelope is canonical JSON signed with Ed25519. All fields are mandatory and
+exact. Unknown fields, algorithms, issuers or versions fail closed. The public
+key is supplied by the protected host through a separate bounded regular file;
+it may not be embedded in or selected by the approval artifact, repository policy
+or issue content. Approval claims bind the lowercase SHA-256 fingerprint of the
+exact DER public key and an allowlisted issuer. Key rotation is an explicit host
+configuration change and invalidates outstanding approvals.
+
+For the Action, the protected environment materializes approval and public-key
+files before invoking the JavaScript entrypoint. Their contents are never Action
+inputs. The CLI accepts `--approval-file` and `--approval-public-key-file`; both
+paths are canonical workspace-relative, non-symlink regular files with exclusive
+bounded reads. Private signing keys never enter this runtime.
 
 All fields are mandatory and exact. Unknown fields, algorithms, issuers or
 versions fail closed. Trust roots are host configuration, never repository policy.
@@ -117,7 +132,8 @@ this contract is explicitly accepted. #57 implements only the accepted surface;
 rollback.
 
 Synthetic acceptance tests must cover every bound and gate, approval substitution
-and expiry, replay, lease exclusion/loss, permission denial, stale-plan/TOCTOU,
+and expiry, invalid signatures, substituted keys, fingerprint mismatch, unknown
+issuers, key rotation, replay, lease exclusion/loss, permission denial, stale-plan/TOCTOU,
 mutation allowlisting, no retry, partial failures, invalidation, verification,
 final zero convergence, the zero-mutation second apply, redaction and structural
 separation from dry-run.
