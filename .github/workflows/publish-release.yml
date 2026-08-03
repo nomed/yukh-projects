@@ -96,8 +96,7 @@ jobs:
           test "${#RELEASE_COMMIT}" -eq 40
           case "$RELEASE_COMMIT" in *[!0-9a-f]*) exit 1 ;; esac
           git merge-base --is-ancestor "$RELEASE_COMMIT" origin/main
-          git checkout --detach "$RELEASE_COMMIT"
-          test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           node scripts/publish-release.mjs "$RELEASE_VERSION" "$RELEASE_COMMIT" release-assets
       - name: Attest release assets
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
