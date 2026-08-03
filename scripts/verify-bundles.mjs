@@ -9,3 +9,10 @@ const applyBytes=await readFile("dist/apply/index.js"),manifest=JSON.parse(await
 if(Object.keys(manifest).sort().join("\0")!==["artifact","artifacts","entrypoint","publication","schema"].sort().join("\0")||manifest.schema!==1||manifest.artifact!=="controlled-apply-candidate"||manifest.entrypoint!=="action-cli"||manifest.publication!=="disabled")throw new Error("apply candidate manifest mismatch");for(const path of ["index.js","action.js","cli.js"]){const bytes=await readFile(`dist/apply/${path}`),entry=manifest.artifacts?.[path];if(!entry||Object.keys(entry).sort().join("\0")!=="bytes\0sha256"||entry.bytes!==bytes.byteLength||entry.sha256!==createHash("sha256").update(bytes).digest("hex"))throw new Error("apply candidate artifact mismatch");}
 const applySource=applyBytes.toString("utf8");for(const forbidden of ["nats","jetstream","process.env","GITHUB_TOKEN","workflow_dispatch"]){if(applySource.toLowerCase().includes(forbidden.toLowerCase()))throw new Error("apply candidate contains concrete host authority");}
 const applyDiff=spawnSync("git",["diff","--exit-code","--","dist/apply/index.js","dist/apply/action.js","dist/apply/cli.js","dist/apply/manifest.json"],{stdio:"inherit"});if(applyDiff.status!==0)throw new Error("committed apply candidate is not reproducible");
+
+const smoke=(path,args,expectedStatus,expectedOutput)=>{const result=spawnSync(process.execPath,[path,...args],{encoding:"utf8",env:{},timeout:5000,maxBuffer:64*1024});if(result.error||result.signal||result.status!==expectedStatus||`${result.stdout}${result.stderr}`.includes("Dynamic require")||!expectedOutput.test(`${result.stdout}${result.stderr}`))throw new Error("published bundle startup smoke test failed");};
+smoke("dist/action/index.js",[],1,/YKP-RUNTIME-003/u);
+smoke("dist/cli/index.js",[],2,/^$/u);
+smoke("dist/apply/index.js",[],0,/^$/u);
+smoke("dist/apply/action.js",[],1,/YKP-APPLY-001/u);
+smoke("dist/apply/cli.js",[],2,/YKP-APPLY-001/u);

@@ -1,3 +1,5 @@
+import { createRequire as __yukhCreateRequire } from "node:module";
+const require=__yukhCreateRequire(import.meta.url);
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
