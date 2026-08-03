@@ -1,0 +1,68 @@
+site_name: Yukh Projects
+site_description: Declarative, safe reconciliation for GitHub Projects.
+site_url: https://nomed.github.io/yukh-projects/
+repo_url: https://github.com/nomed/yukh-projects
+repo_name: nomed/yukh-projects
+
+exclude_docs: |
+  migration/
+
+theme:
+  name: material
+  logo: assets/repository-mark.svg
+  favicon: assets/repository-mark.svg
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: cyan
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Tutorial:
+      - Run the first dry-run: tutorials/first-dry-run.md
+  - How-to:
+      - Configure repository policy: how-to/configure-policy.md
+  - Reference:
+      - Dry-run Action: reference/dry-run-action.md
+      - Contracts: reference/contracts.md
+  - Explanation:
+      - Reconciliation model: explanation/reconciliation.md
+      - Consumer neutrality: adr/0001-consumer-neutrality.md
+      - REST-first transport: adr/0002-rest-first-github-transport.md
+  - Security:
+      - Threat model: security/threat-model.md
+      - Repository hardening: security/repository-hardening.md
+  - Project:
+      - Release operations: release-operations.md

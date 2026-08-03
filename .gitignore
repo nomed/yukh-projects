@@ -8,6 +8,7 @@ Thumbs.db
 .env.*
 !.env.example
 node_modules/
+site/
 dist/*
 !dist/action/
 !dist/cli/

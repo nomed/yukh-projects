@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 430" role="img" aria-labelledby="title desc">
+  <title id="title">Yukh Projects reconciliation flow</title>
+  <desc id="desc">Policy, issue contract, and bounded GitHub observations enter a deterministic planner. Dry-run returns a redacted report. Controlled apply crosses a separate approval gate and verifies convergence.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#007f8c"/></marker>
+    <style>.box{fill:#fff;stroke:#18181b;stroke-width:2}.plan{fill:#cffafe;stroke:#007f8c;stroke-width:3}.gate{fill:#fff7ed;stroke:#c2410c;stroke-width:3}.label{font:600 21px system-ui,sans-serif;fill:#18181b}.note{font:16px system-ui,sans-serif;fill:#52525b}.flow{fill:none;stroke:#007f8c;stroke-width:4;marker-end:url(#arrow)}.apply{fill:none;stroke:#c2410c;stroke-width:4;marker-end:url(#arrow)}</style>
+  </defs>
+  <rect width="1200" height="430" rx="24" fill="#fafafa"/>
+  <rect class="box" x="35" y="45" width="220" height="85" rx="14"/><text class="label" x="145" y="82" text-anchor="middle">Repository policy</text><text class="note" x="145" y="109" text-anchor="middle">desired ownership</text>
+  <rect class="box" x="35" y="172" width="220" height="85" rx="14"/><text class="label" x="145" y="209" text-anchor="middle">Issue contract</text><text class="note" x="145" y="236" text-anchor="middle">desired values</text>
+  <rect class="box" x="35" y="299" width="220" height="85" rx="14"/><text class="label" x="145" y="336" text-anchor="middle">GitHub snapshot</text><text class="note" x="145" y="363" text-anchor="middle">bounded observation</text>
+  <rect class="plan" x="345" y="142" width="250" height="145" rx="14"/><text class="label" x="470" y="195" text-anchor="middle">Deterministic plan</text><text class="note" x="470" y="228" text-anchor="middle">exact preconditions</text><text class="note" x="470" y="255" text-anchor="middle">redacted diagnostics</text>
+  <rect class="box" x="690" y="65" width="220" height="100" rx="14"/><text class="label" x="800" y="108" text-anchor="middle">Dry-run report</text><text class="note" x="800" y="137" text-anchor="middle">stop without mutation</text>
+  <rect class="gate" x="690" y="255" width="220" height="100" rx="14"/><text class="label" x="800" y="298" text-anchor="middle">Approval gate</text><text class="note" x="800" y="327" text-anchor="middle">fresh + plan-bound</text>
+  <rect class="box" x="985" y="255" width="180" height="100" rx="14"/><text class="label" x="1075" y="298" text-anchor="middle">Apply</text><text class="note" x="1075" y="327" text-anchor="middle">verify convergence</text>
+  <path class="flow" d="M255 87H300V180H335"/><path class="flow" d="M255 214H335"/><path class="flow" d="M255 341H300V250H335"/><path class="flow" d="M595 190H635V115H680"/><path class="apply" d="M595 240H635V305H680"/><path class="apply" d="M910 305H975"/>
+</svg>
