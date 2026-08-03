@@ -3,7 +3,7 @@ import { readGitHubObservation, type ReadOnlyTransport, type RequestedGitHubScop
 import { calculateEffectiveSchema, parseRepositoryPolicy, type ObservedSchema } from "./policy.js";
 import { planReconciliation, renderPublicReport, type ObservedItem, type PublicReport } from "./planner.js";
 
-export type DryRunFailureClass = "input"|"authentication"|"authorization"|"provider"|"invariant";
+export type DryRunFailureClass = "input"|"authentication"|"authorization"|"provider"|"invariant"|"deferred";
 export interface DryRunFailure { status:"error"; failureClass:DryRunFailureClass; diagnostics:readonly {code:string;message:string}[] }
 export interface DryRunSuccess { status:"success"; report:PublicReport }
 export type DryRunResult = DryRunSuccess|DryRunFailure;
@@ -11,7 +11,7 @@ export interface DryRunInput { scope:RequestedGitHubScope; policySource:string; 
 
 const MESSAGE="dry-run could not produce a complete report";
 function fail(failureClass:DryRunFailureClass,codes:readonly string[]):DryRunFailure{return{status:"error",failureClass,diagnostics:codes.slice(0,64).map(code=>({code,message:MESSAGE}))};}
-function readClass(code:string):DryRunFailureClass{return code==="YKP-GH-READ-002"?"authentication":code==="YKP-GH-READ-003"?"authorization":"provider";}
+function readClass(code:string):DryRunFailureClass{return code==="YKP-GH-READ-002"?"authentication":code==="YKP-GH-READ-003"?"authorization":code==="YKP-RATE-001"?"deferred":code==="YKP-REST-001"||code==="YKP-SNAPSHOT-001"||code==="YKP-CACHE-001"?"invariant":"provider";}
 
 export async function runDryRun(input:DryRunInput):Promise<DryRunResult>{
  const policy=parseRepositoryPolicy(input.policySource);if(!policy.policy)return fail("input",policy.diagnostics.map(d=>d.code));

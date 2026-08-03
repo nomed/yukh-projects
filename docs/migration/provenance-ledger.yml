@@ -92,7 +92,7 @@ slices:
       - rollback_impact
   - id: rest-project-snapshot-v2
     disposition: redesign
-    status: specified
+    status: implemented
     evidence:
       - rights_confirmed
       - public_specification

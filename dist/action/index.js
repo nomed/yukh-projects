@@ -494,7 +494,7 @@ var require_anchors = __commonJS({
 var require_applyReviver = __commonJS({
   "node_modules/yaml/dist/doc/applyReviver.js"(exports) {
     "use strict";
-    function applyReviver(reviver, obj2, key, val) {
+    function applyReviver(reviver, obj, key, val) {
       if (val && typeof val === "object") {
         if (Array.isArray(val)) {
           for (let i = 0, len = val.length; i < len; ++i) {
@@ -534,7 +534,7 @@ var require_applyReviver = __commonJS({
           }
         }
       }
-      return reviver.call(obj2, key, val);
+      return reviver.call(obj, key, val);
     }
     exports.applyReviver = applyReviver;
   }
@@ -637,22 +637,22 @@ var require_Alias = __commonJS({
       resolve(doc, ctx) {
         if (ctx?.maxAliasCount === 0)
           throw new ReferenceError("Alias resolution is disabled");
-        let nodes2;
+        let nodes;
         if (ctx?.aliasResolveCache) {
-          nodes2 = ctx.aliasResolveCache;
+          nodes = ctx.aliasResolveCache;
         } else {
-          nodes2 = [];
+          nodes = [];
           visit.visit(doc, {
             Node: (_key, node) => {
               if (identity.isAlias(node) || identity.hasAnchor(node))
-                nodes2.push(node);
+                nodes.push(node);
             }
           });
           if (ctx)
-            ctx.aliasResolveCache = nodes2;
+            ctx.aliasResolveCache = nodes;
         }
         let found = void 0;
-        for (const node of nodes2) {
+        for (const node of nodes) {
           if (node === this)
             break;
           if (node.anchor === this.source)
@@ -999,14 +999,14 @@ var require_foldFlowLines = __commonJS({
     var FOLD_FLOW = "flow";
     var FOLD_BLOCK = "block";
     var FOLD_QUOTED = "quoted";
-    function foldFlowLines(text2, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
+    function foldFlowLines(text3, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
       if (!lineWidth || lineWidth < 0)
-        return text2;
+        return text3;
       if (lineWidth < minContentWidth)
         minContentWidth = 0;
       const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
-      if (text2.length <= endStep)
-        return text2;
+      if (text3.length <= endStep)
+        return text3;
       const folds = [];
       const escapedFolds = {};
       let end = lineWidth - indent.length;
@@ -1023,14 +1023,14 @@ var require_foldFlowLines = __commonJS({
       let escStart = -1;
       let escEnd = -1;
       if (mode === FOLD_BLOCK) {
-        i = consumeMoreIndentedLines(text2, i, indent.length);
+        i = consumeMoreIndentedLines(text3, i, indent.length);
         if (i !== -1)
           end = i + endStep;
       }
-      for (let ch; ch = text2[i += 1]; ) {
+      for (let ch; ch = text3[i += 1]; ) {
         if (mode === FOLD_QUOTED && ch === "\\") {
           escStart = i;
-          switch (text2[i + 1]) {
+          switch (text3[i + 1]) {
             case "x":
               i += 3;
               break;
@@ -1047,12 +1047,12 @@ var require_foldFlowLines = __commonJS({
         }
         if (ch === "\n") {
           if (mode === FOLD_BLOCK)
-            i = consumeMoreIndentedLines(text2, i, indent.length);
+            i = consumeMoreIndentedLines(text3, i, indent.length);
           end = i + indent.length + endStep;
           split = void 0;
         } else {
           if (ch === " " && prev && prev !== " " && prev !== "\n" && prev !== "	") {
-            const next = text2[i + 1];
+            const next = text3[i + 1];
             if (next && next !== " " && next !== "\n" && next !== "	")
               split = i;
           }
@@ -1064,12 +1064,12 @@ var require_foldFlowLines = __commonJS({
             } else if (mode === FOLD_QUOTED) {
               while (prev === " " || prev === "	") {
                 prev = ch;
-                ch = text2[i += 1];
+                ch = text3[i += 1];
                 overflow = true;
               }
               const j = i > escEnd + 1 ? i - 2 : escStart - 1;
               if (escapedFolds[j])
-                return text2;
+                return text3;
               folds.push(j);
               escapedFolds[j] = true;
               end = j + endStep;
@@ -1084,39 +1084,39 @@ var require_foldFlowLines = __commonJS({
       if (overflow && onOverflow)
         onOverflow();
       if (folds.length === 0)
-        return text2;
+        return text3;
       if (onFold)
         onFold();
-      let res = text2.slice(0, folds[0]);
+      let res = text3.slice(0, folds[0]);
       for (let i2 = 0; i2 < folds.length; ++i2) {
         const fold = folds[i2];
-        const end2 = folds[i2 + 1] || text2.length;
+        const end2 = folds[i2 + 1] || text3.length;
         if (fold === 0)
           res = `
-${indent}${text2.slice(0, end2)}`;
+${indent}${text3.slice(0, end2)}`;
         else {
           if (mode === FOLD_QUOTED && escapedFolds[fold])
-            res += `${text2[fold]}\\`;
+            res += `${text3[fold]}\\`;
           res += `
-${indent}${text2.slice(fold + 1, end2)}`;
+${indent}${text3.slice(fold + 1, end2)}`;
         }
       }
       return res;
     }
-    function consumeMoreIndentedLines(text2, i, indent) {
+    function consumeMoreIndentedLines(text3, i, indent) {
       let end = i;
       let start = i + 1;
-      let ch = text2[start];
+      let ch = text3[start];
       while (ch === " " || ch === "	") {
         if (i < start + indent) {
-          ch = text2[++i];
+          ch = text3[++i];
         } else {
           do {
-            ch = text2[++i];
+            ch = text3[++i];
           } while (ch && ch !== "\n");
           end = i;
           start = i + 1;
-          ch = text2[start];
+          ch = text3[start];
         }
       }
       return end;
@@ -1468,10 +1468,10 @@ var require_stringify = __commonJS({
           return match.find((t) => t.format === item.format) ?? match[0];
       }
       let tagObj = void 0;
-      let obj2;
+      let obj;
       if (identity.isScalar(item)) {
-        obj2 = item.value;
-        let match = tags.filter((t) => t.identify?.(obj2));
+        obj = item.value;
+        let match = tags.filter((t) => t.identify?.(obj));
         if (match.length > 1) {
           const testMatch = match.filter((t) => t.test);
           if (testMatch.length > 0)
@@ -1479,11 +1479,11 @@ var require_stringify = __commonJS({
         }
         tagObj = match.find((t) => t.format === item.format) ?? match.find((t) => !t.format);
       } else {
-        obj2 = item;
-        tagObj = tags.find((t) => t.nodeClass && obj2 instanceof t.nodeClass);
+        obj = item;
+        tagObj = tags.find((t) => t.nodeClass && obj instanceof t.nodeClass);
       }
       if (!tagObj) {
-        const name = obj2?.constructor?.name ?? (obj2 === null ? "null" : typeof obj2);
+        const name = obj?.constructor?.name ?? (obj === null ? "null" : typeof obj);
         throw new Error(`Tag not resolved for ${name} value`);
       }
       return tagObj;
@@ -2039,23 +2039,23 @@ var require_YAMLMap = __commonJS({
        * A generic collection parsing method that can be extended
        * to other node classes that inherit from YAMLMap
        */
-      static from(schema, obj2, ctx) {
+      static from(schema, obj, ctx) {
         const { keepUndefined, replacer } = ctx;
         const map = new this(schema);
         const add4 = (key, value2) => {
           if (typeof replacer === "function")
-            value2 = replacer.call(obj2, key, value2);
+            value2 = replacer.call(obj, key, value2);
           else if (Array.isArray(replacer) && !replacer.includes(key))
             return;
           if (value2 !== void 0 || keepUndefined)
             map.items.push(Pair.createPair(key, value2, ctx));
         };
-        if (obj2 instanceof Map) {
-          for (const [key, value2] of obj2)
+        if (obj instanceof Map) {
+          for (const [key, value2] of obj)
             add4(key, value2);
-        } else if (obj2 && typeof obj2 === "object") {
-          for (const key of Object.keys(obj2))
-            add4(key, obj2[key]);
+        } else if (obj && typeof obj === "object") {
+          for (const key of Object.keys(obj))
+            add4(key, obj[key]);
         }
         if (typeof schema.sortMapEntries === "function") {
           map.items.sort(schema.sortMapEntries);
@@ -2165,7 +2165,7 @@ var require_map = __commonJS({
           onError("Expected a mapping for this tag");
         return map2;
       },
-      createNode: (schema, obj2, ctx) => YAMLMap.YAMLMap.from(schema, obj2, ctx)
+      createNode: (schema, obj, ctx) => YAMLMap.YAMLMap.from(schema, obj, ctx)
     };
     exports.map = map;
   }
@@ -2261,15 +2261,15 @@ var require_YAMLSeq = __commonJS({
           onComment
         });
       }
-      static from(schema, obj2, ctx) {
+      static from(schema, obj, ctx) {
         const { replacer } = ctx;
         const seq = new this(schema);
-        if (obj2 && Symbol.iterator in Object(obj2)) {
+        if (obj && Symbol.iterator in Object(obj)) {
           let i = 0;
-          for (let it of obj2) {
+          for (let it of obj) {
             if (typeof replacer === "function") {
-              const key = obj2 instanceof Set ? it : String(i++);
-              it = replacer.call(obj2, key, it);
+              const key = obj instanceof Set ? it : String(i++);
+              it = replacer.call(obj, key, it);
             }
             seq.items.push(createNode.createNode(it, void 0, ctx));
           }
@@ -2303,7 +2303,7 @@ var require_seq = __commonJS({
           onError("Expected a sequence for this tag");
         return seq2;
       },
-      createNode: (schema, obj2, ctx) => YAMLSeq.YAMLSeq.from(schema, obj2, ctx)
+      createNode: (schema, obj, ctx) => YAMLSeq.YAMLSeq.from(schema, obj, ctx)
     };
     exports.seq = seq;
   }
@@ -7365,8 +7365,10 @@ var require_dist = __commonJS({
 import { appendFile, open as open2 } from "node:fs/promises";
 import { join } from "node:path";
 
+// src/github-rest-snapshot.ts
+import { createHash } from "node:crypto";
+
 // src/github-transport.ts
-var ENDPOINT = "https://api.github.com/graphql";
 var DOCUMENTS = {
   resolve_scope: `query YukhResolveScope($ownerLogin:String!,$repositoryName:String!,$projectNumber:Int!,$issueNumber:Int!){viewer{login}repository(owner:$ownerLogin,name:$repositoryName){id issue(number:$issueNumber){id number body projectItems(first:100){nodes{id project{id number}}pageInfo{hasNextPage}}}}repositoryOwner(login:$ownerLogin){... on User{projectV2(number:$projectNumber){id number}}... on Organization{projectV2(number:$projectNumber){id number}}}}`,
   read_project_fields: `query YukhReadProjectFields($ownerLogin:String!,$projectNumber:Int!,$first:Int!,$cursor:String){repositoryOwner(login:$ownerLogin){... on User{projectV2(number:$projectNumber){id fields(first:$first,after:$cursor){nodes{... on ProjectV2Field{id name dataType}... on ProjectV2SingleSelectField{id name dataType options{id name}}... on ProjectV2IterationField{id name dataType configuration{iterations{id title}completedIterations{id title}}}}pageInfo{hasNextPage endCursor}}}}... on Organization{projectV2(number:$projectNumber){id fields(first:$first,after:$cursor){nodes{... on ProjectV2Field{id name dataType}... on ProjectV2SingleSelectField{id name dataType options{id name}}... on ProjectV2IterationField{id name dataType configuration{iterations{id title}completedIterations{id title}}}}pageInfo{hasNextPage endCursor}}}}}}`,
@@ -7382,111 +7384,312 @@ var GitHubTransportError = class extends Error {
   }
   code;
 };
+
+// src/github-rest-snapshot.ts
+var API = "https://api.github.com";
+var GRAPHQL = `${API}/graphql`;
+var API_VERSION = "2026-03-10";
+var RELATIONSHIP_QUERY = `query YukhRelationshipSnapshot($ids:[ID!]!){nodes(ids:$ids){... on Issue{id number repository{id} parent{number repository{id}} subIssues(first:100){nodes{number repository{id}}pageInfo{hasNextPage}} blockedBy(first:100){nodes{number repository{id}}pageInfo{hasNextPage}} blocking(first:100){nodes{number repository{id}}pageInfo{hasNextPage}}}} rateLimit{cost remaining resetAt}}`;
 function rec(v) {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
-function obj(v, key) {
-  if (!rec(v)) throw new GitHubTransportError("YKP-GH-READ-008");
-  const x = v[key];
-  if (!rec(x)) throw new GitHubTransportError("YKP-GH-READ-008");
-  return x;
+function array(v) {
+  if (!Array.isArray(v) || !v.every(rec)) throw new GitHubTransportError("YKP-REST-001");
+  return v;
 }
-function pageInfo(v) {
-  return obj(v, "pageInfo");
+function text(v, max = 512) {
+  if (typeof v !== "string" || v.length === 0 || [...v].length > max || /[\u0000-\u001f\u007f]/u.test(v)) throw new GitHubTransportError("YKP-REST-001");
+  return v;
 }
-function nodes(v) {
-  if (!Array.isArray(v.nodes) || !v.nodes.every(rec)) throw new GitHubTransportError("YKP-GH-READ-008");
-  return v.nodes;
+function integer(v) {
+  if (!Number.isSafeInteger(v) || v <= 0) throw new GitHubTransportError("YKP-REST-001");
+  return v;
 }
-function project(owner) {
-  const p = owner.projectV2;
-  if (!rec(p)) throw new GitHubTransportError("YKP-GH-READ-006");
-  return p;
+function rawName(v) {
+  if (typeof v === "string") return text(v, 128);
+  if (rec(v) && rec(v.name) && typeof v.name.raw === "string") return text(v.name.raw, 128);
+  if (rec(v) && typeof v.raw === "string") return text(v.raw, 128);
+  throw new GitHubTransportError("YKP-REST-001");
 }
-function ownerProject(data) {
-  return project(obj(data, "repositoryOwner"));
-}
-function value(node) {
-  return node.text ?? node.number ?? node.date ?? node.name ?? node.title ?? null;
-}
-function fieldKind(value2) {
-  const kinds = { TEXT: "text", NUMBER: "number", DATE: "date", SINGLE_SELECT: "single_select", ITERATION: "iteration" };
-  const kind = kinds[String(value2)];
-  if (!kind) throw new GitHubTransportError("YKP-GH-READ-008");
-  return kind;
-}
-function fieldOptions(field) {
-  if (Array.isArray(field.options)) return field.options.filter(rec).map((option) => ({ id: option.id, name: option.name }));
-  if (rec(field.configuration)) {
-    const active = Array.isArray(field.configuration.iterations) ? field.configuration.iterations.filter(rec) : [];
-    const completed = Array.isArray(field.configuration.completedIterations) ? field.configuration.completedIterations.filter(rec) : [];
-    return [...active, ...completed].map((iteration) => ({ id: iteration.id, name: iteration.title }));
+function value(v) {
+  if (v === null) return null;
+  if (typeof v === "string" || typeof v === "number" && Number.isFinite(v)) return v;
+  if (rec(v)) {
+    if (rec(v.name) && typeof v.name.raw === "string") return v.name.raw;
+    if (typeof v.raw === "string") return v.raw;
   }
-  return [];
+  return null;
 }
-function createGitHubGraphQLReadTransport(options) {
-  if (typeof options?.token !== "string" || options.token.length === 0 || /[\u0000-\u001f\u007f]/u.test(options.token)) throw new TypeError("invalid credential");
-  const request = options.fetch ?? globalThis.fetch;
-  return { execute: async (operation, variables) => {
-    const query = DOCUMENTS[operation];
-    if (!query || !/^query Yukh/u.test(query) || /\bmutation\b|\bsubscription\b/u.test(query)) throw new GitHubTransportError("YKP-GH-READ-010");
+function kind(v) {
+  const map = { text: "text", number: "number", date: "date", single_select: "single_select", iteration: "iteration" };
+  const out = map[String(v)];
+  if (!out) throw new GitHubTransportError("YKP-REST-001");
+  return out;
+}
+function nextLink(value2) {
+  if (!value2) return null;
+  for (const part of value2.split(",")) {
+    const match = part.match(/<([^>]+)>;\s*rel="next"/u);
+    if (match) return match[1] ?? null;
+  }
+  return null;
+}
+function normalizedPath(value2) {
+  if (value2.startsWith("/")) return value2;
+  let parsed;
+  try {
+    parsed = new URL(value2);
+  } catch {
+    throw new GitHubTransportError("YKP-CAPABILITY-001");
+  }
+  if (parsed.origin !== API || parsed.username || parsed.password || parsed.hash) throw new GitHubTransportError("YKP-CAPABILITY-001");
+  return `${parsed.pathname}${parsed.search}`;
+}
+function issueNumberFromUrl(v) {
+  if (typeof v !== "string") return void 0;
+  const match = v.match(/\/issues\/(\d+)$/u);
+  return match ? Number(match[1]) : void 0;
+}
+function relationshipSummary(content) {
+  const summary = rec(content.issue_dependencies_summary) ? content.issue_dependencies_summary : {};
+  const blockedBy = Number(summary.total_blocked_by ?? summary.blocked_by ?? 0), blocking = Number(summary.total_blocking ?? summary.blocking ?? 0);
+  if (!Number.isSafeInteger(blockedBy) || blockedBy < 0 || !Number.isSafeInteger(blocking) || blocking < 0) throw new GitHubTransportError("YKP-REST-001");
+  return { blockedBy, blocking };
+}
+var RestSnapshotClient = class {
+  constructor(options) {
+    this.options = options;
+    if (typeof options.token !== "string" || !options.token || /[\u0000-\u001f\u007f]/u.test(options.token)) throw new TypeError("invalid credential");
+    this.request = options.fetch ?? globalThis.fetch;
+    this.now = options.now ?? Date.now;
+    this.ttl = options.cacheTtlMs ?? 3e5;
+    this.graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY;
+  }
+  options;
+  request;
+  now;
+  ttl;
+  cache = /* @__PURE__ */ new Map();
+  flights = /* @__PURE__ */ new Map();
+  restRemaining = Number.POSITIVE_INFINITY;
+  graphqlRemaining;
+  bytes = 0;
+  evidence = { restRequests: 0, graphqlRequests: 0, restCacheHits: 0, conditionalRequests: 0, coalescedRequests: 0 };
+  headers(etag) {
+    return { accept: "application/vnd.github+json", authorization: `Bearer ${this.options.token}`, "x-github-api-version": API_VERSION, ...etag ? { "if-none-match": etag } : {} };
+  }
+  classify(response) {
+    if (response.status === 401) throw new GitHubTransportError("YKP-GH-READ-002");
+    if (response.status === 403) throw new GitHubTransportError(response.headers.get("x-ratelimit-remaining") === "0" ? "YKP-RATE-001" : "YKP-GH-READ-003");
+    if (response.status === 429) throw new GitHubTransportError("YKP-RATE-001");
+    if ([502, 503, 504].includes(response.status)) throw new GitHubTransportError("YKP-GH-READ-004");
+    throw new GitHubTransportError("YKP-REST-001");
+  }
+  updateRate(headers) {
+    const value2 = headers.get("x-ratelimit-remaining");
+    if (value2 !== null && /^\d+$/u.test(value2)) this.restRemaining = Number(value2);
+  }
+  async get(path) {
+    if (!/^\/(repos|users|orgs)\/[A-Za-z0-9_.\/-]+(?:\?[A-Za-z0-9_.,=&-]+)?$/u.test(path)) throw new GitHubTransportError("YKP-CAPABILITY-001");
+    const key = path, cached = this.cache.get(key), current = this.now();
+    if (cached && cached.expires > current) {
+      this.evidence.restCacheHits++;
+      return { body: cached.body, bytes: cached.bytes, headers: new Headers(cached.link ? { link: cached.link } : {}) };
+    }
+    const existing = this.flights.get(key);
+    if (existing) {
+      this.evidence.coalescedRequests++;
+      return existing;
+    }
+    const task = (async () => {
+      const reserve = this.options.restReserve ?? 500;
+      if (this.restRemaining <= reserve) throw new GitHubTransportError("YKP-RATE-001");
+      if (this.evidence.restRequests >= (this.options.maxRestRequests ?? 64)) throw new GitHubTransportError("YKP-RATE-001");
+      this.evidence.restRequests++;
+      if (cached?.etag) this.evidence.conditionalRequests++;
+      let response;
+      try {
+        response = await this.request(`${API}${path}`, { method: "GET", redirect: "manual", headers: this.headers(cached?.etag) });
+      } catch {
+        throw new GitHubTransportError("YKP-GH-READ-004");
+      }
+      this.updateRate(response.headers);
+      if (response.status === 304 && cached) {
+        const refreshed = { ...cached, expires: current + this.ttl };
+        this.cache.set(key, refreshed);
+        return { body: refreshed.body, bytes: 0, headers: new Headers(refreshed.link ? { link: refreshed.link } : {}) };
+      }
+      if (response.status >= 300 && response.status < 400 || !response.ok) this.classify(response);
+      if (!response.headers.get("content-type")?.toLowerCase().includes("json")) throw new GitHubTransportError("YKP-REST-001");
+      const raw = new Uint8Array(await response.arrayBuffer());
+      this.bytes += raw.byteLength;
+      if (raw.byteLength > 8 * 1024 * 1024 || this.bytes > 64 * 1024 * 1024) throw new GitHubTransportError("YKP-GH-READ-005");
+      let body;
+      try {
+        body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw));
+      } catch {
+        throw new GitHubTransportError("YKP-REST-001");
+      }
+      this.cache.set(key, { body, bytes: raw.byteLength, etag: response.headers.get("etag") ?? void 0, link: response.headers.get("link") ?? void 0, expires: current + this.ttl });
+      return { body, bytes: raw.byteLength, headers: response.headers };
+    })();
+    this.flights.set(key, task);
+    try {
+      return await task;
+    } finally {
+      this.flights.delete(key);
+    }
+  }
+  async list(path) {
+    const nodes = [];
+    let bytes = 0, next = path;
+    for (let page2 = 0; next && page2 < 20; page2++) {
+      const response = await this.get(normalizedPath(next));
+      nodes.push(...array(response.body));
+      bytes += response.bytes;
+      if (nodes.length > 1e4) throw new GitHubTransportError("YKP-GH-READ-005");
+      next = nextLink(response.headers.get("link"));
+    }
+    if (next) throw new GitHubTransportError("YKP-GH-READ-005");
+    return { nodes, bytes };
+  }
+  async relationships(ids) {
+    const result = /* @__PURE__ */ new Map();
+    if (ids.length === 0) return result;
+    if (ids.length > 100) throw new GitHubTransportError("YKP-GH-READ-005");
+    if (this.graphqlRemaining <= 0) return result;
+    const reserve = this.options.graphqlReserve ?? 500;
+    if (this.graphqlRemaining <= reserve) throw new GitHubTransportError("YKP-RATE-001");
+    if (this.evidence.graphqlRequests >= (this.options.maxGraphqlRequests ?? 2)) throw new GitHubTransportError("YKP-RATE-001");
+    this.evidence.graphqlRequests++;
     let response;
     try {
-      response = await request(ENDPOINT, { method: "POST", redirect: "manual", headers: { accept: "application/vnd.github+json", "content-type": "application/json", "authorization": `Bearer ${options.token}`, "x-github-api-version": "2022-11-28" }, body: JSON.stringify({ query, variables }) });
+      response = await this.request(GRAPHQL, { method: "POST", redirect: "manual", headers: { accept: "application/vnd.github+json", "content-type": "application/json", authorization: `Bearer ${this.options.token}`, "x-github-api-version": "2022-11-28" }, body: JSON.stringify({ query: RELATIONSHIP_QUERY, variables: { ids } }) });
     } catch {
       throw new GitHubTransportError("YKP-GH-READ-004");
     }
-    if (response.status >= 300 && response.status < 400) throw new GitHubTransportError("YKP-GH-READ-006");
-    if (response.status === 401) throw new GitHubTransportError("YKP-GH-READ-002");
-    if (response.status === 403) throw new GitHubTransportError(response.headers.get("x-ratelimit-remaining") === "0" ? "YKP-GH-READ-009" : "YKP-GH-READ-003");
-    if (response.status === 429) throw new GitHubTransportError("YKP-GH-READ-009");
-    if ([502, 503, 504].includes(response.status)) throw new GitHubTransportError("YKP-GH-READ-004");
-    if (!response.ok) throw new GitHubTransportError("YKP-GH-READ-008");
-    if (!response.headers.get("content-type")?.toLowerCase().includes("application/json")) throw new GitHubTransportError("YKP-GH-READ-008");
-    const raw = new Uint8Array(await response.arrayBuffer());
-    if (raw.byteLength > 2 * 1024 * 1024) throw new GitHubTransportError("YKP-GH-READ-005");
-    let body;
+    if (!response.ok) this.classify(response);
+    let payload;
     try {
-      body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw));
+      payload = await response.json();
     } catch {
-      throw new GitHubTransportError("YKP-GH-READ-008");
+      throw new GitHubTransportError("YKP-REST-001");
     }
-    if (!rec(body) || !rec(body.data)) throw new GitHubTransportError(Array.isArray(body?.errors) ? "YKP-GH-READ-003" : "YKP-GH-READ-008");
-    const data = body.data;
-    let normalized;
-    if (operation === "resolve_scope") {
-      const viewer = obj(data, "viewer"), repo = obj(data, "repository"), issue = obj(repo, "issue"), p = ownerProject(data), items = obj(issue, "projectItems");
-      if (typeof viewer.login !== "string" || !/^[A-Za-z0-9-]{1,39}$/u.test(viewer.login)) throw new GitHubTransportError("YKP-GH-READ-008");
-      if (pageInfo(items).hasNextPage === true) throw new GitHubTransportError("YKP-GH-READ-005");
-      if (typeof issue.body !== "string") throw new GitHubTransportError("YKP-GH-READ-008");
-      if (Buffer.byteLength(issue.body, "utf8") > 256 * 1024) throw new GitHubTransportError("YKP-GH-READ-005");
-      const matches = nodes(items).filter((i) => rec(i.project) && i.project.id === p.id);
-      if (matches.length > 1) throw new GitHubTransportError("YKP-GH-READ-006");
-      normalized = { subjectRef: `github:${viewer.login}`, ownerLogin: variables.ownerLogin, repositoryName: variables.repositoryName, projectNumber: p.number, issueNumber: issue.number, repositoryRef: repo.id, projectRef: p.id, issueRef: issue.id, issueBody: issue.body };
-    } else if (operation === "read_project_fields") {
-      const p = ownerProject(data), fields = obj(p, "fields");
-      normalized = { projectRef: p.id, nodes: nodes(fields).map((f) => ({ id: f.id, name: f.name, kind: fieldKind(f.dataType), options: fieldOptions(f) })), pageInfo: pageInfo(fields) };
-    } else if (operation === "read_project_item") {
-      const issue = obj(obj(data, "repository"), "issue"), items = obj(issue, "projectItems");
-      if (pageInfo(items).hasNextPage === true) throw new GitHubTransportError("YKP-GH-READ-005");
-      const matches = nodes(items).filter((i) => rec(i.project) && i.project.number === variables.projectNumber);
-      if (matches.length === 0) normalized = { projectRef: null, issueRef: issue.id, absent: true, nodes: [], pageInfo: { hasNextPage: false, endCursor: null } };
-      else {
-        if (matches.length !== 1) throw new GitHubTransportError("YKP-GH-READ-006");
-        const item = matches[0], values = obj(item, "fieldValues");
-        normalized = { projectRef: item.project.id, issueRef: issue.id, itemRef: item.id, fingerprint: item.id, nodes: nodes(values).filter((v) => rec(v.field) && typeof v.field.name === "string").map((v) => ({ key: v.field.name, value: value(v) })), pageInfo: pageInfo(values) };
-      }
-    } else {
-      const repo = obj(data, "repository"), issue = obj(repo, "issue"), connections = [obj(issue, "subIssues"), obj(issue, "blockedBy"), obj(issue, "blocking")], infos = connections.map(pageInfo), next = infos.filter((i) => i.hasNextPage === true).map((i) => i.endCursor);
-      if (next.length > 0 && new Set(next).size !== 1) throw new GitHubTransportError("YKP-GH-READ-007");
-      const related = [...nodes(connections[0]), ...nodes(connections[1]), ...nodes(connections[2])], all = [{ issueNumber: issue.number }, ...related.map((i) => ({ issueNumber: i.number }))];
-      const unique = [...new Map(all.map((i) => [i.issueNumber, i])).values()];
-      const parent = rec(issue.parent) ? [{ from: issue.number, to: issue.parent.number }] : [];
-      const blocked = nodes(connections[1]).map((i) => ({ from: i.number, to: issue.number }));
-      const blocking = nodes(connections[2]).map((i) => ({ from: issue.number, to: i.number }));
-      normalized = { repositoryRef: repo.id, issueRef: issue.id, nodes: unique, parent, blocks: [...blocked, ...blocking], pageInfo: { hasNextPage: next.length > 0, endCursor: next[0] ?? null } };
+    if (!rec(payload) || Array.isArray(payload.errors) || !rec(payload.data) || !Array.isArray(payload.data.nodes) || !rec(payload.data.rateLimit)) throw new GitHubTransportError("YKP-REST-001");
+    this.graphqlRemaining = Number(payload.data.rateLimit.remaining);
+    for (const node of payload.data.nodes) {
+      if (!rec(node)) throw new GitHubTransportError("YKP-REST-001");
+      const connections = ["subIssues", "blockedBy", "blocking"].map((name) => {
+        const c = node[name];
+        if (!rec(c) || !Array.isArray(c.nodes) || !rec(c.pageInfo) || c.pageInfo.hasNextPage === true) throw new GitHubTransportError("YKP-GH-READ-005");
+        return c.nodes.map((v) => {
+          if (!rec(v)) throw new GitHubTransportError("YKP-REST-001");
+          return integer(v.number);
+        });
+      });
+      result.set(text(node.id), { number: integer(node.number), ...rec(node.parent) ? { parent: integer(node.parent.number) } : {}, blockedBy: connections[1], blocking: connections[2] });
     }
-    return { byteCount: raw.byteLength, data: normalized };
+    return result;
+  }
+};
+function subject(token) {
+  return `github-token:${createHash("sha256").update(token).digest("hex")}`;
+}
+function fieldOptions(field) {
+  if (!Array.isArray(field.options)) return [];
+  return field.options.map((option) => {
+    if (!rec(option)) throw new GitHubTransportError("YKP-REST-001");
+    return { id: text(option.id), name: rawName(option.name) };
+  }).sort((a, b) => a.id.localeCompare(b.id));
+}
+function itemValues(item) {
+  const out = {};
+  for (const field of array(item.fields ?? [])) {
+    const name = text(field.name, 128);
+    if (Object.hasOwn(out, name)) throw new GitHubTransportError("YKP-REST-001");
+    out[name] = value(field.value);
+  }
+  return out;
+}
+function nativeIssueFields(content) {
+  const out = {};
+  if (!Array.isArray(content.issue_field_values)) return out;
+  for (const entry of content.issue_field_values) {
+    if (!rec(entry) || typeof entry.issue_field_name !== "string") throw new GitHubTransportError("YKP-REST-001");
+    const observed = entry.single_select_option;
+    if (rec(observed) && typeof observed.name === "string") out[entry.issue_field_name] = observed.name;
+    else if (typeof entry.value === "string" || typeof entry.value === "number") out[entry.issue_field_name] = entry.value;
+  }
+  return out;
+}
+async function readWithClient(input2, options, client) {
+  const numbers = [...new Set(input2.issueNumbers)].sort((a, b) => a - b);
+  if (!/^[A-Za-z0-9-]{1,39}$/u.test(input2.ownerLogin) || !/^[A-Za-z0-9_.-]{1,100}$/u.test(input2.repositoryName) || !Number.isSafeInteger(input2.projectNumber) || input2.projectNumber < 1 || numbers.length < 1 || numbers.length > 100 || numbers.some((n) => !Number.isSafeInteger(n) || n < 1)) throw new GitHubTransportError("YKP-GH-READ-001");
+  const repoPage = await client.get(`/repos/${input2.ownerLogin}/${input2.repositoryName}`), repo = repoPage.body;
+  if (!rec(repo) || !rec(repo.owner)) throw new GitHubTransportError("YKP-REST-001");
+  const ownerKind = repo.owner.type === "Organization" ? "orgs" : repo.owner.type === "User" ? "users" : (() => {
+    throw new GitHubTransportError("YKP-CAPABILITY-001");
+  })();
+  const projectPage = await client.get(`/${ownerKind}/${input2.ownerLogin}/projectsV2/${input2.projectNumber}`), project = projectPage.body;
+  if (!rec(project) || integer(project.number) !== input2.projectNumber) throw new GitHubTransportError("YKP-SNAPSHOT-001");
+  const projectRef = text(project.node_id);
+  const fieldsPage = await client.list(`/${ownerKind}/${input2.ownerLogin}/projectsV2/${input2.projectNumber}/fields?per_page=100`);
+  const fields = fieldsPage.nodes.filter((f) => ["text", "number", "date", "single_select", "iteration"].includes(String(f.data_type))).map((f) => ({ id: String(integer(f.id)), name: text(f.name, 128), kind: kind(f.data_type), options: fieldOptions(f) }));
+  const fieldSelector = fields.map((f) => f.id).join(",");
+  if (fieldSelector.length > 4096) throw new GitHubTransportError("YKP-GH-READ-005");
+  const itemsPage = await client.list(`/${ownerKind}/${input2.ownerLogin}/projectsV2/${input2.projectNumber}/items?per_page=100${fieldSelector ? `&fields=${fieldSelector}` : ""}`);
+  const wanted = new Set(numbers), selected = /* @__PURE__ */ new Map();
+  for (const item of itemsPage.nodes) {
+    if (!rec(item.content) || !rec(item.content.repository) || item.content.repository.full_name !== `${input2.ownerLogin}/${input2.repositoryName}`) continue;
+    const n = item.content.number;
+    if (Number.isSafeInteger(n) && wanted.has(n)) {
+      if (selected.has(n)) throw new GitHubTransportError("YKP-SNAPSHOT-001");
+      selected.set(n, item);
+    }
+  }
+  if (selected.size !== numbers.length) throw new GitHubTransportError("YKP-SNAPSHOT-001");
+  const relationshipIds = numbers.flatMap((n) => {
+    const content = selected.get(n).content, summary = relationshipSummary(content);
+    return summary.blockedBy + summary.blocking > 0 ? [text(content.node_id)] : [];
+  });
+  const relationships = await client.relationships(relationshipIds), issues = /* @__PURE__ */ new Map();
+  for (const n of numbers) {
+    const item = selected.get(n), content = item.content, relation = relationships.get(text(content.node_id));
+    const parent = relation?.parent ?? issueNumberFromUrl(content.parent_issue_url), labels = Array.isArray(content.labels) ? content.labels.map((label) => {
+      if (!rec(label)) throw new GitHubTransportError("YKP-REST-001");
+      return text(label.name, 128);
+    }).sort() : [], milestone = rec(content.milestone) && typeof content.milestone.title === "string" ? text(content.milestone.title, 128) : void 0, issueType = rec(content.type) && typeof content.type.name === "string" ? text(content.type.name, 128) : void 0, summary = relationshipSummary(content), relationshipsComplete = Boolean(relation) || summary.blockedBy === 0 && summary.blocking === 0;
+    issues.set(n, { issueRef: text(content.node_id), issueDatabaseId: integer(content.id), body: typeof content.body === "string" ? content.body : "", itemRef: text(item.node_id), fingerprint: text(item.node_id), values: itemValues(item), ...issueType ? { issueType } : {}, labels, ...milestone ? { milestone } : {}, issueFields: nativeIssueFields(content), ...parent ? { parent } : {}, blockedBy: relation?.blockedBy ?? [], blocking: relation?.blocking ?? [], relationshipsComplete });
+  }
+  return { subjectRef: subject(options.token), ownerLogin: input2.ownerLogin, repositoryName: input2.repositoryName, projectNumber: input2.projectNumber, repositoryRef: text(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), issues, evidence: { ...client.evidence } };
+}
+function createRestProjectSnapshotReader(options) {
+  const client = new RestSnapshotClient(options);
+  return { read: (input2) => readWithClient(input2, options, client) };
+}
+async function readRestProjectSnapshot(input2, options) {
+  return createRestProjectSnapshotReader(options).read(input2);
+}
+function createGitHubRestSnapshotReadTransport(options) {
+  let snapshotPromise;
+  let bound;
+  return { execute: async (operation, variables) => {
+    const ownerLogin = text(variables.ownerLogin), repositoryName = text(variables.repositoryName), projectNumber = integer(variables.projectNumber), issueNumber2 = integer(variables.issueNumber);
+    const key = `${ownerLogin}/${repositoryName}/${projectNumber}/${issueNumber2}`;
+    if (bound && bound !== key) throw new GitHubTransportError("YKP-SNAPSHOT-001");
+    bound = key;
+    snapshotPromise ??= readRestProjectSnapshot({ ownerLogin, repositoryName, projectNumber, issueNumbers: [issueNumber2] }, options);
+    const snapshot = await snapshotPromise, issue = snapshot.issues.get(issueNumber2);
+    if (!issue) throw new GitHubTransportError("YKP-SNAPSHOT-001");
+    let data;
+    if (operation === "resolve_scope") data = { subjectRef: snapshot.subjectRef, ownerLogin, repositoryName, projectNumber, issueNumber: issueNumber2, repositoryRef: snapshot.repositoryRef, projectRef: snapshot.projectRef, issueRef: issue.issueRef, issueBody: issue.body };
+    else if (operation === "read_project_fields") data = { projectRef: snapshot.projectRef, nodes: snapshot.fields, pageInfo: { hasNextPage: false, endCursor: null } };
+    else if (operation === "read_project_item") data = { projectRef: snapshot.projectRef, issueRef: issue.issueRef, itemRef: issue.itemRef, fingerprint: issue.fingerprint, nodes: Object.entries(issue.values).map(([key2, value2]) => ({ key: key2, value: value2 })), pageInfo: { hasNextPage: false, endCursor: null } };
+    else {
+      const nodes = /* @__PURE__ */ new Set([issueNumber2, ...issue.blockedBy, ...issue.blocking, ...issue.parent ? [issue.parent] : []]);
+      data = { repositoryRef: snapshot.repositoryRef, issueRef: issue.issueRef, nodes: [...nodes].sort((a, b) => a - b).map((issueNumber3) => ({ issueNumber: issueNumber3 })), parent: issue.parent ? [{ from: issueNumber2, to: issue.parent }] : [], blocks: [...issue.blockedBy.map((from) => ({ from, to: issueNumber2 })), ...issue.blocking.map((to) => ({ from: issueNumber2, to }))], pageInfo: { hasNextPage: false, endCursor: null } };
+    }
+    return { byteCount: Buffer.byteLength(JSON.stringify(data)), data };
   } };
 }
 
@@ -7659,12 +7862,12 @@ function semantic(value2, options, diagnostics2) {
     if (!isRecord(value2.project)) add(diagnostics2, "YKP-CONTRACT-007", "$.project");
     else {
       unknownFields(value2.project, PROJECT_FIELDS, "$.project", diagnostics2);
-      const project2 = {};
-      if ("status" in value2.project) project2.status = vocabulary(value2.project.status, 64, "$.project.status", diagnostics2);
-      if ("start_date" in value2.project) project2.start_date = calendarDate(value2.project.start_date, "$.project.start_date", diagnostics2);
-      if ("target_date" in value2.project) project2.target_date = calendarDate(value2.project.target_date, "$.project.target_date", diagnostics2);
-      if (project2.start_date && project2.target_date && project2.target_date < project2.start_date) add(diagnostics2, "YKP-CONTRACT-011", "$.project.target_date");
-      result.project = project2;
+      const project = {};
+      if ("status" in value2.project) project.status = vocabulary(value2.project.status, 64, "$.project.status", diagnostics2);
+      if ("start_date" in value2.project) project.start_date = calendarDate(value2.project.start_date, "$.project.start_date", diagnostics2);
+      if ("target_date" in value2.project) project.target_date = calendarDate(value2.project.target_date, "$.project.target_date", diagnostics2);
+      if (project.start_date && project.target_date && project.target_date < project.start_date) add(diagnostics2, "YKP-CONTRACT-011", "$.project.target_date");
+      result.project = project;
     }
   }
   if ("relationships" in value2) {
@@ -7733,10 +7936,10 @@ function parseIssueContract(body, options = {}) {
 }
 
 // src/github-readonly.ts
-import { createHash as createHash2 } from "node:crypto";
+import { createHash as createHash3 } from "node:crypto";
 
 // src/planner.ts
-import { createHash } from "node:crypto";
+import { createHash as createHash2 } from "node:crypto";
 var MESSAGES2 = {
   "YKP-PLAN-001": "input boundary is invalid",
   "YKP-PLAN-002": "effective schema is not executable",
@@ -7784,7 +7987,7 @@ function canonicalJson(value2) {
   return JSON.stringify(canonicalValue(value2));
 }
 function planId(plan) {
-  return createHash("sha256").update(canonicalJson(plan), "utf8").digest("hex");
+  return createHash2("sha256").update(canonicalJson(plan), "utf8").digest("hex");
 }
 function opKey(...parts) {
   return parts.join(".");
@@ -7825,9 +8028,9 @@ function operationFromSchema(operation, scope) {
   };
   return null;
 }
-function hasCycle(nodes2, edges) {
+function hasCycle(nodes, edges) {
   const adjacent = /* @__PURE__ */ new Map();
-  nodes2.forEach((node) => adjacent.set(node, []));
+  nodes.forEach((node) => adjacent.set(node, []));
   edges.forEach((edge) => adjacent.get(edge.from)?.push(edge.to));
   const visiting = /* @__PURE__ */ new Set();
   const visited = /* @__PURE__ */ new Set();
@@ -7840,7 +8043,7 @@ function hasCycle(nodes2, edges) {
     visited.add(node);
     return false;
   };
-  return nodes2.some(visit);
+  return nodes.some(visit);
 }
 function edgeKey(edge) {
   return `${edge.from}->${edge.to}`;
@@ -7850,10 +8053,10 @@ function validateGraph(graph, internal) {
     add2(internal, "YKP-GRAPH-001", "$.relationships");
     return;
   }
-  const nodes2 = /* @__PURE__ */ new Set();
+  const nodes = /* @__PURE__ */ new Set();
   graph.nodes.forEach((node, index) => {
-    if (!Number.isSafeInteger(node) || node <= 0 || nodes2.has(node)) add2(internal, "YKP-GRAPH-002", `$.relationships.nodes[${index}]`);
-    else nodes2.add(node);
+    if (!Number.isSafeInteger(node) || node <= 0 || nodes.has(node)) add2(internal, "YKP-GRAPH-002", `$.relationships.nodes[${index}]`);
+    else nodes.add(node);
   });
   const validate = (edges, name) => {
     const seen = /* @__PURE__ */ new Set();
@@ -7861,7 +8064,7 @@ function validateGraph(graph, internal) {
     edges.forEach((edge, index) => {
       const path = `$.relationships.${name}[${index}]`;
       const key = edgeKey(edge);
-      if (!nodes2.has(edge.from) || !nodes2.has(edge.to) || edge.from === edge.to || seen.has(key)) add2(internal, "YKP-GRAPH-002", path);
+      if (!nodes.has(edge.from) || !nodes.has(edge.to) || edge.from === edge.to || seen.has(key)) add2(internal, "YKP-GRAPH-002", path);
       else seen.add(key);
       if (name === "parent" && parents.has(edge.from)) add2(internal, "YKP-GRAPH-003", path);
       else if (name === "parent") parents.add(edge.from);
@@ -7936,14 +8139,14 @@ function planReconciliation(input2) {
     });
   }
   const current = scope.issueNumber;
-  const nodes2 = new Set(input2.relationships.nodes);
+  const nodes = new Set(input2.relationships.nodes);
   const desiredBlocks = new Set(input2.contract.relationships?.blocks ?? []);
   const desiredBlockedBy = new Set(input2.contract.relationships?.blocked_by ?? []);
   for (const issue of desiredBlocks) if (desiredBlockedBy.has(issue)) add2(internal, "YKP-GRAPH-006", "$.contract.relationships");
   const parent = input2.contract.relationships?.parent;
   const proposedParent = [...input2.relationships.parent];
   if (parent !== void 0) {
-    if (!nodes2.has(parent) || !nodes2.has(current)) add2(internal, "YKP-GRAPH-002", "$.contract.relationships.parent");
+    if (!nodes.has(parent) || !nodes.has(current)) add2(internal, "YKP-GRAPH-002", "$.contract.relationships.parent");
     else {
       const existing = input2.relationships.parent.find((edge) => edge.from === current);
       if (existing?.to === parent) observations.push({ type: "preserve_parent", logicalKey: "parent", displayValue: parent });
@@ -7960,7 +8163,7 @@ function planReconciliation(input2) {
   if (desiredEdges.length + (parent === void 0 ? 0 : 1) > 100) add2(internal, "YKP-GRAPH-001", "1contract.relationships");
   desiredEdges.sort((a, b) => a.from - b.from || a.to - b.to).forEach((edge) => {
     const path = "1contract.relationships";
-    if (!nodes2.has(edge.from) || !nodes2.has(edge.to) || edge.from === edge.to) {
+    if (!nodes.has(edge.from) || !nodes.has(edge.to) || edge.from === edge.to) {
       add2(internal, "YKP-GRAPH-002", path);
       return;
     }
@@ -7993,21 +8196,21 @@ function renderPublicReport(plan) {
 
 // src/github-readonly.ts
 var READ_OPERATIONS = ["resolve_scope", "read_project_fields", "read_project_item", "read_issue_relationships"];
-var MSG = { "YKP-GH-READ-001": "requested scope is invalid", "YKP-GH-READ-002": "authentication failed", "YKP-GH-READ-003": "access is denied", "YKP-GH-READ-004": "provider is unavailable", "YKP-GH-READ-005": "response limit is exceeded", "YKP-GH-READ-006": "resource binding does not match", "YKP-GH-READ-007": "pagination invariant is invalid", "YKP-GH-READ-008": "provider response is invalid", "YKP-GH-READ-009": "provider rate limit is reached", "YKP-GH-READ-010": "failure could not be safely classified", "YKP-GH-READ-011": "required provider capability is unavailable" };
+var MSG = { "YKP-GH-READ-001": "requested scope is invalid", "YKP-GH-READ-002": "authentication failed", "YKP-GH-READ-003": "access is denied", "YKP-GH-READ-004": "provider is unavailable", "YKP-GH-READ-005": "response limit is exceeded", "YKP-GH-READ-006": "resource binding does not match", "YKP-GH-READ-007": "pagination invariant is invalid", "YKP-GH-READ-008": "provider response is invalid", "YKP-GH-READ-009": "provider rate limit is reached", "YKP-GH-READ-010": "failure could not be safely classified", "YKP-GH-READ-011": "required provider capability is unavailable", "YKP-RATE-001": "provider budget is reserved", "YKP-CACHE-001": "cached observation is invalid", "YKP-CAPABILITY-001": "required provider capability is unavailable", "YKP-REST-001": "REST response is invalid", "YKP-SNAPSHOT-001": "snapshot is incomplete" };
 function failure(code, operation, retry = "never") {
   return { observation: null, diagnostics: [{ code, severity: "error", message: MSG[code], operation, retry }] };
 }
 function rec2(v) {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
-function text(v, max = 256) {
+function text2(v, max = 256) {
   return typeof v === "string" && v.trim() === v && [...v].length > 0 && [...v].length <= max && !/[\u0000-\u001f\u007f]/u.test(v);
 }
 function scopeOK(s) {
-  return !!s && text(s.ownerLogin) && text(s.repositoryName) && Number.isSafeInteger(s.projectNumber) && s.projectNumber > 0 && Number.isSafeInteger(s.issueNumber) && s.issueNumber > 0;
+  return !!s && text2(s.ownerLogin) && text2(s.repositoryName) && Number.isSafeInteger(s.projectNumber) && s.projectNumber > 0 && Number.isSafeInteger(s.issueNumber) && s.issueNumber > 0;
 }
 function page(v) {
-  return rec2(v) && Array.isArray(v.nodes) && rec2(v.pageInfo) && typeof v.pageInfo.hasNextPage === "boolean" && (v.pageInfo.endCursor === null || text(v.pageInfo.endCursor));
+  return rec2(v) && Array.isArray(v.nodes) && rec2(v.pageInfo) && typeof v.pageInfo.hasNextPage === "boolean" && (v.pageInfo.endCursor === null || text2(v.pageInfo.endCursor));
 }
 var ReadFailure = class {
   constructor(code, operation) {
@@ -8031,7 +8234,7 @@ async function readGitHubObservation(scope, transport) {
   };
   try {
     const resolved = await execute("resolve_scope", null);
-    if (resolved.ownerLogin !== scope.ownerLogin || resolved.repositoryName !== scope.repositoryName || resolved.projectNumber !== scope.projectNumber || resolved.issueNumber !== scope.issueNumber || !text(resolved.subjectRef) || !text(resolved.repositoryRef) || !text(resolved.projectRef) || !text(resolved.issueRef)) throw new ReadFailure("YKP-GH-READ-006", "resolve_scope");
+    if (resolved.ownerLogin !== scope.ownerLogin || resolved.repositoryName !== scope.repositoryName || resolved.projectNumber !== scope.projectNumber || resolved.issueNumber !== scope.issueNumber || !text2(resolved.subjectRef) || !text2(resolved.repositoryRef) || !text2(resolved.projectRef) || !text2(resolved.issueRef)) throw new ReadFailure("YKP-GH-READ-006", "resolve_scope");
     if (typeof resolved.issueBody !== "string") throw new ReadFailure("YKP-GH-READ-008", "resolve_scope");
     if (Buffer.byteLength(resolved.issueBody, "utf8") > 256 * 1024) throw new ReadFailure("YKP-GH-READ-005", "resolve_scope");
     const paginate = async (op) => {
@@ -8057,11 +8260,11 @@ async function readGitHubObservation(scope, transport) {
     for (const p of fieldPages) {
       if (p.projectRef !== resolved.projectRef) throw new ReadFailure("YKP-GH-READ-006", "read_project_fields");
       for (const v of p.nodes) {
-        if (!rec2(v) || !text(v.id) || !text(v.name) || !["text", "number", "date", "single_select", "iteration"].includes(String(v.kind)) || fieldIds.has(v.id) || !Array.isArray(v.options) || v.options.length > 256) throw new ReadFailure("YKP-GH-READ-008", "read_project_fields");
+        if (!rec2(v) || !text2(v.id) || !text2(v.name) || !["text", "number", "date", "single_select", "iteration"].includes(String(v.kind)) || fieldIds.has(v.id) || !Array.isArray(v.options) || v.options.length > 256) throw new ReadFailure("YKP-GH-READ-008", "read_project_fields");
         fieldIds.add(v.id);
         const options = [];
         for (const o of v.options) {
-          if (!rec2(o) || !text(o.id) || !text(o.name) || optionIds.has(o.id)) throw new ReadFailure("YKP-GH-READ-008", "read_project_fields");
+          if (!rec2(o) || !text2(o.id) || !text2(o.name) || optionIds.has(o.id)) throw new ReadFailure("YKP-GH-READ-008", "read_project_fields");
           optionIds.add(o.id);
           options.push({ id: o.id, name: o.name });
           if (++optionCount > 2048) throw new ReadFailure("YKP-GH-READ-005", "read_project_fields");
@@ -8080,24 +8283,24 @@ async function readGitHubObservation(scope, transport) {
         if (p.nodes.length || itemRef) throw new ReadFailure("YKP-GH-READ-008", "read_project_item");
         continue;
       }
-      if (p.projectRef !== resolved.projectRef || !text(p.itemRef) || !text(p.fingerprint) || itemRef && p.itemRef !== itemRef || fingerprint && p.fingerprint !== fingerprint) throw new ReadFailure("YKP-GH-READ-006", "read_project_item");
+      if (p.projectRef !== resolved.projectRef || !text2(p.itemRef) || !text2(p.fingerprint) || itemRef && p.itemRef !== itemRef || fingerprint && p.fingerprint !== fingerprint) throw new ReadFailure("YKP-GH-READ-006", "read_project_item");
       itemRef = p.itemRef;
       fingerprint = p.fingerprint;
       for (const v of p.nodes) {
-        if (!rec2(v) || !text(v.key, 64) || v.key in values || !(v.value === null || typeof v.value === "string" || typeof v.value === "number" && Number.isFinite(v.value))) throw new ReadFailure("YKP-GH-READ-008", "read_project_item");
+        if (!rec2(v) || !text2(v.key, 64) || v.key in values || !(v.value === null || typeof v.value === "string" || typeof v.value === "number" && Number.isFinite(v.value))) throw new ReadFailure("YKP-GH-READ-008", "read_project_item");
         values[v.key] = v.value;
         if (Object.keys(values).length > 256) throw new ReadFailure("YKP-GH-READ-005", "read_project_item");
       }
     }
     if (itemRef && fingerprint) item = { values, fingerprint };
-    const nodes2 = /* @__PURE__ */ new Set(), parents = [], blocks = [];
+    const nodes = /* @__PURE__ */ new Set(), parents = [], blocks = [];
     const edges = /* @__PURE__ */ new Set();
     for (const p of relationPages) {
       if (p.repositoryRef !== resolved.repositoryRef || p.issueRef !== resolved.issueRef) throw new ReadFailure("YKP-GH-READ-006", "read_issue_relationships");
       for (const v of p.nodes) {
-        if (!rec2(v) || !Number.isSafeInteger(v.issueNumber) || v.issueNumber <= 0 || nodes2.has(v.issueNumber)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
-        nodes2.add(v.issueNumber);
-        if (nodes2.size > 512) throw new ReadFailure("YKP-GH-READ-005", "read_issue_relationships");
+        if (!rec2(v) || !Number.isSafeInteger(v.issueNumber) || v.issueNumber <= 0 || nodes.has(v.issueNumber)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
+        nodes.add(v.issueNumber);
+        if (nodes.size > 512) throw new ReadFailure("YKP-GH-READ-005", "read_issue_relationships");
       }
       for (const [key, target, limit] of [["parent", parents, 511], ["blocks", blocks, 4096]]) {
         const list = p[key];
@@ -8112,17 +8315,17 @@ async function readGitHubObservation(scope, transport) {
         }
       }
     }
-    if (!nodes2.has(scope.issueNumber) || [...parents, ...blocks].some((e) => !nodes2.has(e.from) || !nodes2.has(e.to) || e.from === e.to)) throw new ReadFailure("YKP-GH-READ-006", "read_issue_relationships");
+    if (!nodes.has(scope.issueNumber) || [...parents, ...blocks].some((e) => !nodes.has(e.from) || !nodes.has(e.to) || e.from === e.to)) throw new ReadFailure("YKP-GH-READ-006", "read_issue_relationships");
     fields.sort((a, b) => a.id.localeCompare(b.id));
-    const relationships = { nodes: [...nodes2].sort((a, b) => a - b), parent: parents.sort((a, b) => a.from - b.from || a.to - b.to), blocks: blocks.sort((a, b) => a.from - b.from || a.to - b.to) };
+    const relationships = { nodes: [...nodes].sort((a, b) => a - b), parent: parents.sort((a, b) => a.from - b.from || a.to - b.to), blocks: blocks.sort((a, b) => a.from - b.from || a.to - b.to) };
     const base = { scope: { subjectRef: resolved.subjectRef, repositoryRef: resolved.repositoryRef, projectRef: resolved.projectRef, issueRef: resolved.issueRef, issueNumber: scope.issueNumber }, projectSchema: { fields }, item, relationships };
-    const fingerprintOut = createHash2("sha256").update(canonicalJson(base)).digest("hex");
+    const fingerprintOut = createHash3("sha256").update(canonicalJson(base)).digest("hex");
     return { observation: { ...base, issueBody: resolved.issueBody, evidence: { schema: 1, operationCounts: counts, pageCount: pages, fingerprint: fingerprintOut } }, diagnostics: [] };
   } catch (e) {
     if (e instanceof ReadFailure) return failure(e.code, e.operation, e.code === "YKP-GH-READ-008" ? "review" : "never");
     if (rec2(e) && typeof e.code === "string" && Object.hasOwn(MSG, e.code)) {
       const code = e.code;
-      return failure(code, "scope", code === "YKP-GH-READ-004" ? "full-read" : code === "YKP-GH-READ-009" ? "reset" : code === "YKP-GH-READ-008" ? "review" : "never");
+      return failure(code, "scope", code === "YKP-GH-READ-004" ? "full-read" : code === "YKP-GH-READ-009" || code === "YKP-RATE-001" ? "reset" : code === "YKP-GH-READ-008" || code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" ? "review" : "never");
     }
     return failure("YKP-GH-READ-004", "scope", "full-read");
   }
@@ -8254,13 +8457,13 @@ function parseRepositoryPolicy(source) {
       unknownFields2(declaration, FIELD_FIELDS, path, internal);
       for (const required of ["name", "kind", "mode"]) if (!(required in declaration)) add3(internal, "YKP-POLICY-001", `${path}.${required}`);
       const name = "name" in declaration ? displayName(declaration.name, `${path}.name`, internal) : void 0;
-      const kind = declaration.kind;
+      const kind2 = declaration.kind;
       const mode = declaration.mode;
-      if ("kind" in declaration && (typeof kind !== "string" || !KINDS.has(kind))) add3(internal, typeof kind === "string" ? "YKP-POLICY-006" : "YKP-POLICY-005", `${path}.kind`);
+      if ("kind" in declaration && (typeof kind2 !== "string" || !KINDS.has(kind2))) add3(internal, typeof kind2 === "string" ? "YKP-POLICY-006" : "YKP-POLICY-005", `${path}.kind`);
       if ("mode" in declaration && (typeof mode !== "string" || !MODES.has(mode))) add3(internal, typeof mode === "string" ? "YKP-POLICY-006" : "YKP-POLICY-005", `${path}.mode`);
       const options = {};
       if ("options" in declaration) {
-        if (kind !== "single_select" || mode !== "managed") add3(internal, "YKP-POLICY-006", `${path}.options`);
+        if (kind2 !== "single_select" || mode !== "managed") add3(internal, "YKP-POLICY-006", `${path}.options`);
         else if (!isRecord2(declaration.options)) add3(internal, "YKP-POLICY-005", `${path}.options`);
         else if (Object.keys(declaration.options).length < 1 || Object.keys(declaration.options).length > 128) add3(internal, "YKP-POLICY-003", `${path}.options`);
         else {
@@ -8279,14 +8482,14 @@ function parseRepositoryPolicy(source) {
             }
           }
         }
-      } else if (kind === "single_select" && mode === "managed") add3(internal, "YKP-POLICY-001", `${path}.options`);
+      } else if (kind2 === "single_select" && mode === "managed") add3(internal, "YKP-POLICY-001", `${path}.options`);
       if (name) {
         const folded = comparisonFold(name);
         if (names.has(folded)) add3(internal, "YKP-POLICY-007", `${path}.name`);
         else names.set(folded, key);
       }
-      if (name && KINDS.has(kind) && MODES.has(mode) && LOGICAL_KEY.test(key)) {
-        fields[key] = { name, kind, mode, ...Object.keys(options).length ? { options } : {} };
+      if (name && KINDS.has(kind2) && MODES.has(mode) && LOGICAL_KEY.test(key)) {
+        fields[key] = { name, kind: kind2, mode, ...Object.keys(options).length ? { options } : {} };
       }
     }
   }
@@ -8384,7 +8587,7 @@ function fail(failureClass, codes) {
   return { status: "error", failureClass, diagnostics: codes.slice(0, 64).map((code) => ({ code, message: MESSAGE })) };
 }
 function readClass(code) {
-  return code === "YKP-GH-READ-002" ? "authentication" : code === "YKP-GH-READ-003" ? "authorization" : "provider";
+  return code === "YKP-GH-READ-002" ? "authentication" : code === "YKP-GH-READ-003" ? "authorization" : code === "YKP-RATE-001" ? "deferred" : code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" || code === "YKP-CACHE-001" ? "invariant" : "provider";
 }
 async function runDryRun(input2) {
   const policy = parseRepositoryPolicy(input2.policySource);
@@ -8451,7 +8654,7 @@ async function actionMain() {
     if (!workspace || !temporary) throw new TypeError("invalid action environment");
     const scope = parseRuntimeScope({ owner: input("OWNER"), repository: input("REPOSITORY"), projectNumber: input("PROJECT-NUMBER"), issueNumber: input("ISSUE-NUMBER") });
     const policySource = await loadWorkspacePolicy(workspace, process.env["INPUT_POLICY-PATH"] || ".yukh/project.yaml");
-    const result = await runDryRun({ scope, policySource, transport: createGitHubGraphQLReadTransport({ token }) });
+    const result = await runDryRun({ scope, policySource, transport: createGitHubRestSnapshotReadTransport({ token }) });
     const reportPath = join(temporary, `yukh-projects-${process.pid}.json`);
     const file = await open2(reportPath, "wx", 384);
     try {

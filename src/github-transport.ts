@@ -1,4 +1,4 @@
-import type { AllowedReadOperation, GitHubReadCode, ReadEnvelope, ReadOnlyTransport } from "./github-readonly.js";
+import type { AllowedReadOperation, GitHubReadCode, SnapshotReadCode, ReadEnvelope, ReadOnlyTransport } from "./github-readonly.js";
 
 const ENDPOINT = "https://api.github.com/graphql";
 const DOCUMENTS: Record<AllowedReadOperation,string> = {
@@ -8,7 +8,7 @@ const DOCUMENTS: Record<AllowedReadOperation,string> = {
  read_issue_relationships: `query YukhReadIssueRelationships($ownerLogin:String!,$repositoryName:String!,$issueNumber:Int!,$first:Int!,$cursor:String){repository(owner:$ownerLogin,name:$repositoryName){id issue(number:$issueNumber){id number parent{number repository{id}}subIssues(first:$first,after:$cursor){nodes{number repository{id}}pageInfo{hasNextPage endCursor}}blockedBy(first:$first,after:$cursor){nodes{number repository{id}}pageInfo{hasNextPage endCursor}}blocking(first:$first,after:$cursor){nodes{number repository{id}}pageInfo{hasNextPage endCursor}}}}}`
 };
 export const GITHUB_READ_QUERY_DOCUMENTS:Readonly<Record<AllowedReadOperation,string>> = Object.freeze({...DOCUMENTS});
-export class GitHubTransportError extends Error { constructor(readonly code:GitHubReadCode){super("GitHub read transport failed");this.name="GitHubTransportError";} }
+export class GitHubTransportError extends Error { constructor(readonly code:GitHubReadCode|SnapshotReadCode){super("GitHub read transport failed");this.name="GitHubTransportError";} }
 export interface GitHubTransportOptions { token:string; fetch?:typeof globalThis.fetch }
 function rec(v:unknown):v is Record<string,unknown>{return typeof v==="object"&&v!==null&&!Array.isArray(v);}
 function obj(v:unknown,key:string):Record<string,unknown>{if(!rec(v))throw new GitHubTransportError("YKP-GH-READ-008");const x=v[key];if(!rec(x))throw new GitHubTransportError("YKP-GH-READ-008");return x;}

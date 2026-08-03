@@ -15,7 +15,7 @@ async function fixture() {
 if [[ $* == "api rate_limit" ]]; then
   printf '%s\\n' '{"resources":{"core":{"remaining":4000,"limit":5000},"graphql":{"remaining":0,"limit":5000},"search":{"remaining":30,"limit":30}}}'
 else
-  printf '%s\\n' "$*"
+  printf '["%s"]\\n' "$*"
 fi
 `);
   await chmod(gh, 0o755);
@@ -56,4 +56,10 @@ test("fails closed when the REST reserve is reached", async () => {
 test("skill contains no unfinished template markers", async () => {
   const body = await readFile(path.join(root, ".github/skills/github-projects-rest-first/SKILL.md"), "utf8");
   assert.doesNotMatch(body, /TODO|Structuring This Skill/);
+});
+
+test("helper remains compatible with gh versions that lack api --slurp", async () => {
+  const body = await readFile(script, "utf8");
+  assert.doesNotMatch(body, /--slurp/u);
+  assert.match(body, /jq -s/u);
 });
