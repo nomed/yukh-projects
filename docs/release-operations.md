@@ -11,6 +11,11 @@ workflow checks that policy once in its read-only preflight and checks it again
 immediately before the first GitHub mutation. Either unavailable, malformed or
 disabled policy state fails closed without retry.
 
+The policy reads use the protected `IMMUTABLE_RELEASES_READ_TOKEN`, scoped to
+repository Administration read and stored only in the `release` environment.
+The automatic workflow token remains the publication and attestation identity;
+the publisher never falls back to it for an administrative policy read.
+
 The publisher creates a draft Release bound to the exact candidate commit,
 uploads and verifies the complete allowlisted asset set, then publishes the
 draft. It accepts success only when GitHub reports the Release immutable and the

@@ -21,6 +21,7 @@ concurrency:
 
 jobs:
   preflight:
+    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -34,7 +35,7 @@ jobs:
           cache: npm
       - name: Build exact candidate
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.IMMUTABLE_RELEASES_READ_TOKEN }}
           RELEASE_VERSION: ${{ inputs.version }}
           RELEASE_COMMIT: ${{ inputs.commit }}
         shell: bash
@@ -95,6 +96,7 @@ jobs:
       - name: Recheck binding and publish once
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          IMMUTABLE_RELEASES_READ_TOKEN: ${{ secrets.IMMUTABLE_RELEASES_READ_TOKEN }}
           RELEASE_VERSION: ${{ inputs.version }}
           RELEASE_COMMIT: ${{ inputs.commit }}
         shell: bash
