@@ -7505,6 +7505,7 @@ var RestSnapshotClient = class {
   ttl;
   cache = /* @__PURE__ */ new Map();
   flights = /* @__PURE__ */ new Map();
+  generations = /* @__PURE__ */ new Map();
   ledger;
   bytes = 0;
   evidence = { restRequests: 0, graphqlRequests: 0, restCacheHits: 0, conditionalRequests: 0, coalescedRequests: 0 };
@@ -7522,6 +7523,15 @@ var RestSnapshotClient = class {
     const value2 = headers.get("x-ratelimit-remaining");
     if (value2 !== null && /^\d+$/u.test(value2)) this.ledger.observe(resource, Number(value2));
   }
+  invalidate(input2, effect) {
+    if (!/^[A-Za-z0-9-]{1,39}$/u.test(input2.ownerLogin) || !Number.isSafeInteger(input2.projectNumber) || input2.projectNumber < 1) throw new GitHubTransportError("YKP-GH-READ-001");
+    const prefix = new RegExp(`^/(?:orgs|users)/${input2.ownerLogin}/projectsV2/${input2.projectNumber}/(?:${effect === "schema" ? "fields|items" : "items"})\\?`, `u`), keys = /* @__PURE__ */ new Set([...this.cache.keys(), ...this.flights.keys()]);
+    for (const key of keys) if (prefix.test(key)) {
+      this.generations.set(key, (this.generations.get(key) ?? 0) + 1);
+      this.cache.delete(key);
+      this.flights.delete(key);
+    }
+  }
   async get(path) {
     if (!/^\/(repos|users|orgs)\/[A-Za-z0-9_.\/-]+(?:\?[A-Za-z0-9_.,=&-]+)?$/u.test(path)) throw new GitHubTransportError("YKP-CAPABILITY-001");
     const key = path, cached = this.cache.get(key), current = this.now();
@@ -7534,7 +7544,7 @@ var RestSnapshotClient = class {
       this.evidence.coalescedRequests++;
       return existing;
     }
-    const task = (async () => {
+    const generation = this.generations.get(key) ?? 0, task = (async () => {
       if (!this.ledger.reserve("rest")) throw new GitHubTransportError("YKP-RATE-001");
       this.evidence.restRequests++;
       if (cached?.etag) this.evidence.conditionalRequests++;
@@ -7547,7 +7557,7 @@ var RestSnapshotClient = class {
       this.updateRate("rest", response.headers);
       if (response.status === 304 && cached) {
         const refreshed = { ...cached, expires: current + this.ttl };
-        this.cache.set(key, refreshed);
+        if ((this.generations.get(key) ?? 0) === generation) this.cache.set(key, refreshed);
         return { body: refreshed.body, bytes: 0, headers: new Headers(refreshed.link ? { link: refreshed.link } : {}) };
       }
       if (response.status >= 300 && response.status < 400 || !response.ok) this.classify(response);
@@ -7561,7 +7571,7 @@ var RestSnapshotClient = class {
       } catch {
         throw new GitHubTransportError("YKP-REST-001");
       }
-      this.cache.set(key, { body, bytes: raw.byteLength, etag: response.headers.get("etag") ?? void 0, link: response.headers.get("link") ?? void 0, expires: current + this.ttl });
+      if ((this.generations.get(key) ?? 0) === generation) this.cache.set(key, { body, bytes: raw.byteLength, etag: response.headers.get("etag") ?? void 0, link: response.headers.get("link") ?? void 0, expires: current + this.ttl });
       return { body, bytes: raw.byteLength, headers: response.headers };
     })();
     this.flights.set(key, task);
@@ -7695,7 +7705,7 @@ async function readWithClient(input2, options, client) {
 }
 function createRestProjectSnapshotReader(options) {
   const client = new RestSnapshotClient(options);
-  return { read: (input2) => readWithClient(input2, options, client) };
+  return { read: (input2) => readWithClient(input2, options, client), invalidate: (input2, effect) => client.invalidate(input2, effect) };
 }
 async function readRestProjectSnapshot(input2, options) {
   return createRestProjectSnapshotReader(options).read(input2);

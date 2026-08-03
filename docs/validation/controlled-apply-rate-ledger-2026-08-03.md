@@ -24,6 +24,19 @@ each use exactly four REST requests and zero GraphQL requests. Separate ledger
 assertions prove that the fifth REST reservation fails when it would cross the
 provider reserve. These tests use invented resources and injected fetch only.
 
+After an accepted mutation, the executor requires cache invalidation before its
+verification port can read. Item/value/relationship effects invalidate only the
+Project item resource group and require one fresh REST request. Schema effects
+invalidate the fields and item resource groups and require two fresh REST
+requests. Repository and Project metadata remain reusable. The subsequent final
+complete snapshot reuses only observations populated after invalidation and
+requires zero additional HTTP requests in the unchanged synthetic case.
+
+Each cache resource carries an internal generation. Invalidation advances the
+generation and detaches any older single-flight promise, so a response that was
+already in flight before provider acceptance cannot repopulate the verification
+cache. Invalidation failure stops before verification and final reconciliation.
+
 Validation commands:
 
 ```text
