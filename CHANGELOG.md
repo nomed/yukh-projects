@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2](https://github.com/nomed/yukh-projects/compare/yukh-projects-v1.3.1...yukh-projects-v1.3.2) (2026-08-03)
+
+
+### Bug Fixes
+
+* bind immutable policy credential ([#85](https://github.com/nomed/yukh-projects/issues/85)) ([64983be](https://github.com/nomed/yukh-projects/commit/64983be5a4cd8ee7a0b89d2551499c511c0ffefb))
+* require immutable release publication ([#82](https://github.com/nomed/yukh-projects/issues/82)) ([aea3fbf](https://github.com/nomed/yukh-projects/commit/aea3fbf00c2d3dcafdc5673e9a4243e451445cfe))
+
 ## [1.3.1](https://github.com/nomed/yukh-projects/compare/yukh-projects-v1.3.0...yukh-projects-v1.3.1) (2026-08-03)
 
 
