@@ -1,0 +1,52 @@
+name: Protected release preflight
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact semantic version from the merged release PR
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-preflight-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  would-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: Validate candidate without publication
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF}" = "refs/heads/main"
+          npm ci
+          npm test
+          npm run verify:bundles
+          npm audit --audit-level=moderate
+          npm sbom --sbom-format spdx > release.spdx.json
+          node scripts/release-preflight.mjs "$RELEASE_VERSION" "$RELEASE_COMMIT"
+      - name: Assert no publication authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" = ""
+          test "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" = ""

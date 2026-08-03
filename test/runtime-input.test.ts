@@ -1,0 +1,13 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { mkdtemp, mkdir, readFile, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { loadWorkspacePolicy, parseRuntimeScope, writeWorkspaceReport } from "../src/runtime-input.js";
+import { parseCliArgs, readBoundedToken } from "../src/cli.js";
+
+test("parses bounded scope and rejects confusable or oversized values",()=>{assert.deepEqual(parseRuntimeScope({owner:"example-labs",repository:"atlas",projectNumber:"7",issueNumber:"42"}),{ownerLogin:"example-labs",repositoryName:"atlas",projectNumber:7,issueNumber:42});for(const owner of ["-bad","bad-","bad/name","éxample"]){assert.throws(()=>parseRuntimeScope({owner,repository:"atlas",projectNumber:"7",issueNumber:"42"}));}assert.throws(()=>parseRuntimeScope({owner:"example",repository:"atlas",projectNumber:"2147483648",issueNumber:"42"}));});
+test("loads only a regular policy below the real workspace",async()=>{const root=await mkdtemp(join(tmpdir(),"ykp-runtime-"));await mkdir(join(root,".yukh"));await writeFile(join(root,".yukh/project.yaml"),"schema: 1\nfields: {}\n");assert.match(await loadWorkspacePolicy(root),/schema/u);await symlink("/etc/passwd",join(root,".yukh/escape"));await assert.rejects(loadWorkspacePolicy(root,".yukh/escape"));for(const path of ["../outside","/etc/passwd",""]){await assert.rejects(loadWorkspacePolicy(root,path));}});
+test("creates reports exclusively beneath the workspace",async()=>{const root=await mkdtemp(join(tmpdir(),"ykp-report-"));await writeWorkspaceReport(root,"report.json","{}\n");assert.equal(await readFile(join(root,"report.json"),"utf8"),"{}\n");await assert.rejects(writeWorkspaceReport(root,"report.json","changed"));await assert.rejects(writeWorkspaceReport(root,"../escape","{}"));});
+test("CLI rejects apply, duplicates, positionals, and token arguments",()=>{const base=["--owner","example","--repository","atlas","--project-number","7","--issue-number","42","--github-token-stdin"];assert.equal(parseCliArgs(base).tokenStdin,true);for(const extra of [["--apply"],["positional"],["--owner","again"],["--github-token","secret"]])assert.throws(()=>parseCliArgs([...base,...extra]));});
+test("token stdin is bounded and control-free",async()=>{assert.equal(await readBoundedToken((async function*(){yield "synthetic-token\n";})()),"synthetic-token");await assert.rejects(readBoundedToken((async function*(){yield "x".repeat(8193);})()));await assert.rejects(readBoundedToken((async function*(){yield "bad\ninside\n";})()));});

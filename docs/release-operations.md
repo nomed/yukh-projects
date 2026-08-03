@@ -1,0 +1,7 @@
+# Release operations
+
+Release Please owns version, changelog, and release-PR maintenance only. It has no tag or GitHub Release authority.
+
+The protected publisher normally establishes the immutable tag that Release Please uses as its previous-release marker. If a release PR is merged while publication remains intentionally suspended, `last-release-sha` in `release-please-config.json` must point to that exact merge commit. This hold prevents already released commits from being proposed again.
+
+The hold is advanced only through a reviewed pull request. It may be removed after the separately authorized protected publisher creates and verifies the corresponding immutable tag. Tags, Releases, attestations, and packages must never be created merely to repair Release Please state.

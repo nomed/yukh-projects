@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "9a49d376c8cc1b95d5f6eec1686a909579b463a8",
+  "last-release-sha": "e63456dc8bfaf90c9d98c78b8ec77ad614e436c0",
+  "skip-github-release": true,
+  "skip-labeling": true,
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "@nomed/yukh-projects",
+      "changelog-path": "CHANGELOG.md"
+    }
+  }
+}

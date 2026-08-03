@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { IssueContract } from "./index.js";
+import type { IssueContract } from "./issue-contract.js";
 import type { EffectiveSchemaResult, FieldKind, RepositoryPolicy, SchemaOperation } from "./policy.js";
 
 export type PlanDiagnosticCode =

@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+import { pathToFileURL } from "node:url";
+import { createGitHubGraphQLReadTransport } from "./github-transport.js";
+import { runDryRun } from "./dry-run.js";
+import { loadWorkspacePolicy, parseRuntimeScope, writeWorkspaceReport } from "./runtime-input.js";
+
+export interface CliOptions { owner:string;repository:string;projectNumber:string;issueNumber:string;policyPath:string;reportFile?:string;tokenStdin:true }
+const KEYS=new Set(["--owner","--repository","--project-number","--issue-number","--policy-path","--report-file"]);
+export function parseCliArgs(argv:readonly string[]):CliOptions{
+ const values=new Map<string,string>();let tokenStdin=false;for(let i=0;i<argv.length;i++){const arg=argv[i]!;if(arg==="--github-token-stdin"){if(tokenStdin)throw new TypeError("invalid arguments");tokenStdin=true;continue;}if(arg==="--apply"||!KEYS.has(arg)||values.has(arg))throw new TypeError("invalid arguments");const value=argv[++i];if(value===undefined||value.startsWith("--"))throw new TypeError("invalid arguments");values.set(arg,value);}if(!tokenStdin)throw new TypeError("invalid arguments");for(const key of ["--owner","--repository","--project-number","--issue-number"])if(!values.has(key))throw new TypeError("invalid arguments");return{owner:values.get("--owner")!,repository:values.get("--repository")!,projectNumber:values.get("--project-number")!,issueNumber:values.get("--issue-number")!,policyPath:values.get("--policy-path")??".yukh/project.yaml",reportFile:values.get("--report-file"),tokenStdin:true};
+}
+export async function readBoundedToken(source:AsyncIterable<Uint8Array|string>):Promise<string>{let bytes=0,value="";for await(const chunk of source){const buffer=Buffer.from(chunk);bytes+=buffer.byteLength;if(bytes>8192)throw new TypeError("invalid credential");value+=buffer.toString("utf8");}value=value.replace(/\r?\n$/u,"");if(!value||/[\u0000-\u001f\u007f]/u.test(value))throw new TypeError("invalid credential");return value;}
+export async function cliMain(argv:readonly string[],stdin:AsyncIterable<Uint8Array|string>,workspace:string,write:(value:string)=>void):Promise<number>{
+ let options:CliOptions;try{options=parseCliArgs(argv);parseRuntimeScope(options);}catch{return 2;}let token:string,policySource:string;try{[token,policySource]=await Promise.all([readBoundedToken(stdin),loadWorkspacePolicy(workspace,options.policyPath)]);}catch{return 2;}
+ const result=await runDryRun({scope:parseRuntimeScope(options),policySource,transport:createGitHubGraphQLReadTransport({token})});const rendered=`${JSON.stringify(result)}\n`;try{if(options.reportFile)await writeWorkspaceReport(workspace,options.reportFile,rendered);else write(rendered);}catch{return 2;}if(result.status==="success")return 0;return result.failureClass==="authentication"?3:result.failureClass==="authorization"?3:result.failureClass==="provider"?4:5;
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){void cliMain(process.argv.slice(2),process.stdin,process.cwd(),value=>process.stdout.write(value)).then(code=>{process.exitCode=code;});}

@@ -1,0 +1,104 @@
+name: Protected release publication
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact semantic version already merged on main
+        required: true
+        type: string
+      commit:
+        description: Exact full commit SHA selected by this main dispatch
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: protected-release-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: Build exact candidate
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_COMMIT: ${{ inputs.commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "${#RELEASE_COMMIT}" -eq 40
+          case "$RELEASE_COMMIT" in *[!0-9a-f]*) exit 1 ;; esac
+          git merge-base --is-ancestor "$RELEASE_COMMIT" origin/main
+          git checkout --detach "$RELEASE_COMMIT"
+          test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          npm ci
+          npm test
+          npm run verify:bundles
+          npm audit --audit-level=moderate
+          npm sbom --sbom-format spdx > release.spdx.json
+          node scripts/release-preflight.mjs "$RELEASE_VERSION" "$RELEASE_COMMIT" > would-publish.json
+          mkdir release-assets
+          cp action.yml "release-assets/yukh-projects-action-${RELEASE_VERSION}.yml"
+          cp dist/action/index.js "release-assets/yukh-projects-action-${RELEASE_VERSION}.js"
+          cp dist/cli/index.js "release-assets/yukh-projects-cli-${RELEASE_VERSION}.js"
+          cp package-lock.json "release-assets/yukh-projects-lock-${RELEASE_VERSION}.json"
+          cp release.spdx.json "release-assets/yukh-projects-${RELEASE_VERSION}.spdx.json"
+          cp would-publish.json release-assets/would-publish.json
+          (cd release-assets && sha256sum yukh-projects-* > "yukh-projects-${RELEASE_VERSION}.sha256")
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-candidate-${{ inputs.commit }}
+          path: release-assets/
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: preflight
+    environment: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-candidate-${{ inputs.commit }}
+          path: release-assets
+      - name: Recheck binding and publish once
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_COMMIT: ${{ inputs.commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "${#RELEASE_COMMIT}" -eq 40
+          case "$RELEASE_COMMIT" in *[!0-9a-f]*) exit 1 ;; esac
+          git merge-base --is-ancestor "$RELEASE_COMMIT" origin/main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          node scripts/publish-release.mjs "$RELEASE_VERSION" "$RELEASE_COMMIT" release-assets
+      - name: Attest release assets
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: release-assets/yukh-projects-*
