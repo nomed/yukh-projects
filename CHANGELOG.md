@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/nomed/yukh-projects/compare/yukh-projects-v1.3.0...yukh-projects-v1.3.1) (2026-08-03)
+
+
+### Bug Fixes
+
+* require immutable release publication ([#82](https://github.com/nomed/yukh-projects/issues/82)) ([aea3fbf](https://github.com/nomed/yukh-projects/commit/aea3fbf00c2d3dcafdc5673e9a4243e451445cfe))
+
 ## [1.3.0](https://github.com/nomed/yukh-projects/compare/yukh-projects-v1.2.0...yukh-projects-v1.3.0) (2026-08-03)
 
 
