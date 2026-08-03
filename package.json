@@ -11,6 +11,7 @@
     "build": "tsc -p tsconfig.json",
     "build:bundles": "node scripts/build-bundles.mjs",
     "verify:bundles": "npm run build:bundles && node scripts/verify-bundles.mjs",
+    "verify:apply-candidate": "npm run verify:bundles",
     "audit": "npm audit --audit-level=moderate"
   },
   "repository": {
