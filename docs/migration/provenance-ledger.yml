@@ -120,5 +120,13 @@ slices:
       - rollback_impact
   - id: action-and-release
     disposition: rebuild
-    status: planned
-    evidence: []
+    status: specified
+    evidence:
+      - rights_confirmed
+      - public_specification
+      - neutrality_review
+      - security_review
+      - permission_delta
+      - dependency_delta
+      - compatibility_impact
+      - rollback_impact

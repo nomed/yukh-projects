@@ -216,6 +216,30 @@ Controls:
 - build releases in a protected workflow with provenance, checksums, and a software bill of materials;
 - review dependency changes and minimize production dependencies.
 
+### Preview entrypoint privilege escalation
+
+An attacker supplies hidden mode switches, paths, workflow context, credentials, or crafted input that makes a nominal dry-run load mutation code, escape the workspace, or disclose provider data.
+
+Controls:
+
+- ship Action and CLI entrypoints whose dependency graphs exclude the executor and mutation transport;
+- expose no apply input, flag, environment switch, dynamic import, interactive prompt, or caller-selected endpoint;
+- require explicit bounded scope, workspace-confined non-symlink paths, and a standard-input-only CLI credential;
+- emit only fixed, bounded, redacted outputs and stable exit classes;
+- run the first public workflow only by manual dispatch with read permissions and immutable action pins.
+
+### Release automation privilege confusion
+
+A compromised dependency, untrusted event, stale commit, mutable tag, or overprivileged release bot publishes code that did not pass review.
+
+Controls:
+
+- limit Release Please to version, changelog, and release-PR maintenance with no tag or publication authority;
+- place publication in a separate manually dispatched protected environment with exact version and commit binding;
+- acquire contents, identity-token, and attestation write permissions only in the final publication job;
+- rebuild from a clean checkout, verify the committed bundle byte-for-byte, and publish checksums, an SBOM, and attestations;
+- publish immutable semantic-version tags only, recommend full commit pins, and correct releases with a new version rather than moving published state.
+
 ### Privacy and neutrality failure
 
 Fixtures, logs, documentation, telemetry, issue content, or release notes identify an adopter or private environment.
@@ -249,6 +273,8 @@ Controls:
 - write-permission delta denial and separate read/write credential construction;
 - redaction of tokens, URLs, identifiers, and API error bodies;
 - tampered bundle, lockfile, and action-pin detection.
+- preview entrypoint mutation-import, hidden-apply, path-escape, and output-redaction rejection;
+- Release Please privilege separation and publisher commit, version, tag, bundle, SBOM, and attestation mismatch rejection.
 
 ## Release gate
 
