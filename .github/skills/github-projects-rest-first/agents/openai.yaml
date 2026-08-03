@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub Projects REST First"
+  short_description: "Rate-aware GitHub Projects API routing"
+  default_prompt: "Use $github-projects-rest-first to inspect or update GitHub Projects without exhausting GraphQL quota."
