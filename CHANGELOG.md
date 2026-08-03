@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/nomed/yukh-projects/compare/yukh-projects-v1.0.0...yukh-projects-v1.1.0) (2026-08-03)
+
+
+### Features
+
+* add environment-gated protected publisher ([#46](https://github.com/nomed/yukh-projects/issues/46)) ([bb77fad](https://github.com/nomed/yukh-projects/commit/bb77fad8d0c87f03aaeac12d877dd7f5de6a52bc))
+
 ## 1.0.0 (2026-08-03)
 
 
