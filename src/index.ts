@@ -6,6 +6,7 @@ export * from "./github-rest-snapshot.js";
 export * from "./legacy-shadow.js";
 export * from "./github-transport.js";
 export * from "./executor.js";
+export * from "./apply-coordination.js";
 export * from "./github-mutation-transport.js";
 export * from "./dry-run.js";
 export * from "./runtime-input.js";
