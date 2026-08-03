@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.4](https://github.com/nomed/yukh-projects/compare/yukh-projects-v1.3.3...yukh-projects-v1.3.4) (2026-08-03)
+
+
+### Bug Fixes
+
+* bind immutable policy credential ([#85](https://github.com/nomed/yukh-projects/issues/85)) ([64983be](https://github.com/nomed/yukh-projects/commit/64983be5a4cd8ee7a0b89d2551499c511c0ffefb))
+* expose legacy shadow through the action ([#97](https://github.com/nomed/yukh-projects/issues/97)) ([ff93070](https://github.com/nomed/yukh-projects/commit/ff9307033d266dd17e86b1ce68de27877426baee))
+* make published ESM bundles executable ([#92](https://github.com/nomed/yukh-projects/issues/92)) ([687c72b](https://github.com/nomed/yukh-projects/commit/687c72b532b75df57eb18227606a3554c0c6486c))
+* publish on Release Please merge ([#89](https://github.com/nomed/yukh-projects/issues/89)) ([51157c6](https://github.com/nomed/yukh-projects/commit/51157c6a07332d13870304cf381d8414186af9f6))
+* publish workflow-bearing releases with protected token ([#87](https://github.com/nomed/yukh-projects/issues/87)) ([caa3314](https://github.com/nomed/yukh-projects/commit/caa33148ab9ceff2bf726ccf6fae728dc4e06fe8))
+* require immutable release publication ([#82](https://github.com/nomed/yukh-projects/issues/82)) ([aea3fbf](https://github.com/nomed/yukh-projects/commit/aea3fbf00c2d3dcafdc5673e9a4243e451445cfe))
+* version release notes in release PRs ([#91](https://github.com/nomed/yukh-projects/issues/91)) ([bdb23ed](https://github.com/nomed/yukh-projects/commit/bdb23ed6f78548be07cc4609826add31d3ba0186))
+
 ## [1.3.3](https://github.com/nomed/yukh-projects/compare/yukh-projects-v1.3.2...yukh-projects-v1.3.3) (2026-08-03)
 
 
