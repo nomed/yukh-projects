@@ -164,12 +164,6 @@ var ApplyCoordinationError = class extends Error {
   code;
 };
 var DIGEST3 = /^[a-f0-9]{64}$/u;
-function validTime(value2, now, maxLifetimeMs) {
-  return Number.isSafeInteger(value2) && value2 > now && value2 - now <= maxLifetimeMs;
-}
-function requestOK(value2, now, maxLifetimeMs) {
-  return DIGEST3.test(value2.keyDigest) && DIGEST3.test("valueDigest" in value2 ? value2.valueDigest : value2.holderDigest) && Number.isSafeInteger(value2.epoch) && value2.epoch > 0 && validTime(value2.expiresAtMs, now, maxLifetimeMs);
-}
 function digest(value2) {
   return createHash2("sha256").update(value2).digest("hex");
 }
@@ -181,45 +175,6 @@ function bindApplyCoordination(base, store, options) {
       await lease.release();
     } } : null;
   } };
-}
-function createMemoryApplyCoordinationStore(options) {
-  const max = options.maxLifetimeMs ?? 15 * 60 * 1e3, epoch = options.epoch ?? 1, nonces = /* @__PURE__ */ new Map(), leases = /* @__PURE__ */ new Map();
-  if (!Number.isSafeInteger(epoch) || epoch < 1) throw new TypeError("invalid coordination epoch");
-  let revision = 0;
-  return {
-    consumeNonce: async (request) => {
-      const now = options.nowMs();
-      if (!requestOK(request, now, max) || request.epoch !== epoch) throw new ApplyCoordinationError("YKP-COORD-001");
-      if (nonces.has(request.keyDigest)) return "replayed";
-      nonces.set(request.keyDigest, { valueDigest: request.valueDigest, expiresAtMs: request.expiresAtMs });
-      return "consumed";
-    },
-    acquireLease: async (request) => {
-      const now = options.nowMs();
-      if (!requestOK(request, now, max) || request.epoch !== epoch) throw new ApplyCoordinationError("YKP-COORD-001");
-      const current = leases.get(request.keyDigest);
-      if (current && !current.released && current.expiresAtMs > now) return null;
-      const state = { holderDigest: request.holderDigest, expiresAtMs: request.expiresAtMs, revision: ++revision, released: false };
-      leases.set(request.keyDigest, state);
-      const token = state.revision;
-      return { fencingToken: token, renew: async (expiresAtMs) => {
-        const observed = leases.get(request.keyDigest), clock = options.nowMs();
-        if (!validTime(expiresAtMs, clock, max) || observed !== state || state.released || state.expiresAtMs <= clock) return false;
-        state.expiresAtMs = expiresAtMs;
-        state.revision = ++revision;
-        return true;
-      }, valid: async () => {
-        const observed = leases.get(request.keyDigest);
-        return observed === state && !state.released && state.expiresAtMs > options.nowMs();
-      }, release: async () => {
-        const observed = leases.get(request.keyDigest);
-        if (observed !== state || state.released) return false;
-        state.released = true;
-        state.revision = ++revision;
-        return true;
-      } };
-    }
-  };
 }
 
 // src/executor.ts
@@ -437,6 +392,180 @@ async function applyCliMain(argv, workspace, factory, write) {
 `);
     return 2;
   }
+}
+
+// src/apply-coordination-http.ts
+var MEDIA = "application/yukh-coordination-primitives+json;version=1";
+var DIGEST4 = /^[a-f0-9]{64}$/u;
+var MAX_BODY = 4096;
+var MAX_CAPABILITY = 3800;
+function canonical(value2) {
+  if (value2 === null || typeof value2 === "boolean" || typeof value2 === "string") return JSON.stringify(value2);
+  if (typeof value2 === "number") {
+    if (!Number.isSafeInteger(value2)) throw new ApplyCoordinationError("YKP-COORD-001");
+    return JSON.stringify(value2);
+  }
+  if (Array.isArray(value2)) return `[${value2.map(canonical).join(",")}]`;
+  if (typeof value2 !== "object") throw new ApplyCoordinationError("YKP-COORD-001");
+  const record = value2, keys2 = Object.keys(record).sort();
+  return `{${keys2.map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`).join(",")}}`;
+}
+function expiry(value2) {
+  if (!Number.isSafeInteger(value2)) throw new ApplyCoordinationError("YKP-COORD-001");
+  const formatted = new Date(value2).toISOString();
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(formatted)) throw new ApplyCoordinationError("YKP-COORD-001");
+  return formatted;
+}
+function validRequest(value2, epoch) {
+  return DIGEST4.test(value2.keyDigest) && DIGEST4.test("valueDigest" in value2 ? value2.valueDigest : value2.holderDigest) && value2.epoch === epoch && Number.isSafeInteger(value2.expiresAtMs);
+}
+function object(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function beforeDeadline(promise, signal) {
+  if (signal.aborted) return Promise.reject(new ApplyCoordinationError("YKP-COORD-002"));
+  return new Promise((resolve3, reject) => {
+    const aborted = () => reject(new ApplyCoordinationError("YKP-COORD-002"));
+    signal.addEventListener("abort", aborted, { once: true });
+    promise.then((value2) => {
+      signal.removeEventListener("abort", aborted);
+      resolve3(value2);
+    }, (error) => {
+      signal.removeEventListener("abort", aborted);
+      reject(error);
+    });
+  });
+}
+async function bounded4(response, signal) {
+  const reader = response.body?.getReader();
+  if (!reader) throw new ApplyCoordinationError("YKP-COORD-001");
+  const chunks = [];
+  let length = 0;
+  try {
+    for (; ; ) {
+      const { done, value: value2 } = await beforeDeadline(reader.read(), signal);
+      if (done) break;
+      if (!(value2 instanceof Uint8Array) || (length += value2.byteLength) > MAX_BODY) {
+        await reader.cancel();
+        throw new ApplyCoordinationError("YKP-COORD-001");
+      }
+      chunks.push(value2);
+    }
+  } catch (error) {
+    if (error instanceof ApplyCoordinationError) throw error;
+    throw new ApplyCoordinationError("YKP-COORD-002");
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  let text3;
+  try {
+    text3 = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    throw new ApplyCoordinationError("YKP-COORD-001");
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(text3);
+  } catch {
+    throw new ApplyCoordinationError("YKP-COORD-001");
+  }
+  if (canonical(parsed) !== text3) throw new ApplyCoordinationError("YKP-COORD-001");
+  return parsed;
+}
+function createApplyCoordinationHttpStore(options) {
+  let base;
+  try {
+    base = new URL(options?.baseUri);
+  } catch {
+    throw new TypeError("invalid coordination configuration");
+  }
+  if (base.protocol !== "https:" || base.username || base.password || base.search || base.hash || base.pathname !== "/" || options.baseUri.endsWith("/") || !Number.isSafeInteger(options.epoch) || options.epoch < 1 || !Number.isSafeInteger(options.deadlineMs) || options.deadlineMs < 1 || options.deadlineMs > 5e3 || typeof options.authenticate !== "function") throw new TypeError("invalid coordination configuration");
+  const fetcher = options.fetch ?? globalThis.fetch;
+  async function call(path, body) {
+    const target = `${options.baseUri}${path}`, raw = canonical(body);
+    if (Buffer.byteLength(raw) > MAX_BODY) throw new ApplyCoordinationError("YKP-COORD-001");
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), options.deadlineMs);
+    try {
+      let auth;
+      try {
+        auth = await beforeDeadline(options.authenticate({ method: "POST", targetUri: target, signal: controller.signal }), controller.signal);
+      } catch {
+        throw new ApplyCoordinationError("YKP-COORD-002");
+      }
+      if (typeof auth?.credential !== "string" || auth.credential.length < 1 || auth.credential.length > 8192 || typeof auth.proof !== "string" || auth.proof.length < 1 || auth.proof.length > 16384) throw new ApplyCoordinationError("YKP-COORD-001");
+      let response;
+      try {
+        response = await fetcher(target, { method: "POST", redirect: "manual", signal: controller.signal, headers: { authorization: `DPoP ${auth.credential}`, dpop: auth.proof, "content-type": MEDIA }, body: raw });
+      } catch {
+        throw new ApplyCoordinationError("YKP-COORD-002");
+      }
+      if (response.status >= 300 && response.status < 400) throw new ApplyCoordinationError("YKP-COORD-002");
+      if (response.headers.get("content-type")?.split(";").map((part) => part.trim()).join(";") !== MEDIA) throw new ApplyCoordinationError("YKP-COORD-001");
+      const parsed = await bounded4(response, controller.signal);
+      if (!object(parsed)) throw new ApplyCoordinationError("YKP-COORD-001");
+      if (!response.ok) {
+        const code = parsed.code;
+        throw new ApplyCoordinationError(code === "conflict" || code === "replayed" || code === "stale_fence" ? "YKP-COORD-003" : code === "temporarily_unavailable" ? "YKP-COORD-002" : "YKP-COORD-001");
+      }
+      if (parsed.specversion !== "1" || typeof parsed.outcome !== "string") throw new ApplyCoordinationError("YKP-COORD-001");
+      return parsed;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return {
+    consumeNonce: async (request) => {
+      if (!validRequest(request, options.epoch)) throw new ApplyCoordinationError("YKP-COORD-001");
+      const result2 = await call("/coordination-primitives/v1/nonces:consume", { epoch: request.epoch, expires_at: expiry(request.expiresAtMs), scope_digest: request.keyDigest, value_digest: request.valueDigest });
+      if (result2.outcome !== "consumed" && result2.outcome !== "replayed") throw new ApplyCoordinationError("YKP-COORD-001");
+      return result2.outcome;
+    },
+    acquireLease: async (request) => {
+      if (!validRequest(request, options.epoch)) throw new ApplyCoordinationError("YKP-COORD-001");
+      let result2;
+      try {
+        result2 = await call("/coordination-primitives/v1/leases:acquire", { epoch: request.epoch, expires_at: expiry(request.expiresAtMs), holder_digest: request.holderDigest, scope_digest: request.keyDigest });
+      } catch (error) {
+        if (error instanceof ApplyCoordinationError && error.code === "YKP-COORD-003") return null;
+        throw error;
+      }
+      if (result2.outcome !== "acquired" || typeof result2.lease_capability !== "string" || result2.lease_capability.length < 1 || result2.lease_capability.length > MAX_CAPABILITY || !Number.isSafeInteger(result2.fencing_token) || Number(result2.fencing_token) < 1) throw new ApplyCoordinationError("YKP-COORD-001");
+      let capability = result2.lease_capability, fencingToken = Number(result2.fencing_token);
+      const lease = { get fencingToken() {
+        return fencingToken;
+      }, renew: async (expiresAtMs) => {
+        try {
+          const renewed = await call("/coordination-primitives/v1/leases:renew", { expires_at: expiry(expiresAtMs), lease_capability: capability });
+          if (renewed.outcome !== "renewed" || typeof renewed.lease_capability !== "string" || renewed.lease_capability.length < 1 || renewed.lease_capability.length > MAX_CAPABILITY || !Number.isSafeInteger(renewed.fencing_token) || Number(renewed.fencing_token) <= fencingToken) throw new ApplyCoordinationError("YKP-COORD-001");
+          capability = renewed.lease_capability;
+          fencingToken = Number(renewed.fencing_token);
+          return true;
+        } catch (error) {
+          if (error instanceof ApplyCoordinationError && error.code === "YKP-COORD-003") return false;
+          throw error;
+        }
+      }, valid: async () => {
+        const inspected = await call("/coordination-primitives/v1/leases:inspect", { lease_capability: capability });
+        if (!["valid", "expired", "released", "stale"].includes(String(inspected.outcome))) throw new ApplyCoordinationError("YKP-COORD-001");
+        return inspected.outcome === "valid";
+      }, release: async () => {
+        try {
+          const released = await call("/coordination-primitives/v1/leases:release", { lease_capability: capability });
+          return released.outcome === "released";
+        } catch (error) {
+          if (error instanceof ApplyCoordinationError && error.code === "YKP-COORD-003") return false;
+          throw error;
+        }
+      } };
+      return lease;
+    }
+  };
 }
 
 // src/github-rate-ledger.ts
@@ -916,9 +1045,9 @@ export {
   applyActionMain,
   applyCliMain,
   bindApplyCoordination,
+  createApplyCoordinationHttpStore,
   createGitHubMutationTransport,
   createGitHubRateLedger,
-  createMemoryApplyCoordinationStore,
   createRestProjectSnapshotReader,
   executeControlledPlan,
   normalizeGitHubApplyFailure,
