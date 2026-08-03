@@ -1,29 +1,23 @@
-name: Protected release publication
+name: Release publication
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: Exact semantic version already merged on main
-        required: true
-        type: string
-      commit:
-        description: Exact full commit SHA selected by this main dispatch
-        required: true
-        type: string
+  push:
+    branches: [main]
+    paths: [.release-please-manifest.json]
 
 permissions:
   contents: read
 
 concurrency:
-  group: protected-release-${{ inputs.version }}
+  group: release-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
   preflight:
-    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      version: ${{ steps.release.outputs.version }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
@@ -33,11 +27,20 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - name: Bind merged Release Please candidate
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(jq -er '.["."]' .release-please-manifest.json)"
+          case "$version" in ''|*[!0-9.]*) exit 1 ;; esac
+          test "$(printf '%s' "$version" | awk -F. 'NF == 3 && $1 ~ /^(0|[1-9][0-9]*)$/ && $2 ~ /^(0|[1-9][0-9]*)$/ && $3 ~ /^(0|[1-9][0-9]*)$/ { print "ok" }')" = ok
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
       - name: Build exact candidate
         env:
-          GITHUB_TOKEN: ${{ secrets.IMMUTABLE_RELEASES_READ_TOKEN }}
-          RELEASE_VERSION: ${{ inputs.version }}
-          RELEASE_COMMIT: ${{ inputs.commit }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -70,14 +73,13 @@ jobs:
           (cd release-assets && sha256sum yukh-projects-* > "yukh-projects-${RELEASE_VERSION}.sha256")
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: release-candidate-${{ inputs.commit }}
+          name: release-candidate-${{ github.sha }}
           path: release-assets/
           if-no-files-found: error
           retention-days: 1
 
   publish:
     needs: preflight
-    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -91,14 +93,14 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: release-candidate-${{ inputs.commit }}
+          name: release-candidate-${{ github.sha }}
           path: release-assets
       - name: Recheck binding and publish once
         env:
-          GITHUB_TOKEN: ${{ secrets.IMMUTABLE_RELEASES_READ_TOKEN }}
-          IMMUTABLE_RELEASES_READ_TOKEN: ${{ secrets.IMMUTABLE_RELEASES_READ_TOKEN }}
-          RELEASE_VERSION: ${{ inputs.version }}
-          RELEASE_COMMIT: ${{ inputs.commit }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          IMMUTABLE_RELEASES_READ_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          RELEASE_VERSION: ${{ needs.preflight.outputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
         shell: bash
         run: |
           set -euo pipefail

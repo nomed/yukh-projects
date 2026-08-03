@@ -11,11 +11,12 @@ workflow checks that policy once in its read-only preflight and checks it again
 immediately before the first GitHub mutation. Either unavailable, malformed or
 disabled policy state fails closed without retry.
 
-The policy reads use the protected `IMMUTABLE_RELEASES_READ_TOKEN`, scoped to
-repository Administration read and stored only in the `release` environment.
-The protected token is also the publication identity because GitHub's automatic
-workflow token cannot create a Release whose target commit changes workflow
-files. Attestations continue to use the job's short-lived OIDC identity.
+Merging the Release Please PR changes `.release-please-manifest.json` on `main`
+and is the complete publication authorization. That push automatically runs the
+publisher without an environment, reviewer, or manual dispatch gate. The
+repository `RELEASE_TOKEN` supplies the workflow and administration permissions
+GitHub requires for workflow-bearing immutable Releases. Attestations continue
+to use the job's short-lived OIDC identity.
 
 The publisher creates a draft Release bound to the exact candidate commit,
 uploads and verifies the complete allowlisted asset set, then publishes the
