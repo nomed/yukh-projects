@@ -34,6 +34,7 @@ jobs:
           cache: npm
       - name: Build exact candidate
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ inputs.version }}
           RELEASE_COMMIT: ${{ inputs.commit }}
         shell: bash
@@ -45,6 +46,7 @@ jobs:
           git merge-base --is-ancestor "$RELEASE_COMMIT" origin/main
           git checkout --detach "$RELEASE_COMMIT"
           test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          node scripts/check-immutable-releases.mjs
           npm ci
           npm test
           npm run verify:bundles

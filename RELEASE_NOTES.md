@@ -1,6 +1,7 @@
-# Yukh Projects 1.3.0
+# Yukh Projects 1.3.1
 
-This is the first immutable rate-safe release candidate that includes the
+This corrective release candidate is the first rate-safe apply-compatible
+release whose GitHub Release must be verified immutable. It includes the
 controlled-apply Action and CLI in addition to the existing dry-run surfaces.
 
 ## Compatibility
@@ -37,9 +38,14 @@ provenance attestations bind the published assets to the protected release run.
 Consumers must pin the full commit resolved and verified by the immutable
 release; moving branches and floating major tags are unsupported.
 
+Version `v1.3.0` remains available but its GitHub Release predates repository
+immutable-release enforcement. It is intentionally unchanged and is not the
+immutable apply-compatible migration pin. Use `v1.3.1` only after its protected
+publication and independent qualification complete.
+
 ## Rollback
 
-The exact rollback pin is the preceding immutable dry-run release commit:
+The exact rollback pin is the preceding qualified dry-run release commit:
 `2fc81c48b678428937209326bececcf52354aaf1` (`v1.2.0`). Rollback means restoring
 that full commit pin. It does not authorize high-volume use of a legacy GraphQL
 path, deletion or movement of a tag, or rewriting an existing release.
