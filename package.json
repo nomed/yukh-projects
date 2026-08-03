@@ -1,6 +1,6 @@
 {
   "name": "@nomed/yukh-projects",
-  "version": "0.0.0-private",
+  "version": "0.0.0",
   "description": "Declarative, secure, and consumer-neutral reconciliation for GitHub Projects",
   "main": "dist/src/index.js",
   "directories": {
@@ -9,6 +9,8 @@
   "scripts": {
     "test": "npm run build && node --test dist/test/*.test.js",
     "build": "tsc -p tsconfig.json",
+    "build:bundles": "node scripts/build-bundles.mjs",
+    "verify:bundles": "npm run build:bundles && node scripts/verify-bundles.mjs",
     "audit": "npm audit --audit-level=moderate"
   },
   "repository": {
@@ -27,6 +29,7 @@
   },
   "devDependencies": {
     "@types/node": "24.5.2",
+    "esbuild": "0.28.1",
     "graphql": "17.0.2",
     "typescript": "5.9.3"
   },

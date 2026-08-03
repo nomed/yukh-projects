@@ -1,0 +1,6 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+
+test("Release Please is pinned and cannot publish a GitHub release",async()=>{const workflow=await readFile(".github/workflows/release-please.yml","utf8"),config=JSON.parse(await readFile("release-please-config.json","utf8"));assert.match(workflow,/release-please-action@[0-9a-f]{40}/u);assert.match(workflow,/skip-github-release: true/u);assert.equal(config["skip-github-release"],true);assert.doesNotMatch(workflow,/id-token|attestations|packages: write/u);});
+test("release preflight uses the trusted event SHA with read-only permissions and no publisher command",async()=>{const workflow=await readFile(".github/workflows/release-preflight.yml","utf8");assert.match(workflow,/permissions:\n  contents: read/u);assert.match(workflow,/RELEASE_COMMIT: \$\{\{ github\.sha \}\}/u);assert.match(workflow,/refs\/heads\/main/u);assert.doesNotMatch(workflow,/ref: \$\{\{ inputs\.|contents: write|id-token: write|attestations: write|gh release|npm publish|git tag/u);assert.match(workflow,/publication authority/u);});
