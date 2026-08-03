@@ -1,7 +1,8 @@
-# REST-first Project snapshot v2 — proposed specification
+# REST-first Project snapshot v2 — accepted specification
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Proposed:** 2026-08-03
+- **Accepted:** 2026-08-03 by `@nomed`
 - **Governing issue:** [#63](https://github.com/nomed/yukh-projects/issues/63)
 - **Decision:** [ADR 0002](../adr/0002-rest-first-github-transport.md)
 - **Security boundary:** authenticated provider state to one immutable, scope-bound planning observation
