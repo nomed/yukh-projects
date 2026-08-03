@@ -137,6 +137,24 @@ Controls:
 - normalize diagnostics and emit exactly one stable error per failed rule;
 - use deterministic ordering and complexity limits for graph operations.
 
+### Aggregate migration inference and authority escalation
+
+An aggregate roadmap migration can silently invent issue fields, reverse dependency direction,
+turn program or gate state into execution readiness, emit partial contracts from an invalid graph,
+or expose adopter context through diagnostics and generated evidence.
+
+Controls:
+
+- keep migration input separate from the steady-state issue contract and require a versioned,
+  allowlisted mapping document;
+- prohibit defaults, similarity matching, transitive expansion, gate-derived readiness and
+  program-derived relationships;
+- validate all references, cardinality and cycles before emitting any contract envelope;
+- make candidate text inert review material with no apply operation or readiness authority;
+- canonicalize validated inputs and bind deterministic output to SHA-256 provenance digests;
+- emit only stable redacted diagnostics that never echo source values or logical identifiers;
+- keep the pure planner free of paths, environment access, credentials, network and mutation ports.
+
 ### Unauthorized or unsafe mutation
 
 Validation gaps, stale discovery, replay, concurrent runs, or partial failure produce incorrect writes.
@@ -275,6 +293,8 @@ Controls:
 ## Required security tests
 
 - contract size, depth, alias, duplicate-block, and malformed-type limits;
+- aggregate-manifest and mapping bounds, no-inference behavior, graph rejection, deterministic
+  provenance, redaction, zero-I/O and zero-mutation authority;
 - path traversal and symbolic-link escape rejection;
 - shell and workflow metacharacters preserved as inert data;
 - repository, owner, Project, and installation binding failures;

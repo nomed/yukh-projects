@@ -20,6 +20,20 @@ required_evidence:
   - rollback_impact
 
 slices:
+  - id: aggregate-manifest-migration-planner
+    disposition: re-author
+    status: implemented
+    evidence:
+      - rights_confirmed
+      - public_specification
+      - neutrality_review
+      - security_review
+      - synthetic_fixtures
+      - validation_results
+      - permission_delta
+      - dependency_delta
+      - compatibility_impact
+      - rollback_impact
   - id: contract-and-diagnostics
     disposition: re-author
     status: implemented
