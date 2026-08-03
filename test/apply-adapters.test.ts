@@ -1,0 +1,9 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+import { applyActionMain } from "../src/apply-action.js";
+import type { ApplyHostFactory } from "../src/apply-host.js";
+
+test("apply Action requires explicit mode before credentials or host creation",async()=>{let factories=0;const factory={create:async()=>{factories++;throw new Error("must not run");}} as ApplyHostFactory,errors:string[]=[];const report=await applyActionMain({env:{INPUT_MODE:"dry-run"},mask:()=>{throw new Error("must not mask")},output:async()=>{},error:code=>errors.push(code)},factory);assert.equal(report.status,"error");assert.equal(factories,0);assert.deepEqual(errors,["YKP-APPLY-001"]);});
+test("apply Action masks both credentials and rejects one shared profile",async()=>{let factories=0;const factory={create:async()=>{factories++;throw new Error("must not run");}} as ApplyHostFactory,masks:string[]=[];const report=await applyActionMain({env:{INPUT_MODE:"apply","INPUT_GITHUB-READ-TOKEN":"same-secret","INPUT_GITHUB-WRITE-TOKEN":"same-secret"},mask:value=>masks.push(value),output:async()=>{},error:()=>{}},factory);assert.equal(report.status,"error");assert.deepEqual(masks,["same-secret","same-secret"]);assert.equal(factories,0);assert.doesNotMatch(JSON.stringify(report),/same-secret/u);});
+test("dry-run entrypoints remain structurally separate from apply adapters",async()=>{for(const path of ["src/action.ts","src/cli.ts","src/dry-run.ts"]){const source=await readFile(path,"utf8");assert.doesNotMatch(source,/apply-(?:action|cli|entrypoint|host)|executor|github-mutation-transport/u);}for(const path of ["src/apply-action.ts","src/apply-cli.ts"]){const source=await readFile(path,"utf8");assert.match(source,/apply-entrypoint/u);}});
