@@ -1,4 +1,4 @@
-export type CoordinationCode="YKP-COORD-001"|"YKP-COORD-002"|"YKP-COORD-003";
+export type CoordinationCode="YKP-COORD-001"|"YKP-COORD-002"|"YKP-COORD-003"|"YKP-COORD-004"|"YKP-COORD-005";
 export class ApplyCoordinationError extends Error{constructor(readonly code:CoordinationCode){super("apply coordination failed");this.name="ApplyCoordinationError";}}
 export interface NonceRequest{keyDigest:string;valueDigest:string;expiresAtMs:number;epoch:number}
 export interface LeaseRequest{keyDigest:string;holderDigest:string;expiresAtMs:number;epoch:number}
@@ -9,10 +9,11 @@ const DIGEST=/^[a-f0-9]{64}$/u;
 function validTime(value:number,now:number,maxLifetimeMs:number):boolean{return Number.isSafeInteger(value)&&value>now&&value-now<=maxLifetimeMs;}
 function requestOK(value:NonceRequest|LeaseRequest,now:number,maxLifetimeMs:number):boolean{return DIGEST.test(value.keyDigest)&&DIGEST.test("valueDigest" in value?value.valueDigest:value.holderDigest)&&Number.isSafeInteger(value.epoch)&&value.epoch>0&&validTime(value.expiresAtMs,now,maxLifetimeMs);}
 function digest(value:string):string{return createHash("sha256").update(value).digest("hex");}
+function portFailure(error:unknown):never{if(error instanceof ApplyCoordinationError){if(error.code==="YKP-COORD-004")throw new ApplyPortError("authentication");if(error.code==="YKP-COORD-005")throw new ApplyPortError("authorization");if(error.code==="YKP-COORD-002")throw new ApplyPortError("provider");throw new ApplyPortError("invariant");}throw new ApplyPortError("provider");}
 
 export function bindApplyCoordination(base:Omit<ExecutorPorts,"acquireLease"|"consumeNonce">,store:ApplyCoordinationStore,options:{holderDigest:string;expiresAtMs:number;epoch:number}):ExecutorPorts{
  if(!DIGEST.test(options.holderDigest)||!Number.isSafeInteger(options.expiresAtMs)||!Number.isSafeInteger(options.epoch)||options.epoch<1)throw new TypeError("invalid apply coordination binding");
- return{...base,consumeNonce:async nonce=>(await store.consumeNonce({keyDigest:digest(`nonce-key\0${nonce}`),valueDigest:digest(`nonce-value\0${nonce}`),expiresAtMs:options.expiresAtMs,epoch:options.epoch}))==="consumed",acquireLease:async scopeDigest=>{const lease=await store.acquireLease({keyDigest:digest(`lease-key\0${scopeDigest}`),holderDigest:options.holderDigest,expiresAtMs:options.expiresAtMs,epoch:options.epoch});return lease?{fencingToken:lease.fencingToken,valid:()=>lease.valid(),release:async()=>{await lease.release();}}:null;}};
+ return{...base,consumeNonce:async nonce=>{try{return(await store.consumeNonce({keyDigest:digest(`nonce-key\0${nonce}`),valueDigest:digest(`nonce-value\0${nonce}`),expiresAtMs:options.expiresAtMs,epoch:options.epoch}))==="consumed";}catch(error){return portFailure(error);}},acquireLease:async scopeDigest=>{let lease:ApplyLease|null;try{lease=await store.acquireLease({keyDigest:digest(`lease-key\0${scopeDigest}`),holderDigest:options.holderDigest,expiresAtMs:options.expiresAtMs,epoch:options.epoch});}catch(error){return portFailure(error);}return lease?{fencingToken:lease.fencingToken,valid:async()=>{try{return await lease.valid();}catch(error){return portFailure(error);}},release:async()=>{await lease.release();}}:null;}};
 }
 
 /** Synthetic/conformance adapter only. It is never an authoritative production store. */
@@ -24,4 +25,4 @@ export function createMemoryApplyCoordinationStore(options:{nowMs:()=>number;epo
  };
 }
 import { createHash } from "node:crypto";
-import type { ExecutorPorts } from "./executor.js";
+import { ApplyPortError, type ExecutorPorts } from "./executor.js";

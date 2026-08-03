@@ -154,31 +154,10 @@ function verifySignedApproval(artifact, trust) {
 }
 
 // src/apply-coordination.ts
-import { createHash as createHash2 } from "node:crypto";
-var ApplyCoordinationError = class extends Error {
-  constructor(code) {
-    super("apply coordination failed");
-    this.code = code;
-    this.name = "ApplyCoordinationError";
-  }
-  code;
-};
-var DIGEST3 = /^[a-f0-9]{64}$/u;
-function digest(value2) {
-  return createHash2("sha256").update(value2).digest("hex");
-}
-function bindApplyCoordination(base, store, options) {
-  if (!DIGEST3.test(options.holderDigest) || !Number.isSafeInteger(options.expiresAtMs) || !Number.isSafeInteger(options.epoch) || options.epoch < 1) throw new TypeError("invalid apply coordination binding");
-  return { ...base, consumeNonce: async (nonce) => await store.consumeNonce({ keyDigest: digest(`nonce-key\0${nonce}`), valueDigest: digest(`nonce-value\0${nonce}`), expiresAtMs: options.expiresAtMs, epoch: options.epoch }) === "consumed", acquireLease: async (scopeDigest) => {
-    const lease = await store.acquireLease({ keyDigest: digest(`lease-key\0${scopeDigest}`), holderDigest: options.holderDigest, expiresAtMs: options.expiresAtMs, epoch: options.epoch });
-    return lease ? { fencingToken: lease.fencingToken, valid: () => lease.valid(), release: async () => {
-      await lease.release();
-    } } : null;
-  } };
-}
+import { createHash as createHash3 } from "node:crypto";
 
 // src/executor.ts
-import { createHash as createHash3 } from "node:crypto";
+import { createHash as createHash2 } from "node:crypto";
 var ApplyPortError = class extends Error {
   constructor(failureClass) {
     super("apply port failed");
@@ -190,7 +169,7 @@ var ApplyPortError = class extends Error {
 var MESSAGE = { "YKP-APPLY-001": "apply request is invalid", "YKP-APPLY-002": "apply is not explicitly enabled", "YKP-APPLY-003": "approval is invalid or does not match", "YKP-APPLY-004": "approval is expired or has invalid lifetime", "YKP-APPLY-005": "operation is unsupported", "YKP-APPLY-006": "scope lease is unavailable or lost", "YKP-APPLY-007": "fresh preflight does not match approved plan", "YKP-APPLY-008": "approval nonce is already consumed", "YKP-APPLY-009": "operation precondition does not match", "YKP-APPLY-010": "mutation attempt failed", "YKP-APPLY-011": "operation verification failed", "YKP-APPLY-012": "final convergence verification failed", "YKP-APPLY-013": "provider authentication failed", "YKP-APPLY-014": "provider authorization failed", "YKP-APPLY-015": "provider budget is reserved", "YKP-APPLY-016": "provider is unavailable", "YKP-APPLY-017": "provider invariant is invalid" };
 var MAP = { create_field: "create_project_field", add_option: "update_project_field_options", set_field_value: "update_project_item_field_value", set_parent: "add_sub_issue", add_dependency: "add_blocked_by" };
 function hash(v) {
-  return createHash3("sha256").update(canonicalJson(v)).digest("hex");
+  return createHash2("sha256").update(canonicalJson(v)).digest("hex");
 }
 function integrity(plan) {
   if (!plan || plan.schema !== 1 || !plan.executable || plan.diagnostics.length !== 0 || !Array.isArray(plan.operations) || !Array.isArray(plan.observations)) return false;
@@ -327,6 +306,55 @@ function renderPublicApplyReport(value2) {
   const counts = { already_converged: 0, verified: 0, failed: 0, not_attempted: 0 };
   for (const item of value2.outcomes) counts[item.outcome]++;
   return { schema: 1, status: value2.status, planId: value2.planId, counts, remaining: value2.remaining, diagnostics: value2.diagnostics.map((d) => ({ ...d })) };
+}
+
+// src/apply-coordination.ts
+var ApplyCoordinationError = class extends Error {
+  constructor(code) {
+    super("apply coordination failed");
+    this.code = code;
+    this.name = "ApplyCoordinationError";
+  }
+  code;
+};
+var DIGEST3 = /^[a-f0-9]{64}$/u;
+function digest(value2) {
+  return createHash3("sha256").update(value2).digest("hex");
+}
+function portFailure(error) {
+  if (error instanceof ApplyCoordinationError) {
+    if (error.code === "YKP-COORD-004") throw new ApplyPortError("authentication");
+    if (error.code === "YKP-COORD-005") throw new ApplyPortError("authorization");
+    if (error.code === "YKP-COORD-002") throw new ApplyPortError("provider");
+    throw new ApplyPortError("invariant");
+  }
+  throw new ApplyPortError("provider");
+}
+function bindApplyCoordination(base, store, options) {
+  if (!DIGEST3.test(options.holderDigest) || !Number.isSafeInteger(options.expiresAtMs) || !Number.isSafeInteger(options.epoch) || options.epoch < 1) throw new TypeError("invalid apply coordination binding");
+  return { ...base, consumeNonce: async (nonce) => {
+    try {
+      return await store.consumeNonce({ keyDigest: digest(`nonce-key\0${nonce}`), valueDigest: digest(`nonce-value\0${nonce}`), expiresAtMs: options.expiresAtMs, epoch: options.epoch }) === "consumed";
+    } catch (error) {
+      return portFailure(error);
+    }
+  }, acquireLease: async (scopeDigest) => {
+    let lease;
+    try {
+      lease = await store.acquireLease({ keyDigest: digest(`lease-key\0${scopeDigest}`), holderDigest: options.holderDigest, expiresAtMs: options.expiresAtMs, epoch: options.epoch });
+    } catch (error) {
+      return portFailure(error);
+    }
+    return lease ? { fencingToken: lease.fencingToken, valid: async () => {
+      try {
+        return await lease.valid();
+      } catch (error) {
+        return portFailure(error);
+      }
+    }, release: async () => {
+      await lease.release();
+    } } : null;
+  } };
 }
 
 // src/apply-entrypoint.ts
@@ -510,6 +538,8 @@ function createApplyCoordinationHttpStore(options) {
       const parsed = await bounded4(response, controller.signal);
       if (!object(parsed)) throw new ApplyCoordinationError("YKP-COORD-001");
       if (!response.ok) {
+        if (response.status === 401) throw new ApplyCoordinationError("YKP-COORD-004");
+        if (response.status === 403) throw new ApplyCoordinationError("YKP-COORD-005");
         const code = parsed.code;
         throw new ApplyCoordinationError(code === "conflict" || code === "replayed" || code === "stale_fence" ? "YKP-COORD-003" : code === "temporarily_unavailable" ? "YKP-COORD-002" : "YKP-COORD-001");
       }
