@@ -8,6 +8,12 @@ Thumbs.db
 .env.*
 !.env.example
 node_modules/
-dist/
+dist/*
+!dist/action/
+!dist/cli/
+dist/action/*
+dist/cli/*
+!dist/action/index.js
+!dist/cli/index.js
 coverage/
 *.log

@@ -6,3 +6,4 @@ export * from "./github-transport.js";
 export * from "./executor.js";
 export * from "./github-mutation-transport.js";
 export * from "./dry-run.js";
+export * from "./runtime-input.js";
