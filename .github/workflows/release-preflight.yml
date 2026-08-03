@@ -43,7 +43,28 @@ jobs:
           npm run verify:bundles
           npm audit --audit-level=moderate
           npm sbom --sbom-format spdx > release.spdx.json
-          node scripts/release-preflight.mjs "$RELEASE_VERSION" "$RELEASE_COMMIT"
+          node scripts/release-preflight.mjs "$RELEASE_VERSION" "$RELEASE_COMMIT" > would-publish.json
+          mkdir release-assets
+          cp RELEASE_NOTES.md "release-assets/yukh-projects-release-notes-${RELEASE_VERSION}.md"
+          cp action.yml "release-assets/yukh-projects-action-${RELEASE_VERSION}.yml"
+          cp apply-action.yml "release-assets/yukh-projects-apply-action-${RELEASE_VERSION}.yml"
+          cp dist/action/index.js "release-assets/yukh-projects-action-${RELEASE_VERSION}.js"
+          cp dist/apply/action.js "release-assets/yukh-projects-apply-action-${RELEASE_VERSION}.js"
+          cp dist/apply/cli.js "release-assets/yukh-projects-apply-cli-${RELEASE_VERSION}.js"
+          cp dist/apply/index.js "release-assets/yukh-projects-apply-library-${RELEASE_VERSION}.js"
+          cp dist/apply/manifest.json "release-assets/yukh-projects-apply-manifest-${RELEASE_VERSION}.json"
+          cp dist/cli/index.js "release-assets/yukh-projects-cli-${RELEASE_VERSION}.js"
+          cp package-lock.json "release-assets/yukh-projects-lock-${RELEASE_VERSION}.json"
+          cp release.spdx.json "release-assets/yukh-projects-${RELEASE_VERSION}.spdx.json"
+          cp would-publish.json release-assets/would-publish.json
+          (cd release-assets && sha256sum yukh-projects-* > "yukh-projects-${RELEASE_VERSION}.sha256")
+      - name: Upload read-only qualification evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-qualification-${{ github.sha }}
+          path: release-assets/
+          if-no-files-found: error
+          retention-days: 1
       - name: Assert no publication authority
         shell: bash
         run: |
