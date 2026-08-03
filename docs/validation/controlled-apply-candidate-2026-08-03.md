@@ -25,3 +25,14 @@ publishes an artifact and has only `contents: read` permission.
 An executable apply Action or CLI remains blocked on a separately reviewed
 concrete host composition and release qualification. This candidate must not be
 used as an apply-compatible consumer pin.
+
+The executor preserves normalized authentication, authorization, deferred rate
+budget, provider and invariant port failures as distinct static public codes.
+Deferred budget produces a distinct `deferred` status and CLI exit code 6. Raw
+transport failures are normalized before crossing the port boundary.
+
+The mutation transport is constructed with the exact approved mutation-kind
+set. Its write permission profile must equal the union required by that set:
+Projects write only for Project mutations and Issues write only for native issue
+relationship mutations. An undeclared kind, duplicate kind, missing permission,
+unneeded write class, or unapproved permission delta stops before HTTP.

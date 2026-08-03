@@ -15,6 +15,7 @@ export * from "./apply-host.js";
 export * from "./apply-cli.js";
 export * from "./apply-action.js";
 export * from "./github-mutation-transport.js";
+export * from "./github-apply-failure.js";
 export * from "./dry-run.js";
 export * from "./runtime-input.js";
 export * from "./release-plan.js";

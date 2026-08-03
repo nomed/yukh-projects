@@ -224,7 +224,15 @@ function createMemoryApplyCoordinationStore(options) {
 
 // src/executor.ts
 import { createHash as createHash3 } from "node:crypto";
-var MESSAGE = { "YKP-APPLY-001": "apply request is invalid", "YKP-APPLY-002": "apply is not explicitly enabled", "YKP-APPLY-003": "approval is invalid or does not match", "YKP-APPLY-004": "approval is expired or has invalid lifetime", "YKP-APPLY-005": "operation is unsupported", "YKP-APPLY-006": "scope lease is unavailable or lost", "YKP-APPLY-007": "fresh preflight does not match approved plan", "YKP-APPLY-008": "approval nonce is already consumed", "YKP-APPLY-009": "operation precondition does not match", "YKP-APPLY-010": "mutation attempt failed", "YKP-APPLY-011": "operation verification failed", "YKP-APPLY-012": "final convergence verification failed" };
+var ApplyPortError = class extends Error {
+  constructor(failureClass) {
+    super("apply port failed");
+    this.failureClass = failureClass;
+    this.name = "ApplyPortError";
+  }
+  failureClass;
+};
+var MESSAGE = { "YKP-APPLY-001": "apply request is invalid", "YKP-APPLY-002": "apply is not explicitly enabled", "YKP-APPLY-003": "approval is invalid or does not match", "YKP-APPLY-004": "approval is expired or has invalid lifetime", "YKP-APPLY-005": "operation is unsupported", "YKP-APPLY-006": "scope lease is unavailable or lost", "YKP-APPLY-007": "fresh preflight does not match approved plan", "YKP-APPLY-008": "approval nonce is already consumed", "YKP-APPLY-009": "operation precondition does not match", "YKP-APPLY-010": "mutation attempt failed", "YKP-APPLY-011": "operation verification failed", "YKP-APPLY-012": "final convergence verification failed", "YKP-APPLY-013": "provider authentication failed", "YKP-APPLY-014": "provider authorization failed", "YKP-APPLY-015": "provider budget is reserved", "YKP-APPLY-016": "provider is unavailable", "YKP-APPLY-017": "provider invariant is invalid" };
 var MAP = { create_field: "create_project_field", add_option: "update_project_field_options", set_field_value: "update_project_item_field_value", set_parent: "add_sub_issue", add_dependency: "add_blocked_by" };
 function hash(v) {
   return createHash3("sha256").update(canonicalJson(v)).digest("hex");
@@ -244,7 +252,12 @@ function diag(code) {
   return { code, severity: "error", message: MESSAGE[code] };
 }
 function result(planId, ops, states, code, remaining = ops.length) {
-  return { schema: 1, status: code ? "error" : "success", planId, outcomes: ops.map((o) => ({ operationKey: o.operationKey, outcome: states.get(o.operationKey) ?? "not_attempted" })), remaining, diagnostics: code ? [diag(code)] : [] };
+  return { schema: 1, status: code === "YKP-APPLY-015" ? "deferred" : code ? "error" : "success", planId, outcomes: ops.map((o) => ({ operationKey: o.operationKey, outcome: states.get(o.operationKey) ?? "not_attempted" })), remaining, diagnostics: code ? [diag(code)] : [] };
+}
+function portCode(error, fallback) {
+  if (!(error instanceof ApplyPortError)) return fallback;
+  const codes = { authentication: "YKP-APPLY-013", authorization: "YKP-APPLY-014", deferred_rate_budget: "YKP-APPLY-015", provider: "YKP-APPLY-016", invariant: "YKP-APPLY-017" };
+  return codes[error.failureClass];
 }
 function claimsValid(c, request, now, scopeDigest) {
   return !!c && c.schema === 1 && bounded3(c.issuerRef) && c.subjectRef === request.scope.subjectRef && c.repositoryRef === request.scope.repositoryRef && c.projectRef === request.scope.projectRef && c.issueRef === request.scope.issueRef && c.issueNumber === request.scope.issueNumber && c.scopeDigest === scopeDigest && c.planId === request.approvedPlanId && /^[a-f0-9]{64}$/u.test(c.operationDigest) && c.environment === "apply" && bounded3(c.protectedEnvironment) && c.protectedEnvironment === request.protectedEnvironment && Number.isSafeInteger(c.issuedAtMs) && Number.isSafeInteger(c.expiresAtMs) && c.issuedAtMs <= now && c.expiresAtMs >= now && c.expiresAtMs - c.issuedAtMs <= 15 * 60 * 1e3 && bounded3(c.nonce) && [...c.nonce].length >= 22 && /^[a-f0-9]{64}$/u.test(c.keyFingerprint) && c.contractVersion === "controlled-apply-v1" && c.plannerVersion === "reconciliation-plan-v1" && c.snapshotVersion === "rest-project-snapshot-v2" && c.entrypointVersion === "apply-entrypoint-v1";
@@ -276,9 +289,18 @@ async function executeControlledPlan(request, ports) {
   if (!claimsValid(approval, request, now, scopeDigest)) return result(planId, operations, states, approval && approval.expiresAtMs < now ? "YKP-APPLY-004" : "YKP-APPLY-003");
   let lease = null;
   try {
-    lease = await ports.acquireLease(scopeDigest);
+    try {
+      lease = await ports.acquireLease(scopeDigest);
+    } catch (error) {
+      return result(planId, operations, states, portCode(error, "YKP-APPLY-006"));
+    }
     if (!lease || !await lease.valid()) return result(planId, operations, states, "YKP-APPLY-006");
-    const fresh = await ports.replan();
+    let fresh;
+    try {
+      fresh = await ports.replan();
+    } catch (error) {
+      return result(planId, operations, states, portCode(error, "YKP-APPLY-017"));
+    }
     operations = fresh?.operations ?? [];
     if (!integrity(fresh) || fresh.planId !== planId || !dependenciesValid(operations) || !operationsMatchScope(operations, request.scope) || hash(operations) !== approval.operationDigest) return result(planId, operations, states, "YKP-APPLY-007");
     if (operations.some((op) => !MAP[op.type])) return result(planId, operations, states, "YKP-APPLY-005");
@@ -293,8 +315,8 @@ async function executeControlledPlan(request, ports) {
       let observed;
       try {
         observed = await ports.inspect(op);
-      } catch {
-        return result(planId, operations, states, "YKP-APPLY-009");
+      } catch (error) {
+        return result(planId, operations, states, portCode(error, "YKP-APPLY-009"));
       }
       if (observed === "already_converged") {
         states.set(op.operationKey, "already_converged");
@@ -309,17 +331,17 @@ async function executeControlledPlan(request, ports) {
       const mutationKind = MAP[op.type];
       try {
         await ports.mutate(mutationKind, op, hash([planId, op.operationKey]).slice(0, 64), lease.fencingToken);
-      } catch {
+      } catch (error) {
         states.set(op.operationKey, "failed");
         await ports.audit({ type: "operation", planId, operationKey: op.operationKey, outcome: "failed" });
-        return result(planId, operations, states, "YKP-APPLY-010");
+        return result(planId, operations, states, portCode(error, "YKP-APPLY-010"));
       }
       let verified = false;
       try {
         await ports.invalidateAfterMutation(mutationKind, op);
         verified = await ports.verify(op);
-      } catch {
-        verified = false;
+      } catch (error) {
+        return result(planId, operations, states, portCode(error, "YKP-APPLY-011"));
       }
       if (!verified) {
         states.set(op.operationKey, "failed");
@@ -328,12 +350,17 @@ async function executeControlledPlan(request, ports) {
       states.set(op.operationKey, "verified");
       await ports.audit({ type: "operation", planId, operationKey: op.operationKey, outcome: "verified" });
     }
-    const finalPlan = await ports.replan();
+    let finalPlan;
+    try {
+      finalPlan = await ports.replan();
+    } catch (error) {
+      return result(planId, operations, states, portCode(error, "YKP-APPLY-012"));
+    }
     if (!integrity(finalPlan) || !finalPlan.executable || finalPlan.operations.length !== 0 || finalPlan.diagnostics.length !== 0) return result(planId, operations, states, "YKP-APPLY-012", finalPlan.operations.length);
     await ports.audit({ type: "apply_finished", planId, outcome: "verified" });
     return result(planId, operations, states, void 0, 0);
-  } catch {
-    return result(planId, operations, states, "YKP-APPLY-012");
+  } catch (error) {
+    return result(planId, operations, states, portCode(error, "YKP-APPLY-012"));
   } finally {
     if (lease) try {
       await lease.release();
@@ -404,7 +431,7 @@ async function applyCliMain(argv, workspace, factory, write) {
     const requestedScope = parseRuntimeScope({ owner: options.owner, repository: options.repository, projectNumber: options.projectNumber, issueNumber: options.issueNumber }), runtime = await factory.create({ requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId: options.approvedPlanId, protectedEnvironment: options.environment, scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host);
     write(`${JSON.stringify(report)}
 `);
-    return report.status === "success" ? 0 : 5;
+    return report.status === "success" ? 0 : report.status === "deferred" ? 6 : 5;
   } catch {
     write(`${JSON.stringify(failure2(approvedPlanId))}
 `);
@@ -793,10 +820,11 @@ function option(v, withId) {
   const expected = withId ? ["id", "name", "color", "description"] : ["name", "color", "description"];
   return keys(v, expected) && (!withId || id(v.id)) && text2(v.name, 128) && ["GRAY", "BLUE", "GREEN", "YELLOW", "ORANGE", "RED", "PINK", "PURPLE"].includes(String(v.color)) && typeof v.description === "string" && [...v.description].length <= 256 && !/[\u0000-\u001f\u007f]/u.test(v.description);
 }
-function permission(kind2, p) {
-  const approved = new Set(p.approvedExtraPermissions ?? []);
-  if (p.extraPermissions.some((x) => !approved.has(x))) return false;
-  return kind2 === "add_sub_issue" || kind2 === "add_blocked_by" ? p.issues === "write" : p.projects === "write";
+function permissionsExact(kind2, p, approvedKinds) {
+  const allowed = /* @__PURE__ */ new Set(["create_project_field", "update_project_field_options", "update_project_item_field_value", "add_sub_issue", "add_blocked_by"]), kinds = new Set(approvedKinds);
+  if (kinds.size !== approvedKinds.length || kinds.size < 1 || [...kinds].some((value2) => !allowed.has(value2)) || !kinds.has(kind2)) return false;
+  const needsProjects = [...kinds].some((value2) => value2 === "create_project_field" || value2 === "update_project_field_options" || value2 === "update_project_item_field_value"), needsIssues = [...kinds].some((value2) => value2 === "add_sub_issue" || value2 === "add_blocked_by"), approved = new Set(p.approvedExtraPermissions ?? []);
+  return p.projects === (needsProjects ? "write" : "none") && p.issues === (needsIssues ? "write" : "none") && p.extraPermissions.length === approved.size && p.extraPermissions.every((value2) => approved.has(value2));
 }
 function input2(kind2, v, clientMutationId) {
   if (!rec2(v) || v.kind !== kind2 || !/^[a-f0-9]{64}$/u.test(clientMutationId)) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
@@ -825,10 +853,10 @@ function input2(kind2, v, clientMutationId) {
   throw new GitHubMutationTransportError("YKP-GH-WRITE-002");
 }
 function createGitHubMutationTransport(options) {
-  if (!text2(options?.token, 4096)) throw new TypeError("invalid credential");
+  if (!text2(options?.token, 4096) || !Array.isArray(options.approvedKinds)) throw new TypeError("invalid credential");
   const fetcher = options.fetch ?? globalThis.fetch;
   return { execute: async (kind2, variables, clientMutationId) => {
-    if (!permission(kind2, options.permissions)) throw new GitHubMutationTransportError("YKP-GH-WRITE-003");
+    if (!permissionsExact(kind2, options.permissions, options.approvedKinds)) throw new GitHubMutationTransportError("YKP-GH-WRITE-003");
     const mapped = input2(kind2, variables, clientMutationId), query = GITHUB_MUTATION_DOCUMENTS[kind2];
     if (options.rateLedger && !options.rateLedger.reserve("graphql", GITHUB_MUTATION_ESTIMATED_COSTS[kind2])) throw new GitHubMutationTransportError("YKP-GH-WRITE-008");
     let response;
@@ -864,6 +892,26 @@ function createGitHubMutationTransport(options) {
     return { kind: kind2, clientMutationId, providerAccepted: true };
   } };
 }
+
+// src/github-apply-failure.ts
+function normalizeGitHubApplyFailure(error) {
+  if (error instanceof ApplyPortError) return error;
+  if (error instanceof GitHubMutationTransportError) {
+    if (error.code === "YKP-GH-WRITE-006") return new ApplyPortError("authentication");
+    if (error.code === "YKP-GH-WRITE-007" || error.code === "YKP-GH-WRITE-003") return new ApplyPortError("authorization");
+    if (error.code === "YKP-GH-WRITE-008") return new ApplyPortError("deferred_rate_budget");
+    if (error.code === "YKP-GH-WRITE-004") return new ApplyPortError("provider");
+    return new ApplyPortError("invariant");
+  }
+  if (error instanceof GitHubTransportError) {
+    if (error.code === "YKP-GH-READ-002") return new ApplyPortError("authentication");
+    if (error.code === "YKP-GH-READ-003" || error.code === "YKP-CAPABILITY-001") return new ApplyPortError("authorization");
+    if (error.code === "YKP-RATE-001" || error.code === "YKP-GH-READ-009") return new ApplyPortError("deferred_rate_budget");
+    if (error.code === "YKP-GH-READ-004") return new ApplyPortError("provider");
+    return new ApplyPortError("invariant");
+  }
+  return new ApplyPortError("invariant");
+}
 export {
   applyActionMain,
   applyCliMain,
@@ -873,6 +921,7 @@ export {
   createMemoryApplyCoordinationStore,
   createRestProjectSnapshotReader,
   executeControlledPlan,
+  normalizeGitHubApplyFailure,
   renderPublicApplyReport,
   runApplyEntrypoint,
   snapshotInvalidationForMutation,

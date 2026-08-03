@@ -7,3 +7,4 @@ export { createMemoryApplyCoordinationStore, bindApplyCoordination } from "./app
 export { createGitHubRateLedger } from "./github-rate-ledger.js";
 export { createRestProjectSnapshotReader, snapshotInvalidationForMutation } from "./github-rest-snapshot.js";
 export { createGitHubMutationTransport } from "./github-mutation-transport.js";
+export { normalizeGitHubApplyFailure } from "./github-apply-failure.js";
