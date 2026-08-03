@@ -22,7 +22,7 @@ required_evidence:
 slices:
   - id: aggregate-manifest-migration-planner
     disposition: re-author
-    status: specified
+    status: implemented
     evidence:
       - rights_confirmed
       - public_specification
