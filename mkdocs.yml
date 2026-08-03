@@ -14,7 +14,7 @@ theme:
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: cyan
+      primary: black
       accent: cyan
       toggle:
         icon: material/brightness-7
