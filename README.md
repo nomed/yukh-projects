@@ -43,6 +43,7 @@ This repository currently contains the public project foundation. Functional cod
 - [Accepted controlled apply entrypoint v1](docs/contracts/controlled-apply-entrypoint-v1.md)
 - [Accepted GitHub mutation transport v1](docs/contracts/github-mutation-transport-v1.md)
 - [Accepted Action, CLI, and protected release v1](docs/contracts/action-cli-release-v1.md)
+- [Proposed aggregate manifest migration planner v1](docs/contracts/aggregate-manifest-migration-v1.md)
 - [Release operations](docs/release-operations.md)
 - [Provenance ledger](docs/migration/provenance-ledger.yml)
 
