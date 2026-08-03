@@ -7361,6 +7361,9 @@ var require_dist = __commonJS({
   }
 });
 
+// src/apply-action-main.ts
+import { appendFile } from "node:fs/promises";
+
 // src/runtime-input.ts
 import { lstat, open, readFile, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
@@ -7389,46 +7392,19 @@ async function loadWorkspacePolicy(workspace, policyPath = ".yukh/project.yaml")
 import { constants, createReadStream } from "node:fs";
 import { open as open2, realpath as realpath2 } from "node:fs/promises";
 import { basename, dirname as dirname2, isAbsolute as isAbsolute2, relative as relative2, resolve as resolve2, sep as sep2 } from "node:path";
-var VALUES = /* @__PURE__ */ new Set(["--mode", "--owner", "--repository", "--project-number", "--issue-number", "--policy-path", "--approved-plan-id", "--approval-file", "--approval-public-key-file", "--environment", "--github-read-token-fd", "--github-write-token-fd", "--host-capsule-fd"]);
-var DIGEST = /^[a-f0-9]{64}$/u;
-var FD = /^(?:[3-9][0-9]{0,2}|1[0-9]{3})$/u;
 function bounded(value2, max = 256) {
   return value2.length > 0 && value2.length <= max && !/[\u0000-\u001f\u007f]/u.test(value2);
 }
-function fd(value2) {
-  if (!value2 || !FD.test(value2)) throw new TypeError("invalid apply arguments");
-  const parsed = Number(value2);
-  if (!Number.isSafeInteger(parsed) || parsed > 1024) throw new TypeError("invalid apply arguments");
-  return parsed;
-}
-function parseApplyCliArgs(argv) {
-  const values = /* @__PURE__ */ new Map();
-  for (let index = 0; index < argv.length; index++) {
-    const key = argv[index];
-    if (!VALUES.has(key) || values.has(key)) throw new TypeError("invalid apply arguments");
-    const value2 = argv[++index];
-    if (value2 === void 0 || value2.startsWith("--") || !bounded(value2, 1024)) throw new TypeError("invalid apply arguments");
-    values.set(key, value2);
+async function readRunnerCapsule(runnerTemp2, name) {
+  if (!bounded(name, 128) || name.includes("/") || name.includes("\\") || name === "." || name === "..") throw new TypeError("invalid host capsule file");
+  const root = await realpath2(runnerTemp2), path = resolve2(root, name), handle = await open2(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+  try {
+    const metadata = await handle.stat();
+    if (!metadata.isFile() || metadata.size < 1 || metadata.size > 64 * 1024 || (metadata.mode & 511) !== 384) throw new TypeError("invalid host capsule file");
+    return (await handle.readFile()).toString("utf8");
+  } finally {
+    await handle.close();
   }
-  for (const key of VALUES) if (key !== "--policy-path" && !values.has(key)) throw new TypeError("invalid apply arguments");
-  if (values.get("--mode") !== "apply" || !DIGEST.test(values.get("--approved-plan-id") ?? "") || !bounded(values.get("--environment") ?? "", 64)) throw new TypeError("invalid apply arguments");
-  parseRuntimeScope({ owner: values.get("--owner"), repository: values.get("--repository"), projectNumber: values.get("--project-number"), issueNumber: values.get("--issue-number") });
-  const readTokenFd = fd(values.get("--github-read-token-fd")), writeTokenFd = fd(values.get("--github-write-token-fd")), hostCapsuleFd = fd(values.get("--host-capsule-fd"));
-  if ((/* @__PURE__ */ new Set([readTokenFd, writeTokenFd, hostCapsuleFd])).size !== 3) throw new TypeError("invalid apply arguments");
-  return { mode: "apply", owner: values.get("--owner"), repository: values.get("--repository"), projectNumber: values.get("--project-number"), issueNumber: values.get("--issue-number"), policyPath: values.get("--policy-path") ?? ".yukh/project.yaml", approvedPlanId: values.get("--approved-plan-id"), approvalFile: values.get("--approval-file"), approvalPublicKeyFile: values.get("--approval-public-key-file"), environment: values.get("--environment"), readTokenFd, writeTokenFd, hostCapsuleFd };
-}
-async function readBoundedFd(fdValue, maxBytes = 8192) {
-  if (!Number.isSafeInteger(fdValue) || fdValue < 3 || fdValue > 1024 || maxBytes < 1 || maxBytes > 64 * 1024) throw new TypeError("invalid credential descriptor");
-  let bytes = 0, value2 = "";
-  for await (const chunk of createReadStream("", { fd: fdValue, autoClose: true })) {
-    const buffer = Buffer.from(chunk);
-    bytes += buffer.byteLength;
-    if (bytes > maxBytes) throw new TypeError("invalid credential");
-    value2 += buffer.toString("utf8");
-  }
-  value2 = value2.replace(/\r?\n$/u, "");
-  if (!value2 || /[\u0000-\u001f\u007f]/u.test(value2)) throw new TypeError("invalid credential");
-  return value2;
 }
 async function readExclusiveWorkspaceFile(workspace, filePath, maxBytes = 64 * 1024) {
   if (!bounded(filePath, 1024) || isAbsolute2(filePath) || filePath.split(/[\\/]/u).includes("..") || maxBytes < 1 || maxBytes > 1024 * 1024) throw new TypeError("invalid protected file");
@@ -7707,7 +7683,7 @@ function finishPlan(internal, operations, observations) {
 
 // src/apply-approval.ts
 var APPLY_VERSIONS = { contract: "controlled-apply-v1", planner: "reconciliation-plan-v1", snapshot: "rest-project-snapshot-v2", entrypoint: "apply-entrypoint-v1" };
-var DIGEST2 = /^[a-f0-9]{64}$/u;
+var DIGEST = /^[a-f0-9]{64}$/u;
 var SIGNATURE = /^[A-Za-z0-9_-]{86}$/u;
 var CLAIM_KEYS = ["schema", "issuerRef", "subjectRef", "repositoryRef", "projectRef", "issueRef", "issueNumber", "scopeDigest", "planId", "operationDigest", "environment", "protectedEnvironment", "issuedAtMs", "expiresAtMs", "nonce", "keyFingerprint", "contractVersion", "plannerVersion", "snapshotVersion", "entrypointVersion"];
 var ENVELOPE_KEYS = ["schema", "algorithm", "keyFingerprint", "claims", "signature"];
@@ -7730,7 +7706,7 @@ function publicKey(value2) {
 function claimsShape(value2) {
   if (!exactKeys(value2, CLAIM_KEYS)) return false;
   const c = value2;
-  return c.schema === 1 && bounded2(c.issuerRef) && bounded2(c.subjectRef) && bounded2(c.repositoryRef) && bounded2(c.projectRef) && bounded2(c.issueRef) && Number.isSafeInteger(c.issueNumber) && c.issueNumber > 0 && DIGEST2.test(c.scopeDigest) && DIGEST2.test(c.planId) && DIGEST2.test(c.operationDigest) && c.environment === "apply" && bounded2(c.protectedEnvironment, 64) && Number.isSafeInteger(c.issuedAtMs) && Number.isSafeInteger(c.expiresAtMs) && bounded2(c.nonce) && DIGEST2.test(c.keyFingerprint) && c.contractVersion === APPLY_VERSIONS.contract && c.plannerVersion === APPLY_VERSIONS.planner && c.snapshotVersion === APPLY_VERSIONS.snapshot && c.entrypointVersion === APPLY_VERSIONS.entrypoint;
+  return c.schema === 1 && bounded2(c.issuerRef) && bounded2(c.subjectRef) && bounded2(c.repositoryRef) && bounded2(c.projectRef) && bounded2(c.issueRef) && Number.isSafeInteger(c.issueNumber) && c.issueNumber > 0 && DIGEST.test(c.scopeDigest) && DIGEST.test(c.planId) && DIGEST.test(c.operationDigest) && c.environment === "apply" && bounded2(c.protectedEnvironment, 64) && Number.isSafeInteger(c.issuedAtMs) && Number.isSafeInteger(c.expiresAtMs) && bounded2(c.nonce) && DIGEST.test(c.keyFingerprint) && c.contractVersion === APPLY_VERSIONS.contract && c.plannerVersion === APPLY_VERSIONS.planner && c.snapshotVersion === APPLY_VERSIONS.snapshot && c.entrypointVersion === APPLY_VERSIONS.entrypoint;
 }
 function signatureInput(envelope) {
   return Buffer.from(`yukh-projects-approval-v1\0${canonicalJson(envelope)}`, "utf8");
@@ -7738,7 +7714,7 @@ function signatureInput(envelope) {
 function verifySignedApproval(artifact, trust) {
   if (!exactKeys(artifact, ENVELOPE_KEYS)) return null;
   const envelope = artifact;
-  if (envelope.schema !== 1 || envelope.algorithm !== "Ed25519" || !DIGEST2.test(envelope.keyFingerprint) || !SIGNATURE.test(envelope.signature) || !claimsShape(envelope.claims)) return null;
+  if (envelope.schema !== 1 || envelope.algorithm !== "Ed25519" || !DIGEST.test(envelope.keyFingerprint) || !SIGNATURE.test(envelope.signature) || !claimsShape(envelope.claims)) return null;
   const trusted = publicKey(trust.publicKey);
   if (!trusted || trusted.fingerprint !== envelope.keyFingerprint || envelope.claims.keyFingerprint !== trusted.fingerprint || !trust.allowedIssuerRefs.includes(envelope.claims.issuerRef)) return null;
   try {
@@ -7914,7 +7890,7 @@ var ApplyCoordinationError = class extends Error {
   }
   code;
 };
-var DIGEST3 = /^[a-f0-9]{64}$/u;
+var DIGEST2 = /^[a-f0-9]{64}$/u;
 function digest(value2) {
   return createHash4("sha256").update(value2).digest("hex");
 }
@@ -7928,7 +7904,7 @@ function portFailure(error) {
   throw new ApplyPortError("provider");
 }
 function bindApplyCoordination(base, store, options) {
-  if (!DIGEST3.test(options.holderDigest) || !Number.isSafeInteger(options.expiresAtMs) || !Number.isSafeInteger(options.epoch) || options.epoch < 1) throw new TypeError("invalid apply coordination binding");
+  if (!DIGEST2.test(options.holderDigest) || !Number.isSafeInteger(options.expiresAtMs) || !Number.isSafeInteger(options.epoch) || options.epoch < 1) throw new TypeError("invalid apply coordination binding");
   return { ...base, consumeNonce: async (nonce) => {
     try {
       return await store.consumeNonce({ keyDigest: digest(`nonce-key\0${nonce}`), valueDigest: digest(`nonce-value\0${nonce}`), expiresAtMs: options.expiresAtMs, epoch: options.epoch }) === "consumed";
@@ -7963,65 +7939,43 @@ async function runApplyEntrypoint(request, host) {
 }
 
 // src/apply-action.ts
-function input(io, name) {
-  const value2 = io.env[`INPUT_${name.toUpperCase()}`];
+function input(io2, name) {
+  const value2 = io2.env[`INPUT_${name.toUpperCase()}`];
   if (value2 === void 0 || value2 === "") throw new TypeError("invalid action input");
   return value2;
 }
 function failure(planId2) {
   return { schema: 1, status: "error", planId: /^[a-f0-9]{64}$/u.test(planId2) ? planId2 : "invalid", counts: { already_converged: 0, verified: 0, failed: 0, not_attempted: 0 }, remaining: 0, diagnostics: [{ code: "YKP-APPLY-001", severity: "error", message: "apply request is invalid" }] };
 }
-async function applyActionMain(io, factory) {
+async function applyActionMain(io2, factory) {
   let approvedPlanId = "invalid";
   try {
-    if (input(io, "MODE") !== "apply") throw new TypeError("invalid action mode");
-    const readToken = input(io, "GITHUB-READ-TOKEN");
-    io.mask(readToken);
-    const writeToken = input(io, "GITHUB-WRITE-TOKEN");
-    io.mask(writeToken);
+    if (input(io2, "MODE") !== "apply") throw new TypeError("invalid action mode");
+    const readToken = input(io2, "GITHUB-READ-TOKEN");
+    io2.mask(readToken);
+    const writeToken = input(io2, "GITHUB-WRITE-TOKEN");
+    io2.mask(writeToken);
     if (readToken === writeToken) throw new TypeError("credential profiles must be distinct");
-    approvedPlanId = input(io, "APPROVED-PLAN-ID");
-    const workspace = io.env.GITHUB_WORKSPACE;
+    approvedPlanId = input(io2, "APPROVED-PLAN-ID");
+    const workspace = io2.env.GITHUB_WORKSPACE;
     if (!workspace) throw new TypeError("invalid action environment");
-    const requestedScope = parseRuntimeScope({ owner: input(io, "OWNER"), repository: input(io, "REPOSITORY"), projectNumber: input(io, "PROJECT-NUMBER"), issueNumber: input(io, "ISSUE-NUMBER") }), [policySource, approvalArtifact, approvalPublicKey] = await Promise.all([loadWorkspacePolicy(workspace, io.env["INPUT_POLICY-PATH"] || ".yukh/project.yaml"), readApprovalArtifact(workspace, input(io, "APPROVAL-FILE")), readExclusiveWorkspaceFile(workspace, input(io, "APPROVAL-PUBLIC-KEY-FILE"))]), runtime = await factory.create({ requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId, protectedEnvironment: input(io, "ENVIRONMENT"), scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host);
-    await io.output("status", report.status);
-    await io.output("plan-id", report.planId);
-    await io.output("remaining", String(report.remaining));
-    await io.output("report", JSON.stringify(report));
-    if (report.status !== "success") io.error(report.diagnostics[0]?.code ?? "YKP-APPLY-001");
+    const requestedScope = parseRuntimeScope({ owner: input(io2, "OWNER"), repository: input(io2, "REPOSITORY"), projectNumber: input(io2, "PROJECT-NUMBER"), issueNumber: input(io2, "ISSUE-NUMBER") }), [policySource, approvalArtifact, approvalPublicKey] = await Promise.all([loadWorkspacePolicy(workspace, io2.env["INPUT_POLICY-PATH"] || ".yukh/project.yaml"), readApprovalArtifact(workspace, input(io2, "APPROVAL-FILE")), readExclusiveWorkspaceFile(workspace, input(io2, "APPROVAL-PUBLIC-KEY-FILE"))]), runtime = await factory.create({ requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId, protectedEnvironment: input(io2, "ENVIRONMENT"), scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host);
+    await io2.output("status", report.status);
+    await io2.output("plan-id", report.planId);
+    await io2.output("remaining", String(report.remaining));
+    await io2.output("report", JSON.stringify(report));
+    if (report.status !== "success") io2.error(report.diagnostics[0]?.code ?? "YKP-APPLY-001");
     return report;
   } catch {
     const report = failure(approvedPlanId);
-    io.error("YKP-APPLY-001");
+    io2.error("YKP-APPLY-001");
     return report;
-  }
-}
-
-// src/apply-cli.ts
-function failure2(planId2) {
-  return { schema: 1, status: "error", planId: /^[a-f0-9]{64}$/u.test(planId2) ? planId2 : "invalid", counts: { already_converged: 0, verified: 0, failed: 0, not_attempted: 0 }, remaining: 0, diagnostics: [{ code: "YKP-APPLY-001", severity: "error", message: "apply request is invalid" }] };
-}
-async function applyCliMain(argv, workspace, factory, write) {
-  let approvedPlanId = "invalid";
-  try {
-    const options = parseApplyCliArgs(argv);
-    approvedPlanId = options.approvedPlanId;
-    const [readToken, writeToken, policySource, approvalArtifact, approvalPublicKey] = await Promise.all([readBoundedFd(options.readTokenFd), readBoundedFd(options.writeTokenFd), loadWorkspacePolicy(workspace, options.policyPath), readApprovalArtifact(workspace, options.approvalFile), readExclusiveWorkspaceFile(workspace, options.approvalPublicKeyFile)]);
-    if (readToken === writeToken) throw new TypeError("credential profiles must be distinct");
-    const requestedScope = parseRuntimeScope({ owner: options.owner, repository: options.repository, projectNumber: options.projectNumber, issueNumber: options.issueNumber }), runtime = await factory.create({ requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId: options.approvedPlanId, protectedEnvironment: options.environment, scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host);
-    write(`${JSON.stringify(report)}
-`);
-    return report.status === "success" ? 0 : report.status === "deferred" ? 6 : 5;
-  } catch {
-    write(`${JSON.stringify(failure2(approvedPlanId))}
-`);
-    return 2;
   }
 }
 
 // src/apply-coordination-http.ts
 var MEDIA = "application/yukh-coordination-primitives+json;version=1";
-var DIGEST4 = /^[a-f0-9]{64}$/u;
+var DIGEST3 = /^[a-f0-9]{64}$/u;
 var MAX_BODY = 4096;
 var MAX_CAPABILITY = 3800;
 function canonical(value2) {
@@ -8042,7 +7996,7 @@ function expiry(value2) {
   return formatted;
 }
 function validRequest(value2, epoch) {
-  return DIGEST4.test(value2.keyDigest) && DIGEST4.test("valueDigest" in value2 ? value2.valueDigest : value2.holderDigest) && value2.epoch === epoch && Number.isSafeInteger(value2.expiresAtMs);
+  return DIGEST3.test(value2.keyDigest) && DIGEST3.test("valueDigest" in value2 ? value2.valueDigest : value2.holderDigest) && value2.epoch === epoch && Number.isSafeInteger(value2.expiresAtMs);
 }
 function object(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
@@ -8441,7 +8395,7 @@ function parseIssueContract(body, options = {}) {
 import { createHash as createHash5 } from "node:crypto";
 var READ_OPERATIONS = ["resolve_scope", "read_project_fields", "read_project_item", "read_issue_relationships"];
 var MSG = { "YKP-GH-READ-001": "requested scope is invalid", "YKP-GH-READ-002": "authentication failed", "YKP-GH-READ-003": "access is denied", "YKP-GH-READ-004": "provider is unavailable", "YKP-GH-READ-005": "response limit is exceeded", "YKP-GH-READ-006": "resource binding does not match", "YKP-GH-READ-007": "pagination invariant is invalid", "YKP-GH-READ-008": "provider response is invalid", "YKP-GH-READ-009": "provider rate limit is reached", "YKP-GH-READ-010": "failure could not be safely classified", "YKP-GH-READ-011": "required provider capability is unavailable", "YKP-RATE-001": "provider budget is reserved", "YKP-CACHE-001": "cached observation is invalid", "YKP-CAPABILITY-001": "required provider capability is unavailable", "YKP-REST-001": "REST response is invalid", "YKP-SNAPSHOT-001": "snapshot is incomplete" };
-function failure3(code, operation, retry = "never") {
+function failure2(code, operation, retry = "never") {
   return { observation: null, diagnostics: [{ code, severity: "error", message: MSG[code], operation, retry }] };
 }
 function rec(v) {
@@ -8465,7 +8419,7 @@ var ReadFailure = class {
   operation;
 };
 async function readGitHubObservation(scope, transport) {
-  if (!scopeOK(scope)) return failure3("YKP-GH-READ-001", "scope");
+  if (!scopeOK(scope)) return failure2("YKP-GH-READ-001", "scope");
   const counts = Object.fromEntries(READ_OPERATIONS.map((k) => [k, 0]));
   let bytes = 0, pages = 0;
   const execute = async (op, cursor) => {
@@ -8566,12 +8520,12 @@ async function readGitHubObservation(scope, transport) {
     const fingerprintOut = createHash5("sha256").update(canonicalJson(base)).digest("hex");
     return { observation: { ...base, issueBody: resolved.issueBody, evidence: { schema: 1, operationCounts: counts, pageCount: pages, fingerprint: fingerprintOut } }, diagnostics: [] };
   } catch (e) {
-    if (e instanceof ReadFailure) return failure3(e.code, e.operation, e.code === "YKP-GH-READ-008" ? "review" : "never");
+    if (e instanceof ReadFailure) return failure2(e.code, e.operation, e.code === "YKP-GH-READ-008" ? "review" : "never");
     if (rec(e) && typeof e.code === "string" && Object.hasOwn(MSG, e.code)) {
       const code = e.code;
-      return failure3(code, "scope", code === "YKP-GH-READ-004" ? "full-read" : code === "YKP-GH-READ-009" || code === "YKP-RATE-001" ? "reset" : code === "YKP-GH-READ-008" || code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" ? "review" : "never");
+      return failure2(code, "scope", code === "YKP-GH-READ-004" ? "full-read" : code === "YKP-GH-READ-009" || code === "YKP-RATE-001" ? "reset" : code === "YKP-GH-READ-008" || code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" ? "review" : "never");
     }
-    return failure3("YKP-GH-READ-004", "scope", "full-read");
+    return failure2("YKP-GH-READ-004", "scope", "full-read");
   }
 }
 
@@ -9350,7 +9304,7 @@ function createGitHubRestSnapshotReadTransportFromReader(reader) {
 
 // src/controlled-apply-host.ts
 var KIND = { create_field: "create_project_field", add_option: "update_project_field_options", set_field_value: "update_project_item_field_value", set_parent: "add_sub_issue", add_dependency: "add_blocked_by" };
-function failure4(value2) {
+function failure3(value2) {
   throw new ApplyPortError(value2.failureClass === "authentication" ? "authentication" : value2.failureClass === "authorization" ? "authorization" : value2.failureClass === "deferred" ? "deferred_rate_budget" : value2.failureClass === "provider" ? "provider" : "invariant");
 }
 function sameResource(a, b) {
@@ -9412,7 +9366,7 @@ function createControlledApplyHostFactory(options) {
     let latest;
     const replan = async () => {
       const prepared = await prepareReconciliation({ scope: input3.requestedScope, policySource: input3.policySource, transport: createGitHubRestSnapshotReadTransportFromReader(reader) });
-      if (prepared.status !== "success") return failure4(prepared);
+      if (prepared.status !== "success") return failure3(prepared);
       latest = prepared;
       return prepared.plan;
     };
@@ -9438,7 +9392,7 @@ function createControlledApplyHostFactory(options) {
 
 // src/protected-host-capsule.ts
 import { createHash as createHash7, createPrivateKey, randomUUID, sign } from "node:crypto";
-var DIGEST5 = /^[a-f0-9]{64}$/u;
+var DIGEST4 = /^[a-f0-9]{64}$/u;
 var KINDS2 = ["create_project_field", "update_project_field_options", "update_project_item_field_value", "add_sub_issue", "add_blocked_by"];
 function rec4(v) {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -9490,7 +9444,7 @@ function parseProtectedHostCapsule(source, binding, runtime = {}) {
   }
   if (!rec4(value2) || canonical2(value2) !== source) throw new TypeError("invalid host capsule");
   exact2(value2, ["schema", "version", "issued_at_ms", "expires_at_ms", "scope", "enablement", "allowed_issuer_refs", "holder_digest", "coordination", "permissions", "approved_kinds", "rate"]);
-  if (value2.schema !== 1 || value2.version !== "protected-host-capsule-v1" || value2.enablement !== "apply-explicitly-enabled" || !DIGEST5.test(String(value2.holder_digest))) throw new TypeError("invalid host capsule");
+  if (value2.schema !== 1 || value2.version !== "protected-host-capsule-v1" || value2.enablement !== "apply-explicitly-enabled" || !DIGEST4.test(String(value2.holder_digest))) throw new TypeError("invalid host capsule");
   const now = runtime.nowMs ?? Date.now, issued = integer2(value2.issued_at_ms), expires = integer2(value2.expires_at_ms);
   if (issued > now() || expires < now() || expires - issued > 15 * 60 * 1e3) throw new TypeError("invalid host capsule");
   if (!rec4(value2.scope)) throw new TypeError("invalid host capsule");
@@ -9513,20 +9467,26 @@ function parseProtectedHostCapsule(source, binding, runtime = {}) {
   const authenticate = proofFactory(credential, value2.coordination.dpop_private_jwk, now, runtime.jti ?? randomUUID);
   return { options: { enablement: "apply-explicitly-enabled", allowedIssuerRefs: issuers, holderDigest: String(value2.holder_digest), coordinationEpoch: epoch, coordination: { baseUri, epoch, deadlineMs: 5e3, authenticate }, permissions: { projects: value2.permissions.projects, issues: value2.permissions.issues, extraPermissions: [] }, approvedKinds: value2.approved_kinds, rate, nowMs: now } };
 }
-export {
-  applyActionMain,
-  applyCliMain,
-  bindApplyCoordination,
-  createApplyCoordinationHttpStore,
-  createControlledApplyHostFactory,
-  createGitHubMutationTransport,
-  createGitHubRateLedger,
-  createRestProjectSnapshotReader,
-  executeControlledPlan,
-  normalizeGitHubApplyFailure,
-  parseProtectedHostCapsule,
-  renderPublicApplyReport,
-  runApplyEntrypoint,
-  snapshotInvalidationForMutation,
-  verifySignedApproval
-};
+
+// src/apply-action-main.ts
+var env = process.env;
+var runnerTemp = env.RUNNER_TEMP;
+var outputFile = env.GITHUB_OUTPUT;
+var io = { env, mask: (value2) => process.stdout.write(`::add-mask::${value2}
+`), output: async (name, value2) => {
+  if (!outputFile) throw new TypeError("invalid action environment");
+  await appendFile(outputFile, `${name}=${value2}
+`, "utf8");
+}, error: (code) => process.stderr.write(`::error title=Yukh Projects controlled apply::${code}
+`) };
+try {
+  if (!runnerTemp) throw new TypeError("invalid action environment");
+  const scope = parseRuntimeScope({ owner: env.INPUT_OWNER, repository: env.INPUT_REPOSITORY, projectNumber: env["INPUT_PROJECT-NUMBER"], issueNumber: env["INPUT_ISSUE-NUMBER"] }), environment = env.INPUT_ENVIRONMENT, source = await readRunnerCapsule(runnerTemp, env["INPUT_HOST-CAPSULE-FILE"]), runtime = parseProtectedHostCapsule(source, { scope, environment }), raw = JSON.parse(source);
+  io.mask(String(raw.coordination.credential));
+  io.mask(String(raw.coordination.dpop_private_jwk.d));
+  const report = await applyActionMain(io, createControlledApplyHostFactory(runtime.options));
+  if (report.status !== "success") process.exitCode = 1;
+} catch {
+  io.error("YKP-APPLY-001");
+  process.exitCode = 1;
+}

@@ -34,7 +34,7 @@ jobs:
           npm audit --audit-level=moderate
           npm run verify:apply-candidate
           npm sbom --sbom-format spdx > "${RUNNER_TEMP}/controlled-apply.spdx.json"
-          sha256sum dist/apply/index.js dist/apply/manifest.json "${RUNNER_TEMP}/controlled-apply.spdx.json" > "${RUNNER_TEMP}/controlled-apply.sha256"
+          sha256sum dist/apply/index.js dist/apply/action.js dist/apply/cli.js dist/apply/manifest.json "${RUNNER_TEMP}/controlled-apply.spdx.json" > "${RUNNER_TEMP}/controlled-apply.sha256"
           test "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" = ""
           test "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" = ""
           test "$(jq -r .publication dist/apply/manifest.json)" = "disabled"

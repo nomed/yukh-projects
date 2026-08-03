@@ -6,6 +6,7 @@ export { verifySignedApproval } from "./apply-approval.js";
 export { bindApplyCoordination } from "./apply-coordination.js";
 export { createApplyCoordinationHttpStore } from "./apply-coordination-http.js";
 export { createControlledApplyHostFactory } from "./controlled-apply-host.js";
+export { parseProtectedHostCapsule } from "./protected-host-capsule.js";
 export { createGitHubRateLedger } from "./github-rate-ledger.js";
 export { createRestProjectSnapshotReader, snapshotInvalidationForMutation } from "./github-rest-snapshot.js";
 export { createGitHubMutationTransport } from "./github-mutation-transport.js";
