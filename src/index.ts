@@ -9,6 +9,7 @@ export * from "./github-transport.js";
 export * from "./executor.js";
 export * from "./apply-coordination.js";
 export * from "./apply-coordination-http.js";
+export * from "./controlled-apply-host.js";
 export * from "./apply-approval.js";
 export * from "./apply-runtime-input.js";
 export * from "./apply-entrypoint.js";

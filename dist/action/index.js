@@ -5222,7 +5222,7 @@ ${cb}` : comment;
       }
       /** Advance the composer by one CST token. */
       *next(token) {
-        if (node_process.env.LOG_STREAM)
+        if (false)
           console.dir(token, { depth: null });
         switch (token.type) {
           case "directive":
@@ -6473,7 +6473,7 @@ var require_parser = __commonJS({
        */
       *next(source) {
         this.source = source;
-        if (node_process.env.LOG_TOKENS)
+        if (false)
           console.log("|", cst.prettyToken(source));
         if (this.atScalar) {
           this.atScalar = false;
@@ -7639,7 +7639,8 @@ function fieldOptions(field) {
   if (!Array.isArray(field.options)) return [];
   return field.options.map((option) => {
     if (!rec(option)) throw new GitHubTransportError("YKP-REST-001");
-    return { id: text(option.id), name: rawName(option.name) };
+    const colors = ["GRAY", "BLUE", "GREEN", "YELLOW", "ORANGE", "RED", "PINK", "PURPLE"], color = typeof option.color === "string" && colors.includes(option.color) ? option.color : void 0, description = typeof option.description === "string" && [...option.description].length <= 256 && !/[\u0000-\u001f\u007f]/u.test(option.description) ? option.description : void 0;
+    return { id: text(option.id), name: rawName(option.name), ...color ? { color } : {}, ...description !== void 0 ? { description } : {} };
   }).sort((a, b) => a.id.localeCompare(b.id));
 }
 function itemValues(item) {
@@ -7707,10 +7708,7 @@ function createRestProjectSnapshotReader(options) {
   const client = new RestSnapshotClient(options);
   return { read: (input2) => readWithClient(input2, options, client), invalidate: (input2, effect) => client.invalidate(input2, effect) };
 }
-async function readRestProjectSnapshot(input2, options) {
-  return createRestProjectSnapshotReader(options).read(input2);
-}
-function createGitHubRestSnapshotReadTransport(options) {
+function createGitHubRestSnapshotReadTransportFromReader(reader) {
   let snapshotPromise;
   let bound;
   return { execute: async (operation, variables) => {
@@ -7718,7 +7716,7 @@ function createGitHubRestSnapshotReadTransport(options) {
     const key = `${ownerLogin}/${repositoryName}/${projectNumber}/${issueNumber2}`;
     if (bound && bound !== key) throw new GitHubTransportError("YKP-SNAPSHOT-001");
     bound = key;
-    snapshotPromise ??= readRestProjectSnapshot({ ownerLogin, repositoryName, projectNumber, issueNumbers: [issueNumber2] }, options);
+    snapshotPromise ??= reader.read({ ownerLogin, repositoryName, projectNumber, issueNumbers: [issueNumber2] });
     const snapshot = await snapshotPromise, issue = snapshot.issues.get(issueNumber2);
     if (!issue) throw new GitHubTransportError("YKP-SNAPSHOT-001");
     let data;
@@ -7731,6 +7729,9 @@ function createGitHubRestSnapshotReadTransport(options) {
     }
     return { byteCount: Buffer.byteLength(JSON.stringify(data)), data };
   } };
+}
+function createGitHubRestSnapshotReadTransport(options) {
+  return createGitHubRestSnapshotReadTransportFromReader(createRestProjectSnapshotReader(options));
 }
 
 // src/issue-contract.ts
@@ -8629,7 +8630,7 @@ function fail(failureClass, codes) {
 function readClass(code) {
   return code === "YKP-GH-READ-002" ? "authentication" : code === "YKP-GH-READ-003" ? "authorization" : code === "YKP-RATE-001" ? "deferred" : code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" || code === "YKP-CACHE-001" ? "invariant" : "provider";
 }
-async function runDryRun(input2) {
+async function prepareReconciliation(input2) {
   const policy = parseRepositoryPolicy(input2.policySource);
   if (!policy.policy) return fail("input", policy.diagnostics.map((d) => d.code));
   const read = await readGitHubObservation(input2.scope, input2.transport);
@@ -8646,7 +8647,11 @@ async function runDryRun(input2) {
   }
   const item = { values, fingerprint: read.observation.item.fingerprint };
   const plan = planReconciliation({ scope: read.observation.scope, contract: contract.contract, policy: policy.policy, schema, observedItem: item, relationships: read.observation.relationships });
-  return { status: "success", report: renderPublicReport(plan) };
+  return { status: "success", plan, observation: read.observation, policy: policy.policy, schema };
+}
+async function runDryRun(input2) {
+  const prepared = await prepareReconciliation(input2);
+  return prepared.status === "success" ? { status: "success", report: renderPublicReport(prepared.plan) } : prepared;
 }
 
 // src/runtime-input.ts

@@ -28,7 +28,7 @@ export interface RestSnapshotOptions {
 export interface RestSnapshotEvidence { restRequests:number;graphqlRequests:number;restCacheHits:number;conditionalRequests:number;coalescedRequests:number }
 export interface RestProjectSnapshot {
  subjectRef:string;ownerLogin:string;repositoryName:string;projectNumber:number;repositoryRef:string;projectRef:string;
- fields:readonly {id:string;name:string;kind:"text"|"number"|"date"|"single_select"|"iteration";options:readonly {id:string;name:string}[]}[];
+ fields:readonly {id:string;name:string;kind:"text"|"number"|"date"|"single_select"|"iteration";options:readonly {id:string;name:string;color?:"GRAY"|"BLUE"|"GREEN"|"YELLOW"|"ORANGE"|"RED"|"PINK"|"PURPLE";description?:string}[]}[];
  issues:ReadonlyMap<number,{issueRef:string;issueDatabaseId:number;body:string;itemRef:string;fingerprint:string;values:Readonly<Record<string,string|number|null>>;issueType?:string;labels:readonly string[];milestone?:string;issueFields:Readonly<Record<string,string|number>>;parent?:number;blockedBy:readonly number[];blocking:readonly number[];relationshipsComplete:boolean}>;
  evidence:RestSnapshotEvidence;
 }
@@ -66,7 +66,7 @@ class RestSnapshotClient {
 }
 
 function subject(token:string):string{return`github-token:${createHash("sha256").update(token).digest("hex")}`;}
-function fieldOptions(field:JsonRecord):{id:string;name:string}[]{if(!Array.isArray(field.options))return[];return field.options.map(option=>{if(!rec(option))throw new GitHubTransportError("YKP-REST-001");return{id:text(option.id),name:rawName(option.name)};}).sort((a,b)=>a.id.localeCompare(b.id));}
+function fieldOptions(field:JsonRecord):{id:string;name:string;color?:"GRAY"|"BLUE"|"GREEN"|"YELLOW"|"ORANGE"|"RED"|"PINK"|"PURPLE";description?:string}[]{if(!Array.isArray(field.options))return[];return field.options.map(option=>{if(!rec(option))throw new GitHubTransportError("YKP-REST-001");const colors=["GRAY","BLUE","GREEN","YELLOW","ORANGE","RED","PINK","PURPLE"] as const,color=typeof option.color==="string"&&colors.includes(option.color as typeof colors[number])?option.color as typeof colors[number]:undefined,description=typeof option.description==="string"&&[...option.description].length<=256&&!/[\u0000-\u001f\u007f]/u.test(option.description)?option.description:undefined;return{id:text(option.id),name:rawName(option.name),...(color?{color}:{}),...(description!==undefined?{description}:{})};}).sort((a,b)=>a.id.localeCompare(b.id));}
 function itemValues(item:JsonRecord):Record<string,string|number|null>{const out:Record<string,string|number|null>={};for(const field of array(item.fields??[])){const name=text(field.name,128);if(Object.hasOwn(out,name))throw new GitHubTransportError("YKP-REST-001");out[name]=value(field.value);}return out;}
 function nativeIssueFields(content:JsonRecord):Record<string,string|number>{const out:Record<string,string|number>={};if(!Array.isArray(content.issue_field_values))return out;for(const entry of content.issue_field_values){if(!rec(entry)||typeof entry.issue_field_name!=="string")throw new GitHubTransportError("YKP-REST-001");const observed=entry.single_select_option;if(rec(observed)&&typeof observed.name==="string")out[entry.issue_field_name]=observed.name;else if(typeof entry.value==="string"||typeof entry.value==="number")out[entry.issue_field_name]=entry.value;}return out;}
 
@@ -84,7 +84,7 @@ async function readWithClient(input:SnapshotInput,options:RestSnapshotOptions,cl
 export function createRestProjectSnapshotReader(options:RestSnapshotOptions):RestProjectSnapshotReader{const client=new RestSnapshotClient(options);return{read:input=>readWithClient(input,options,client),invalidate:(input,effect)=>client.invalidate(input,effect)};}
 export async function readRestProjectSnapshot(input:SnapshotInput,options:RestSnapshotOptions):Promise<RestProjectSnapshot>{return createRestProjectSnapshotReader(options).read(input);}
 
-export function createGitHubRestSnapshotReadTransport(options:RestSnapshotOptions):ReadOnlyTransport{
+export function createGitHubRestSnapshotReadTransportFromReader(reader:RestProjectSnapshotReader):ReadOnlyTransport{
  let snapshotPromise:Promise<RestProjectSnapshot>|undefined;
  let bound:string|undefined;
  return {execute:async(operation:AllowedReadOperation,variables:Readonly<Record<string,unknown>>):Promise<ReadEnvelope>=>{
@@ -92,7 +92,7 @@ export function createGitHubRestSnapshotReadTransport(options:RestSnapshotOption
   const key=`${ownerLogin}/${repositoryName}/${projectNumber}/${issueNumber}`;
   if(bound&&bound!==key)throw new GitHubTransportError("YKP-SNAPSHOT-001");
   bound=key;
-  snapshotPromise??=readRestProjectSnapshot({ownerLogin,repositoryName,projectNumber,issueNumbers:[issueNumber]},options);
+  snapshotPromise??=reader.read({ownerLogin,repositoryName,projectNumber,issueNumbers:[issueNumber]});
   const snapshot=await snapshotPromise,issue=snapshot.issues.get(issueNumber);
   if(!issue)throw new GitHubTransportError("YKP-SNAPSHOT-001");
   let data:unknown;
@@ -106,3 +106,4 @@ export function createGitHubRestSnapshotReadTransport(options:RestSnapshotOption
   return{byteCount:Buffer.byteLength(JSON.stringify(data)),data};
  }};
 }
+export function createGitHubRestSnapshotReadTransport(options:RestSnapshotOptions):ReadOnlyTransport{return createGitHubRestSnapshotReadTransportFromReader(createRestProjectSnapshotReader(options));}
