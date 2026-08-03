@@ -1,6 +1,7 @@
 # Aggregate manifest migration planner v1 — proposed specification
 
-- **Status:** Proposed
+- **Status:** Accepted
+- **Accepted:** 2026-08-03 by `@nomed`
 - **Governing issue:** [#68](https://github.com/nomed/yukh-projects/issues/68)
 - **Security boundary:** untrusted aggregate planning data to inert candidate issue contracts
 
