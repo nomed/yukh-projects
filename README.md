@@ -40,6 +40,7 @@ This repository currently contains the public project foundation. Functional cod
 - [Legacy yukh v0.8 shadow migration](docs/migration/legacy-v0.8-shadow.md)
 - [Accepted GitHub issue-contract source v1](docs/contracts/github-issue-contract-source-v1.md)
 - [Accepted controlled mutations v1](docs/contracts/controlled-mutations-v1.md)
+- [Proposed controlled apply entrypoint v1](docs/contracts/controlled-apply-entrypoint-v1.md)
 - [Accepted GitHub mutation transport v1](docs/contracts/github-mutation-transport-v1.md)
 - [Accepted Action, CLI, and protected release v1](docs/contracts/action-cli-release-v1.md)
 - [Release operations](docs/release-operations.md)
