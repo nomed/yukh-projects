@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/nomed/yukh-projects/compare/yukh-projects-v1.2.0...yukh-projects-v1.3.0) (2026-08-03)
+
+
+### Features
+
+* implement controlled apply entrypoints ([#74](https://github.com/nomed/yukh-projects/issues/74)) ([8e8c7db](https://github.com/nomed/yukh-projects/commit/8e8c7db31ef5d26fe2642ce2f1360bf3ed4674f9))
+
+
+### Bug Fixes
+
+* align Release Please with v1.2.0 provenance ([#80](https://github.com/nomed/yukh-projects/issues/80)) ([4c04fd1](https://github.com/nomed/yukh-projects/commit/4c04fd1191b4a4b16df53835a20c1e7ff02affcb))
+
 ## [1.2.0](https://github.com/nomed/yukh-projects/compare/yukh-projects-v1.1.0...yukh-projects-v1.2.0) (2026-08-03)
 
 
