@@ -32,7 +32,8 @@ get() {
 }
 
 list() {
-  gh api --cache "$cache_ttl" --paginate --slurp -H "X-GitHub-Api-Version: $api_version" "$1"
+  gh api --cache "$cache_ttl" --paginate -H "X-GitHub-Api-Version: $api_version" "$1" |
+    jq -s 'if length == 1 and (.[0] | type) == "array" then .[0] else add end'
 }
 
 command_name=${1:-}
