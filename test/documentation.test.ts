@@ -15,6 +15,13 @@ test("the public site follows the task-first documentation structure", async () 
   assert.match(home, /not production-ready/);
 });
 
+test("the site uses the black header and canonical component mark", async () => {
+  const config = await read("mkdocs.yml");
+
+  assert.equal((config.match(/primary: black/g) ?? []).length, 2);
+  assert.match(config, /logo: assets\/repository-mark\.svg/);
+});
+
 test("repository-only migration records cannot enter the public build", async () => {
   const config = await read("mkdocs.yml");
 
