@@ -1,7 +1,8 @@
-# Controlled apply entrypoint v1 — proposed specification
+# Controlled apply entrypoint v1 — accepted specification
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Proposed:** 2026-08-03
+- **Accepted:** 2026-08-03 by `@nomed`
 - **Governing issue:** [#56](https://github.com/nomed/yukh-projects/issues/56)
 - **Read-only baseline:** `v1.2.0` at `2fc81c48b678428937209326bececcf52354aaf1`
 - **Security boundary:** explicit operator request and authenticated approval to one bounded, freshly verified mutation run
@@ -73,6 +74,15 @@ After invalidating affected observations it performs a final complete snapshot.
 Success requires zero planned operations and zero diagnostics. An already
 converged operation sends no mutation. A second apply needs a new dry-run,
 approval and nonce and must send zero mutations; this is the idempotency proof.
+
+The run reuses the one immutable REST-first Project snapshot for schema and
+unaffected state. It never rereads Project schema once per issue or once per
+operation. After a successful mutation it invalidates only the affected resource
+group, performs the minimum targeted verification read, and performs one bounded
+final convergence snapshot. Before every request the shared ledger proves the
+declared REST or GraphQL reserve will remain intact. Budget exhaustion returns a
+stable deferred result before network access. No polling, sleep, hidden retry,
+per-issue full-Project fallback, or credential switching is permitted.
 
 ## Permissions, failure and redaction
 
