@@ -13,6 +13,32 @@ Replace issue-at-a-time GraphQL discovery with a bounded REST-first snapshot. A 
 
 This contract authorizes no mutation. Existing v1 GraphQL transports remain rollback-only until a separately reviewed implementation and immutable release qualify v2.
 
+## Legacy consumer compatibility profile
+
+The rate-safe preview must be able to shadow an existing version-1 consumer
+without first rewriting its governed backlog. Compatibility is behavior-led and
+uses only synthetic fixtures; no legacy source or adopter content is imported.
+
+The accepted read and planning surface includes:
+
+- version-1 repository policy documents with `contract.marker: yukh`;
+- the hidden `<!-- yukh ... -->` issue envelope and its declared extensions;
+- managed issue type and managed labels;
+- native milestone;
+- Project fields and single-select, number and date values;
+- native parent/sub-issue and dependency/blocking relationships;
+- policies that deliberately omit `Status`, preserving the observed human-owned
+  Project value without proposing a write;
+- one-issue automatic reconciliation planning and complete-backlog audit planning;
+- a compatibility report that classifies every legacy capability as `supported`,
+  `changed` or `missing` without containing adopter identity.
+
+The preview remains dry-run only. `full apply`, mutation verification and the
+mandatory second zero-operation apply are contract requirements for the later
+controlled-apply release, not capabilities of this snapshot release. Until those
+gates are complete the project must describe itself as shadow-dry-run compatible,
+never apply compatible.
+
 ## Runtime model
 
 A reconciliation run has one `RunScope`:
@@ -166,4 +192,8 @@ Rollback pins the last immutable v1 release and disables v2; tags are never move
 - pagination, duplicate, truncation and mixed-anchor rejection;
 - user-token and installation-token capability matrix;
 - v1/v2 plan-equivalence fixtures;
+- synthetic legacy policy and issue-envelope compatibility fixtures covering
+  issue type, labels, milestone, fields, parent and dependencies;
+- preservation evidence for an observed Project-owned status field;
+- one-issue and complete-backlog shadow planning with comparable legacy/v2 output;
 - redaction, neutrality, permission, dependency and bundle-rebuild evidence.
