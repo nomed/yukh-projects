@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { LEGACY_COMPATIBILITY_MATRIX, runLegacyShadowAudit } from "../src/legacy-shadow.js";
+import { LEGACY_COMPATIBILITY_MATRIX, runLegacyShadow, runLegacyShadowAudit } from "../src/legacy-shadow.js";
 import type { RestProjectSnapshot } from "../src/github-rest-snapshot.js";
 
 const policy=`version: 1
@@ -47,3 +47,5 @@ test("legacy shadow reports bounded drift using stable operation classes",()=>{c
 test("legacy shadow defers native dependencies when GraphQL is exhausted and REST is incomplete",()=>{const report=runLegacyShadowAudit(policy,snapshot({},false));assert.equal(report.status,"deferred");assert.equal(report.issues[0]?.status,"deferred");assert.equal(report.issues[0]?.diagnostics[0]?.code,"YKP-RATE-001");});
 
 test("compatibility matrix does not claim apply compatibility",()=>{assert.equal(LEGACY_COMPATIBILITY_MATRIX.find(entry=>entry.capability.startsWith("full apply"))?.state,"Missing");assert.equal(LEGACY_COMPATIBILITY_MATRIX.find(entry=>entry.capability==="Project-owned Status")?.state,"Supported");});
+test("legacy Action adapter fixes one issue and forces GraphQL remaining zero",async()=>{let reads=0;const report=await runLegacyShadow({ownerLogin:"example",repositoryName:"atlas",projectNumber:17,issueNumbers:[42],policySource:policy,token:"synthetic-token"},async(input,options)=>{reads++;assert.deepEqual(input.issueNumbers,[42]);assert.equal(options.graphqlRemaining,0);return snapshot();});assert.equal(report.status,"success");assert.equal(reads,1);assert.equal(report.evidence.graphqlRequests,0);});
+test("legacy Action adapter rejects invalid policy before provider access",async()=>{let reads=0;const report=await runLegacyShadow({ownerLogin:"example",repositoryName:"atlas",projectNumber:17,issueNumbers:[42],policySource:"version: 2",token:"synthetic-token"},async()=>{reads++;return snapshot();});assert.equal(report.status,"error");assert.equal(report.failureClass,"invariant");assert.equal(report.diagnostics[0]?.code,"YKP-LEGACY-001");assert.equal(reads,0);assert.equal(report.evidence.restRequests,0);assert.equal(report.evidence.graphqlRequests,0);});

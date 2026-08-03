@@ -8801,6 +8801,21 @@ function runLegacyShadowAudit(policySource, snapshot) {
   }
   return { schema: 1, status: failed ? "error" : deferred ? "deferred" : "success", ...failed ? { failureClass: "invariant" } : deferred ? { failureClass: "deferred" } : {}, diagnostics: [], issues: reports, totals, capabilities: LEGACY_COMPATIBILITY_MATRIX, evidence: snapshot.evidence };
 }
+var EMPTY_EVIDENCE = { restRequests: 0, graphqlRequests: 0, restCacheHits: 0, conditionalRequests: 0, coalescedRequests: 0 };
+async function runLegacyShadow(input, reader = readRestProjectSnapshot) {
+  try {
+    parseLegacyPolicy(input.policySource);
+  } catch {
+    return { schema: 1, status: "error", failureClass: "invariant", diagnostics: [{ code: "YKP-LEGACY-001", message: "legacy policy is invalid" }], issues: [], totals: {}, capabilities: LEGACY_COMPATIBILITY_MATRIX, evidence: EMPTY_EVIDENCE };
+  }
+  try {
+    const snapshot = await reader({ ownerLogin: input.ownerLogin, repositoryName: input.repositoryName, projectNumber: input.projectNumber, issueNumbers: input.issueNumbers }, { token: input.token, graphqlRemaining: 0 });
+    return runLegacyShadowAudit(input.policySource, snapshot);
+  } catch (error) {
+    const code = error instanceof GitHubTransportError ? error.code : "YKP-GH-READ-004", failureClass = code === "YKP-GH-READ-002" ? "authentication" : code === "YKP-GH-READ-003" ? "authorization" : code === "YKP-RATE-001" ? "deferred" : code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" || code === "YKP-CACHE-001" ? "invariant" : "provider";
+    return { schema: 1, status: failureClass === "deferred" ? "deferred" : "error", failureClass, diagnostics: [{ code, message: "snapshot acquisition failed" }], issues: [], totals: {}, capabilities: LEGACY_COMPATIBILITY_MATRIX, evidence: EMPTY_EVIDENCE };
+  }
+}
 
 // src/runtime-input.ts
 import { lstat, open, readFile, realpath } from "node:fs/promises";
@@ -8898,15 +8913,7 @@ async function cliMain(argv, stdin, workspace, write) {
     return 2;
   }
   if (options.legacyShadow) {
-    let result2;
-    try {
-      const projectNumber = Number(options.projectNumber), issueNumbers = options.issueNumbers ?? [Number(options.issueNumber)];
-      const snapshot = await readRestProjectSnapshot({ ownerLogin: options.owner, repositoryName: options.repository, projectNumber, issueNumbers }, { token, graphqlRemaining: 0 });
-      result2 = runLegacyShadowAudit(policySource, snapshot);
-    } catch (error) {
-      const code = error instanceof GitHubTransportError ? error.code : "YKP-GH-READ-004", failureClass = code === "YKP-GH-READ-002" ? "authentication" : code === "YKP-GH-READ-003" ? "authorization" : code === "YKP-RATE-001" ? "deferred" : code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" || code === "YKP-CACHE-001" ? "invariant" : "provider";
-      result2 = { schema: 1, status: failureClass === "deferred" ? "deferred" : "error", failureClass, diagnostics: [{ code, message: "snapshot acquisition failed" }], issues: [], totals: {}, capabilities: [], evidence: { restRequests: 0, graphqlRequests: 0, restCacheHits: 0, conditionalRequests: 0, coalescedRequests: 0 } };
-    }
+    const result2 = await runLegacyShadow({ ownerLogin: options.owner, repositoryName: options.repository, projectNumber: Number(options.projectNumber), issueNumbers: options.issueNumbers ?? [Number(options.issueNumber)], policySource, token });
     const rendered2 = `${JSON.stringify(result2)}
 `;
     try {
