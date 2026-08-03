@@ -1,6 +1,7 @@
 # GitHub issue-contract source v1 — proposed specification
 
-- **Status:** Proposed
+- **Status:** Accepted
+- **Accepted:** 2026-08-03 by `@nomed`
 - **Proposed:** 2026-08-03
 - **Governing issue:** [#35](https://github.com/nomed/yukh-projects/issues/35)
 - **Extends:** [GitHub read-only adapter v1](github-read-only-adapter-v1.md)

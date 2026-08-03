@@ -1,6 +1,7 @@
 # Action, CLI, and protected release v1 — proposed specification
 
-- **Status:** Proposed
+- **Status:** Accepted
+- **Accepted:** 2026-08-03 by `@nomed`
 - **Proposed:** 2026-08-02
 - **Governing issues:** [#32](https://github.com/nomed/yukh-projects/issues/32), [#5](https://github.com/nomed/yukh-projects/issues/5)
 - **Security boundaries:** untrusted workflow/CLI input to dry-run orchestration; reviewed source commit to public release artifacts
