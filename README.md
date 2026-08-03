@@ -1,4 +1,10 @@
-# Yukh Projects
+<p align="center">
+  <a href="https://nomed.github.io/system/projects/"><img src="docs/assets/repository-mark.svg" width="96" alt="Yukh Projects"></a>
+</p>
+
+<h1 align="center">Yukh Projects</h1>
+
+<p align="center"><a href="https://nomed.github.io/system/projects/">Role in the Yukh system</a></p>
 
 Declarative, secure, and consumer-neutral reconciliation for GitHub Projects.
 
