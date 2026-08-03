@@ -218,10 +218,10 @@ function canonical(value: unknown): string {
 }
 function digest(value: unknown): string { return createHash("sha256").update(canonical(value), "utf8").digest("hex"); }
 function renderContract(mapped: Record<string, unknown>, relations: { parent?: number; blocked_by?: number[] }): string {
-  const lines = ["<!-- yukh:issue:v1", "schema: 1", `work_type: ${mapped.work_type}`, `area: ${mapped.area}`];
-  for (const key of ["priority", "size", "estimate"] as const) if (mapped[key] !== undefined) lines.push(`${key}: ${mapped[key]}`);
+  const lines = ["<!-- yukh:issue:v1", "schema: 1", `work_type: ${mapped.work_type}`, `area: ${JSON.stringify(mapped.area)}`];
+  for (const key of ["priority", "size", "estimate"] as const) if (mapped[key] !== undefined) lines.push(`${key}: ${typeof mapped[key] === "number" ? mapped[key] : JSON.stringify(mapped[key])}`);
   if (mapped.start_date !== undefined || mapped.target_date !== undefined) {
-    lines.push("project:"); if (mapped.start_date !== undefined) lines.push(`  start_date: ${mapped.start_date}`); if (mapped.target_date !== undefined) lines.push(`  target_date: ${mapped.target_date}`);
+    lines.push("project:"); if (mapped.start_date !== undefined) lines.push(`  start_date: ${JSON.stringify(mapped.start_date)}`); if (mapped.target_date !== undefined) lines.push(`  target_date: ${JSON.stringify(mapped.target_date)}`);
   }
   if (relations.parent !== undefined || (relations.blocked_by?.length ?? 0) > 0) {
     lines.push("relationships:"); if (relations.parent !== undefined) lines.push(`  parent: ${relations.parent}`); if (relations.blocked_by?.length) lines.push(`  blocked_by: [${relations.blocked_by.join(", ")}]`);

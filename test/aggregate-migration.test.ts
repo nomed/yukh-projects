@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { planAggregateManifestMigration } from "../src/aggregate-migration.js";
+import { parseIssueContract } from "../src/issue-contract.js";
 
 const manifest = `schema: 1
 programs:
@@ -52,6 +53,15 @@ test("produces deterministic issue-number ordered inert candidates", () => {
   assert.match(first.candidates[1]!.contract!, /blocked_by: \[101\]/);
   assert.match(first.outputDigest!, /^[0-9a-f]{64}$/u);
   assert.doesNotMatch(JSON.stringify(first), /apply|credential|https?:/iu);
+  for (const candidate of first.candidates) assert.deepEqual(parseIssueContract(candidate.contract!, { issueNumber: candidate.issueNumber }).diagnostics, []);
+});
+
+test("quotes YAML-significant mapped values without changing contract meaning", () => {
+  const significant = mapping.replace("runtime: runtime", "runtime: 'value: # inert'");
+  const result = planAggregateManifestMigration(manifest, significant);
+  const parsed = parseIssueContract(result.candidates[0]!.contract!);
+  assert.equal(parsed.contract?.area, "value: # inert");
+  assert.deepEqual(parsed.diagnostics, []);
 });
 
 test("does not turn a gate into readiness or a relationship", () => {
