@@ -9292,8 +9292,8 @@ async function readWithClient(input3, options, client) {
   if (!rec3(project) || integer(project.number) !== input3.projectNumber) throw new GitHubTransportError("YKP-SNAPSHOT-001");
   const projectRef = text3(project.node_id);
   const fieldsPage = await client.list(`/${ownerKind}/${input3.ownerLogin}/projectsV2/${input3.projectNumber}/fields?per_page=100`);
-  const fields = fieldsPage.nodes.filter((f) => ["text", "number", "date", "single_select", "iteration"].includes(String(f.data_type))).map((f) => ({ id: String(integer(f.id)), name: text3(f.name, 128), kind: kind(f.data_type), options: fieldOptions(f) }));
-  const fieldSelector = fields.map((f) => f.id).join(",");
+  const fields = fieldsPage.nodes.filter((f) => ["text", "number", "date", "single_select", "iteration"].includes(String(f.data_type))).map((f) => ({ id: text3(f.node_id), name: text3(f.name, 128), kind: kind(f.data_type), options: fieldOptions(f) }));
+  const fieldSelector = fieldsPage.nodes.map((f) => String(integer(f.id))).join(",");
   if (fieldSelector.length > 4096) throw new GitHubTransportError("YKP-GH-READ-005");
   const itemsPage = await client.list(`/${ownerKind}/${input3.ownerLogin}/projectsV2/${input3.projectNumber}/items?per_page=100${fieldSelector ? `&fields=${fieldSelector}` : ""}`);
   const wanted = new Set(numbers), selected = /* @__PURE__ */ new Map();
