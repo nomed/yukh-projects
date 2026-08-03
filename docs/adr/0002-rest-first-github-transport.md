@@ -1,7 +1,8 @@
 # ADR 0002: REST-first GitHub transport and GraphQL conservation
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-03
+- **Accepted:** 2026-08-03 by `@nomed`
 - **Governing issue:** [#59](https://github.com/nomed/yukh-projects/issues/59)
 
 ## Context
