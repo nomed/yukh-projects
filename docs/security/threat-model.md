@@ -93,6 +93,7 @@ Controls:
 - never retain or return raw bodies, headers, provider messages, query variables, cursors, or correlation IDs;
 - collapse unclassifiable errors to a static redaction failure;
 - keep public evidence synthetic and consumer-neutral.
+- retain a bounded issue body only inside the successful scope-bound observation and exclude it from fingerprints, reports, diagnostics, logs, audit, caches, and artifacts.
 
 ### Workflow and expression injection
 
