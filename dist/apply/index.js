@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -41,21 +40,21 @@ var require_identity = __commonJS({
     "use strict";
     var ALIAS = /* @__PURE__ */ Symbol.for("yaml.alias");
     var DOC = /* @__PURE__ */ Symbol.for("yaml.document");
-    var MAP = /* @__PURE__ */ Symbol.for("yaml.map");
+    var MAP2 = /* @__PURE__ */ Symbol.for("yaml.map");
     var PAIR = /* @__PURE__ */ Symbol.for("yaml.pair");
     var SCALAR = /* @__PURE__ */ Symbol.for("yaml.scalar");
     var SEQ = /* @__PURE__ */ Symbol.for("yaml.seq");
     var NODE_TYPE = /* @__PURE__ */ Symbol.for("yaml.node.type");
     var isAlias3 = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === ALIAS;
     var isDocument = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === DOC;
-    var isMap3 = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === MAP;
+    var isMap3 = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === MAP2;
     var isPair = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === PAIR;
     var isScalar3 = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === SCALAR;
     var isSeq3 = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === SEQ;
     function isCollection(node) {
       if (node && typeof node === "object")
         switch (node[NODE_TYPE]) {
-          case MAP:
+          case MAP2:
           case SEQ:
             return true;
         }
@@ -65,7 +64,7 @@ var require_identity = __commonJS({
       if (node && typeof node === "object")
         switch (node[NODE_TYPE]) {
           case ALIAS:
-          case MAP:
+          case MAP2:
           case SCALAR:
           case SEQ:
             return true;
@@ -75,7 +74,7 @@ var require_identity = __commonJS({
     var hasAnchor = (node) => (isScalar3(node) || isCollection(node)) && !!node.anchor;
     exports.ALIAS = ALIAS;
     exports.DOC = DOC;
-    exports.MAP = MAP;
+    exports.MAP = MAP2;
     exports.NODE_TYPE = NODE_TYPE;
     exports.PAIR = PAIR;
     exports.SCALAR = SCALAR;
@@ -1000,14 +999,14 @@ var require_foldFlowLines = __commonJS({
     var FOLD_FLOW = "flow";
     var FOLD_BLOCK = "block";
     var FOLD_QUOTED = "quoted";
-    function foldFlowLines(text3, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
+    function foldFlowLines(text5, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
       if (!lineWidth || lineWidth < 0)
-        return text3;
+        return text5;
       if (lineWidth < minContentWidth)
         minContentWidth = 0;
       const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
-      if (text3.length <= endStep)
-        return text3;
+      if (text5.length <= endStep)
+        return text5;
       const folds = [];
       const escapedFolds = {};
       let end = lineWidth - indent.length;
@@ -1024,14 +1023,14 @@ var require_foldFlowLines = __commonJS({
       let escStart = -1;
       let escEnd = -1;
       if (mode === FOLD_BLOCK) {
-        i = consumeMoreIndentedLines(text3, i, indent.length);
+        i = consumeMoreIndentedLines(text5, i, indent.length);
         if (i !== -1)
           end = i + endStep;
       }
-      for (let ch; ch = text3[i += 1]; ) {
+      for (let ch; ch = text5[i += 1]; ) {
         if (mode === FOLD_QUOTED && ch === "\\") {
           escStart = i;
-          switch (text3[i + 1]) {
+          switch (text5[i + 1]) {
             case "x":
               i += 3;
               break;
@@ -1048,12 +1047,12 @@ var require_foldFlowLines = __commonJS({
         }
         if (ch === "\n") {
           if (mode === FOLD_BLOCK)
-            i = consumeMoreIndentedLines(text3, i, indent.length);
+            i = consumeMoreIndentedLines(text5, i, indent.length);
           end = i + indent.length + endStep;
           split = void 0;
         } else {
           if (ch === " " && prev && prev !== " " && prev !== "\n" && prev !== "	") {
-            const next = text3[i + 1];
+            const next = text5[i + 1];
             if (next && next !== " " && next !== "\n" && next !== "	")
               split = i;
           }
@@ -1065,12 +1064,12 @@ var require_foldFlowLines = __commonJS({
             } else if (mode === FOLD_QUOTED) {
               while (prev === " " || prev === "	") {
                 prev = ch;
-                ch = text3[i += 1];
+                ch = text5[i += 1];
                 overflow = true;
               }
               const j = i > escEnd + 1 ? i - 2 : escStart - 1;
               if (escapedFolds[j])
-                return text3;
+                return text5;
               folds.push(j);
               escapedFolds[j] = true;
               end = j + endStep;
@@ -1085,39 +1084,39 @@ var require_foldFlowLines = __commonJS({
       if (overflow && onOverflow)
         onOverflow();
       if (folds.length === 0)
-        return text3;
+        return text5;
       if (onFold)
         onFold();
-      let res = text3.slice(0, folds[0]);
+      let res = text5.slice(0, folds[0]);
       for (let i2 = 0; i2 < folds.length; ++i2) {
         const fold = folds[i2];
-        const end2 = folds[i2 + 1] || text3.length;
+        const end2 = folds[i2 + 1] || text5.length;
         if (fold === 0)
           res = `
-${indent}${text3.slice(0, end2)}`;
+${indent}${text5.slice(0, end2)}`;
         else {
           if (mode === FOLD_QUOTED && escapedFolds[fold])
-            res += `${text3[fold]}\\`;
+            res += `${text5[fold]}\\`;
           res += `
-${indent}${text3.slice(fold + 1, end2)}`;
+${indent}${text5.slice(fold + 1, end2)}`;
         }
       }
       return res;
     }
-    function consumeMoreIndentedLines(text3, i, indent) {
+    function consumeMoreIndentedLines(text5, i, indent) {
       let end = i;
       let start = i + 1;
-      let ch = text3[start];
+      let ch = text5[start];
       while (ch === " " || ch === "	") {
         if (i < start + indent) {
-          ch = text3[++i];
+          ch = text5[++i];
         } else {
           do {
-            ch = text3[++i];
+            ch = text5[++i];
           } while (ch && ch !== "\n");
           end = i;
           start = i + 1;
-          ch = text3[start];
+          ch = text5[start];
         }
       }
       return end;
@@ -2315,7 +2314,7 @@ var require_string = __commonJS({
   "node_modules/yaml/dist/schema/common/string.js"(exports) {
     "use strict";
     var stringifyString = require_stringifyString();
-    var string2 = {
+    var string = {
       identify: (value2) => typeof value2 === "string",
       default: true,
       tag: "tag:yaml.org,2002:str",
@@ -2325,7 +2324,7 @@ var require_string = __commonJS({
         return stringifyString.stringifyString(item, ctx, onComment, onChompKeep);
       }
     };
-    exports.string = string2;
+    exports.string = string;
   }
 });
 
@@ -2496,14 +2495,14 @@ var require_schema = __commonJS({
     var map = require_map();
     var _null = require_null();
     var seq = require_seq();
-    var string2 = require_string();
+    var string = require_string();
     var bool = require_bool();
     var float = require_float();
     var int = require_int();
     var schema = [
       map.map,
       seq.seq,
-      string2.string,
+      string.string,
       _null.nullTag,
       bool.boolTag,
       int.intOct,
@@ -2701,12 +2700,12 @@ ${cn.comment}` : item.comment;
             } else
               throw new TypeError(`Expected [key, value] tuple: ${it}`);
           } else if (it && it instanceof Object) {
-            const keys = Object.keys(it);
-            if (keys.length === 1) {
-              key = keys[0];
+            const keys2 = Object.keys(it);
+            if (keys2.length === 1) {
+              key = keys2[0];
               value2 = it[key];
             } else {
-              throw new TypeError(`Expected tuple with one key, not ${keys.length} keys`);
+              throw new TypeError(`Expected tuple with one key, not ${keys2.length} keys`);
             }
           } else {
             key = it;
@@ -2894,8 +2893,8 @@ var require_int2 = __commonJS({
     var stringifyNumber = require_stringifyNumber();
     var intIdentify = (value2) => typeof value2 === "bigint" || Number.isInteger(value2);
     function intResolve(str, offset, radix, { intAsBigInt }) {
-      const sign = str[0];
-      if (sign === "-" || sign === "+")
+      const sign2 = str[0];
+      if (sign2 === "-" || sign2 === "+")
         offset += 1;
       str = str.substring(offset).replace(/_/g, "");
       if (intAsBigInt) {
@@ -2911,10 +2910,10 @@ var require_int2 = __commonJS({
             break;
         }
         const n2 = BigInt(str);
-        return sign === "-" ? BigInt(-1) * n2 : n2;
+        return sign2 === "-" ? BigInt(-1) * n2 : n2;
       }
       const n = parseInt(str, radix);
-      return sign === "-" ? -1 * n : n;
+      return sign2 === "-" ? -1 * n : n;
     }
     function intStringify(node, radix, prefix) {
       const { value: value2 } = node;
@@ -3061,11 +3060,11 @@ var require_timestamp = __commonJS({
     "use strict";
     var stringifyNumber = require_stringifyNumber();
     function parseSexagesimal(str, asBigInt) {
-      const sign = str[0];
-      const parts = sign === "-" || sign === "+" ? str.substring(1) : str;
+      const sign2 = str[0];
+      const parts = sign2 === "-" || sign2 === "+" ? str.substring(1) : str;
       const num = (n) => asBigInt ? BigInt(n) : Number(n);
       const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num(60) + num(p), num(0));
-      return sign === "-" ? num(-1) * res : res;
+      return sign2 === "-" ? num(-1) * res : res;
     }
     function stringifySexagesimal(node) {
       let { value: value2 } = node;
@@ -3074,9 +3073,9 @@ var require_timestamp = __commonJS({
         num = (n) => BigInt(n);
       else if (isNaN(value2) || !isFinite(value2))
         return stringifyNumber.stringifyNumber(node);
-      let sign = "";
+      let sign2 = "";
       if (value2 < 0) {
-        sign = "-";
+        sign2 = "-";
         value2 *= num(-1);
       }
       const _60 = num(60);
@@ -3091,7 +3090,7 @@ var require_timestamp = __commonJS({
           parts.unshift(value2);
         }
       }
-      return sign + parts.map((n) => String(n).padStart(2, "0")).join(":").replace(/000000\d*$/, "");
+      return sign2 + parts.map((n) => String(n).padStart(2, "0")).join(":").replace(/000000\d*$/, "");
     }
     var intTime = {
       identify: (value2) => typeof value2 === "bigint" || Number.isInteger(value2),
@@ -3150,7 +3149,7 @@ var require_schema3 = __commonJS({
     var map = require_map();
     var _null = require_null();
     var seq = require_seq();
-    var string2 = require_string();
+    var string = require_string();
     var binary = require_binary();
     var bool = require_bool2();
     var float = require_float2();
@@ -3163,7 +3162,7 @@ var require_schema3 = __commonJS({
     var schema = [
       map.map,
       seq.seq,
-      string2.string,
+      string.string,
       _null.nullTag,
       bool.trueTag,
       bool.falseTag,
@@ -3194,7 +3193,7 @@ var require_tags = __commonJS({
     var map = require_map();
     var _null = require_null();
     var seq = require_seq();
-    var string2 = require_string();
+    var string = require_string();
     var bool = require_bool();
     var float = require_float();
     var int = require_int();
@@ -3209,7 +3208,7 @@ var require_tags = __commonJS({
     var timestamp = require_timestamp();
     var schemas = /* @__PURE__ */ new Map([
       ["core", schema.schema],
-      ["failsafe", [map.map, seq.seq, string2.string]],
+      ["failsafe", [map.map, seq.seq, string.string]],
       ["json", schema$1.schema],
       ["yaml11", schema$2.schema],
       ["yaml-1.1", schema$2.schema]
@@ -3252,8 +3251,8 @@ var require_tags = __commonJS({
         if (Array.isArray(customTags))
           tags = [];
         else {
-          const keys = Array.from(schemas.keys()).filter((key) => key !== "yaml11").map((key) => JSON.stringify(key)).join(", ");
-          throw new Error(`Unknown schema "${schemaName}"; use one of ${keys} or define customTags array`);
+          const keys2 = Array.from(schemas.keys()).filter((key) => key !== "yaml11").map((key) => JSON.stringify(key)).join(", ");
+          throw new Error(`Unknown schema "${schemaName}"; use one of ${keys2} or define customTags array`);
         }
       }
       if (Array.isArray(customTags)) {
@@ -3268,8 +3267,8 @@ var require_tags = __commonJS({
         const tagObj = typeof tag === "string" ? tagsByName[tag] : tag;
         if (!tagObj) {
           const tagName = JSON.stringify(tag);
-          const keys = Object.keys(tagsByName).map((key) => JSON.stringify(key)).join(", ");
-          throw new Error(`Unknown custom tag ${tagName}; use one of ${keys}`);
+          const keys2 = Object.keys(tagsByName).map((key) => JSON.stringify(key)).join(", ");
+          throw new Error(`Unknown custom tag ${tagName}; use one of ${keys2}`);
         }
         if (!tags2.includes(tagObj))
           tags2.push(tagObj);
@@ -3288,7 +3287,7 @@ var require_Schema = __commonJS({
     var identity = require_identity();
     var map = require_map();
     var seq = require_seq();
-    var string2 = require_string();
+    var string = require_string();
     var tags = require_tags();
     var sortMapEntriesByKey = (a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
     var Schema = class _Schema {
@@ -3299,7 +3298,7 @@ var require_Schema = __commonJS({
         this.tags = tags.getTags(customTags, this.name, merge);
         this.toStringOptions = toStringDefaults ?? null;
         Object.defineProperty(this, identity.MAP, { value: map.map });
-        Object.defineProperty(this, identity.SCALAR, { value: string2.string });
+        Object.defineProperty(this, identity.SCALAR, { value: string.string });
         Object.defineProperty(this, identity.SEQ, { value: seq.seq });
         this.sortMapEntries = typeof sortMapEntries === "function" ? sortMapEntries : sortMapEntries === true ? sortMapEntriesByKey : null;
       }
@@ -3996,10 +3995,10 @@ var require_resolve_block_map = __commonJS({
       let offset = bm.offset;
       let commentEnd = null;
       for (const collItem of bm.items) {
-        const { start, key, sep: sep2, value: value2 } = collItem;
+        const { start, key, sep: sep3, value: value2 } = collItem;
         const keyProps = resolveProps.resolveProps(start, {
           indicator: "explicit-key-ind",
-          next: key ?? sep2?.[0],
+          next: key ?? sep3?.[0],
           offset,
           onError,
           parentIndent: bm.indent,
@@ -4013,7 +4012,7 @@ var require_resolve_block_map = __commonJS({
             else if ("indent" in key && key.indent !== bm.indent)
               onError(offset, "BAD_INDENT", startColMsg);
           }
-          if (!keyProps.anchor && !keyProps.tag && !sep2) {
+          if (!keyProps.anchor && !keyProps.tag && !sep3) {
             commentEnd = keyProps.end;
             if (keyProps.comment) {
               if (map.comment)
@@ -4037,7 +4036,7 @@ var require_resolve_block_map = __commonJS({
         ctx.atKey = false;
         if (utilMapIncludes.mapIncludes(ctx, map.items, keyNode))
           onError(keyStart, "DUPLICATE_KEY", "Map keys must be unique");
-        const valueProps = resolveProps.resolveProps(sep2 ?? [], {
+        const valueProps = resolveProps.resolveProps(sep3 ?? [], {
           indicator: "map-value-ind",
           next: value2,
           offset: keyNode.range[2],
@@ -4053,7 +4052,7 @@ var require_resolve_block_map = __commonJS({
             if (ctx.options.strict && keyProps.start < valueProps.found.offset - 1024)
               onError(keyNode.range, "KEY_OVER_1024_CHARS", "The : indicator must be at most 1024 chars after the start of an implicit block mapping key");
           }
-          const valueNode = value2 ? composeNode(ctx, value2, valueProps, onError) : composeEmptyNode(ctx, offset, sep2, null, valueProps, onError);
+          const valueNode = value2 ? composeNode(ctx, value2, valueProps, onError) : composeEmptyNode(ctx, offset, sep3, null, valueProps, onError);
           if (ctx.schema.compat)
             utilFlowIndentCheck.flowIndentCheck(bm.indent, value2, onError);
           offset = valueNode.range[2];
@@ -4144,7 +4143,7 @@ var require_resolve_end = __commonJS({
       let comment = "";
       if (end) {
         let hasSpace = false;
-        let sep2 = "";
+        let sep3 = "";
         for (const token of end) {
           const { source, type } = token;
           switch (type) {
@@ -4158,13 +4157,13 @@ var require_resolve_end = __commonJS({
               if (!comment)
                 comment = cb;
               else
-                comment += sep2 + cb;
-              sep2 = "";
+                comment += sep3 + cb;
+              sep3 = "";
               break;
             }
             case "newline":
               if (comment)
-                sep2 += source;
+                sep3 += source;
               hasSpace = true;
               break;
             default:
@@ -4207,18 +4206,18 @@ var require_resolve_flow_collection = __commonJS({
       let offset = fc.offset + fc.start.source.length;
       for (let i = 0; i < fc.items.length; ++i) {
         const collItem = fc.items[i];
-        const { start, key, sep: sep2, value: value2 } = collItem;
+        const { start, key, sep: sep3, value: value2 } = collItem;
         const props = resolveProps.resolveProps(start, {
           flow: fcName,
           indicator: "explicit-key-ind",
-          next: key ?? sep2?.[0],
+          next: key ?? sep3?.[0],
           offset,
           onError,
           parentIndent: fc.indent,
           startOnNewline: false
         });
         if (!props.found) {
-          if (!props.anchor && !props.tag && !sep2 && !value2) {
+          if (!props.anchor && !props.tag && !sep3 && !value2) {
             if (i === 0 && props.comma)
               onError(props.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
             else if (i < fc.items.length - 1)
@@ -4272,8 +4271,8 @@ var require_resolve_flow_collection = __commonJS({
             }
           }
         }
-        if (!isMap3 && !sep2 && !props.found) {
-          const valueNode = value2 ? composeNode(ctx, value2, props, onError) : composeEmptyNode(ctx, props.end, sep2, null, props, onError);
+        if (!isMap3 && !sep3 && !props.found) {
+          const valueNode = value2 ? composeNode(ctx, value2, props, onError) : composeEmptyNode(ctx, props.end, sep3, null, props, onError);
           coll.items.push(valueNode);
           offset = valueNode.range[2];
           if (isBlock(value2))
@@ -4285,7 +4284,7 @@ var require_resolve_flow_collection = __commonJS({
           if (isBlock(key))
             onError(keyNode.range, "BLOCK_IN_FLOW", blockMsg);
           ctx.atKey = false;
-          const valueProps = resolveProps.resolveProps(sep2 ?? [], {
+          const valueProps = resolveProps.resolveProps(sep3 ?? [], {
             flow: fcName,
             indicator: "map-value-ind",
             next: value2,
@@ -4296,8 +4295,8 @@ var require_resolve_flow_collection = __commonJS({
           });
           if (valueProps.found) {
             if (!isMap3 && !props.found && ctx.options.strict) {
-              if (sep2)
-                for (const st of sep2) {
+              if (sep3)
+                for (const st of sep3) {
                   if (st === valueProps.found)
                     break;
                   if (st.type === "newline") {
@@ -4314,7 +4313,7 @@ var require_resolve_flow_collection = __commonJS({
             else
               onError(valueProps.start, "MISSING_CHAR", `Missing , or : between ${fcName} items`);
           }
-          const valueNode = value2 ? composeNode(ctx, value2, valueProps, onError) : valueProps.found ? composeEmptyNode(ctx, valueProps.end, sep2, null, valueProps, onError) : null;
+          const valueNode = value2 ? composeNode(ctx, value2, valueProps, onError) : valueProps.found ? composeEmptyNode(ctx, valueProps.end, sep3, null, valueProps, onError) : null;
           if (valueNode) {
             if (isBlock(value2))
               onError(valueNode.range, "BLOCK_IN_FLOW", blockMsg);
@@ -4494,7 +4493,7 @@ var require_resolve_block_scalar = __commonJS({
           chompStart = i + 1;
       }
       let value2 = "";
-      let sep2 = "";
+      let sep3 = "";
       let prevMoreIndented = false;
       for (let i = 0; i < contentStart; ++i)
         value2 += lines[i][0].slice(trimIndent) + "\n";
@@ -4511,24 +4510,24 @@ var require_resolve_block_scalar = __commonJS({
           indent = "";
         }
         if (type === Scalar.Scalar.BLOCK_LITERAL) {
-          value2 += sep2 + indent.slice(trimIndent) + content;
-          sep2 = "\n";
+          value2 += sep3 + indent.slice(trimIndent) + content;
+          sep3 = "\n";
         } else if (indent.length > trimIndent || content[0] === "	") {
-          if (sep2 === " ")
-            sep2 = "\n";
-          else if (!prevMoreIndented && sep2 === "\n")
-            sep2 = "\n\n";
-          value2 += sep2 + indent.slice(trimIndent) + content;
-          sep2 = "\n";
+          if (sep3 === " ")
+            sep3 = "\n";
+          else if (!prevMoreIndented && sep3 === "\n")
+            sep3 = "\n\n";
+          value2 += sep3 + indent.slice(trimIndent) + content;
+          sep3 = "\n";
           prevMoreIndented = true;
         } else if (content === "") {
-          if (sep2 === "\n")
+          if (sep3 === "\n")
             value2 += "\n";
           else
-            sep2 = "\n";
+            sep3 = "\n";
         } else {
-          value2 += sep2 + content;
-          sep2 = " ";
+          value2 += sep3 + content;
+          sep3 = " ";
           prevMoreIndented = false;
         }
       }
@@ -4710,25 +4709,25 @@ var require_resolve_flow_scalar = __commonJS({
       if (!match)
         return source;
       let res = match[1];
-      let sep2 = " ";
+      let sep3 = " ";
       let pos = first.lastIndex;
       line.lastIndex = pos;
       while (match = line.exec(source)) {
         if (match[1] === "") {
-          if (sep2 === "\n")
-            res += sep2;
+          if (sep3 === "\n")
+            res += sep3;
           else
-            sep2 = "\n";
+            sep3 = "\n";
         } else {
-          res += sep2 + match[1];
-          sep2 = " ";
+          res += sep3 + match[1];
+          sep3 = " ";
         }
         pos = line.lastIndex;
       }
       const last = /[ \t]*(.*)/sy;
       last.lastIndex = pos;
       match = last.exec(source);
-      return res + sep2 + (match?.[1] ?? "");
+      return res + sep3 + (match?.[1] ?? "");
     }
     function doubleQuotedValue(source, onError) {
       let res = "";
@@ -5538,14 +5537,14 @@ var require_cst_stringify = __commonJS({
         }
       }
     }
-    function stringifyItem({ start, key, sep: sep2, value: value2 }) {
+    function stringifyItem({ start, key, sep: sep3, value: value2 }) {
       let res = "";
       for (const st of start)
         res += st.source;
       if (key)
         res += stringifyToken(key);
-      if (sep2)
-        for (const st of sep2)
+      if (sep3)
+        for (const st of sep3)
           res += st.source;
       if (value2)
         res += stringifyToken(value2);
@@ -5572,8 +5571,8 @@ var require_cst_visit = __commonJS({
     visit.REMOVE = REMOVE;
     visit.itemAtPath = (cst, path) => {
       let item = cst;
-      for (const [field, index] of path) {
-        const tok = item?.[field];
+      for (const [field2, index] of path) {
+        const tok = item?.[field2];
         if (tok && "items" in tok) {
           item = tok.items[index];
         } else
@@ -5583,8 +5582,8 @@ var require_cst_visit = __commonJS({
     };
     visit.parentCollection = (cst, path) => {
       const parent = visit.itemAtPath(cst, path.slice(0, -1));
-      const field = path[path.length - 1][0];
-      const coll = parent?.[field];
+      const field2 = path[path.length - 1][0];
+      const coll = parent?.[field2];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
@@ -5593,11 +5592,11 @@ var require_cst_visit = __commonJS({
       let ctrl = visitor(item, path);
       if (typeof ctrl === "symbol")
         return ctrl;
-      for (const field of ["key", "value"]) {
-        const token = item[field];
+      for (const field2 of ["key", "value"]) {
+        const token = item[field2];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path.concat([[field2, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -5607,7 +5606,7 @@ var require_cst_visit = __commonJS({
               i -= 1;
             }
           }
-          if (typeof ctrl === "function" && field === "key")
+          if (typeof ctrl === "function" && field2 === "key")
             ctrl = ctrl(item, path);
         }
       }
@@ -6346,15 +6345,15 @@ var require_parser = __commonJS({
     var node_process = __require("process");
     var cst = require_cst();
     var lexer = require_lexer();
-    function includesToken(list2, type) {
-      for (let i = 0; i < list2.length; ++i)
-        if (list2[i].type === type)
+    function includesToken(list, type) {
+      for (let i = 0; i < list.length; ++i)
+        if (list[i].type === type)
           return true;
       return false;
     }
-    function findNonEmptyIndex(list2) {
-      for (let i = 0; i < list2.length; ++i) {
-        switch (list2[i].type) {
+    function findNonEmptyIndex(list) {
+      for (let i = 0; i < list.length; ++i) {
+        switch (list[i].type) {
           case "space":
           case "comment":
           case "newline":
@@ -6712,18 +6711,18 @@ var require_parser = __commonJS({
         if (this.type === "map-value-ind") {
           const prev = getPrevProps(this.peek(2));
           const start = getFirstKeyStartProps(prev);
-          let sep2;
+          let sep3;
           if (scalar.end) {
-            sep2 = scalar.end;
-            sep2.push(this.sourceToken);
+            sep3 = scalar.end;
+            sep3.push(this.sourceToken);
             delete scalar.end;
           } else
-            sep2 = [this.sourceToken];
+            sep3 = [this.sourceToken];
           const map = {
             type: "block-map",
             offset: scalar.offset,
             indent: scalar.indent,
-            items: [{ start, key: scalar, sep: sep2 }]
+            items: [{ start, key: scalar, sep: sep3 }]
           };
           this.onKeyLine = true;
           this.stack[this.stack.length - 1] = map;
@@ -6876,15 +6875,15 @@ var require_parser = __commonJS({
                 } else if (isFlowToken(it.key) && !includesToken(it.sep, "newline")) {
                   const start2 = getFirstKeyStartProps(it.start);
                   const key = it.key;
-                  const sep2 = it.sep;
-                  sep2.push(this.sourceToken);
+                  const sep3 = it.sep;
+                  sep3.push(this.sourceToken);
                   delete it.key;
                   delete it.sep;
                   this.stack.push({
                     type: "block-map",
                     offset: this.offset,
                     indent: this.indent,
-                    items: [{ start: start2, key, sep: sep2 }]
+                    items: [{ start: start2, key, sep: sep3 }]
                   });
                 } else if (start.length > 0) {
                   it.sep = it.sep.concat(start, this.sourceToken);
@@ -7078,13 +7077,13 @@ var require_parser = __commonJS({
             const prev = getPrevProps(parent);
             const start = getFirstKeyStartProps(prev);
             fixFlowSeqItems(fc);
-            const sep2 = fc.end.splice(1, fc.end.length);
-            sep2.push(this.sourceToken);
+            const sep3 = fc.end.splice(1, fc.end.length);
+            sep3.push(this.sourceToken);
             const map = {
               type: "block-map",
               offset: fc.offset,
               indent: fc.indent,
-              items: [{ start, key: fc, sep: sep2 }]
+              items: [{ start, key: fc, sep: sep3 }]
             };
             this.onKeyLine = true;
             this.stack[this.stack.length - 1] = map;
@@ -7229,7 +7228,7 @@ var require_public_api = __commonJS({
       const lineCounter$1 = options.lineCounter || prettyErrors && new lineCounter.LineCounter() || null;
       return { lineCounter: lineCounter$1, prettyErrors };
     }
-    function parseAllDocuments4(source, options = {}) {
+    function parseAllDocuments3(source, options = {}) {
       const { lineCounter: lineCounter2, prettyErrors } = parseOptions(options);
       const parser$1 = new parser.Parser(lineCounter2?.addNewLine);
       const composer$1 = new composer.Composer(options);
@@ -7304,7 +7303,7 @@ var require_public_api = __commonJS({
       return new Document.Document(value2, _replacer, options).toString(options);
     }
     exports.parse = parse;
-    exports.parseAllDocuments = parseAllDocuments4;
+    exports.parseAllDocuments = parseAllDocuments3;
     exports.parseDocument = parseDocument;
     exports.stringify = stringify;
   }
@@ -7362,629 +7361,105 @@ var require_dist = __commonJS({
   }
 });
 
-// src/cli.ts
-import { pathToFileURL } from "node:url";
-
-// src/github-rest-snapshot.ts
-import { createHash } from "node:crypto";
-
-// src/github-transport.ts
-var DOCUMENTS = {
-  resolve_scope: `query YukhResolveScope($ownerLogin:String!,$repositoryName:String!,$projectNumber:Int!,$issueNumber:Int!){viewer{login}repository(owner:$ownerLogin,name:$repositoryName){id issue(number:$issueNumber){id number body projectItems(first:100){nodes{id project{id number}}pageInfo{hasNextPage}}}}repositoryOwner(login:$ownerLogin){... on User{projectV2(number:$projectNumber){id number}}... on Organization{projectV2(number:$projectNumber){id number}}}}`,
-  read_project_fields: `query YukhReadProjectFields($ownerLogin:String!,$projectNumber:Int!,$first:Int!,$cursor:String){repositoryOwner(login:$ownerLogin){... on User{projectV2(number:$projectNumber){id fields(first:$first,after:$cursor){nodes{... on ProjectV2Field{id name dataType}... on ProjectV2SingleSelectField{id name dataType options{id name}}... on ProjectV2IterationField{id name dataType configuration{iterations{id title}completedIterations{id title}}}}pageInfo{hasNextPage endCursor}}}}... on Organization{projectV2(number:$projectNumber){id fields(first:$first,after:$cursor){nodes{... on ProjectV2Field{id name dataType}... on ProjectV2SingleSelectField{id name dataType options{id name}}... on ProjectV2IterationField{id name dataType configuration{iterations{id title}completedIterations{id title}}}}pageInfo{hasNextPage endCursor}}}}}}`,
-  read_project_item: `query YukhReadProjectItem($ownerLogin:String!,$repositoryName:String!,$issueNumber:Int!,$first:Int!,$cursor:String){repository(owner:$ownerLogin,name:$repositoryName){issue(number:$issueNumber){id projectItems(first:100){nodes{id project{id number}fieldValues(first:$first,after:$cursor){nodes{... on ProjectV2ItemFieldTextValue{text field{... on ProjectV2FieldCommon{name}}}... on ProjectV2ItemFieldNumberValue{number field{... on ProjectV2FieldCommon{name}}}... on ProjectV2ItemFieldDateValue{date field{... on ProjectV2FieldCommon{name}}}... on ProjectV2ItemFieldSingleSelectValue{name field{... on ProjectV2FieldCommon{name}}}... on ProjectV2ItemFieldIterationValue{title field{... on ProjectV2FieldCommon{name}}}}pageInfo{hasNextPage endCursor}}}pageInfo{hasNextPage}}}}}`,
-  read_issue_relationships: `query YukhReadIssueRelationships($ownerLogin:String!,$repositoryName:String!,$issueNumber:Int!,$first:Int!,$cursor:String){repository(owner:$ownerLogin,name:$repositoryName){id issue(number:$issueNumber){id number parent{number repository{id}}subIssues(first:$first,after:$cursor){nodes{number repository{id}}pageInfo{hasNextPage endCursor}}blockedBy(first:$first,after:$cursor){nodes{number repository{id}}pageInfo{hasNextPage endCursor}}blocking(first:$first,after:$cursor){nodes{number repository{id}}pageInfo{hasNextPage endCursor}}}}}`
-};
-var GITHUB_READ_QUERY_DOCUMENTS = Object.freeze({ ...DOCUMENTS });
-var GitHubTransportError = class extends Error {
-  constructor(code) {
-    super("GitHub read transport failed");
-    this.code = code;
-    this.name = "GitHubTransportError";
-  }
-  code;
-};
-
-// src/github-rate-ledger.ts
-function finiteNonnegative(value2) {
-  return Number.isFinite(value2) && Number.isSafeInteger(value2) && value2 >= 0;
+// src/runtime-input.ts
+import { lstat, open, readFile, realpath } from "node:fs/promises";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+var OWNER = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/u;
+var REPOSITORY = /^[A-Za-z0-9_.-]{1,100}$/u;
+var DECIMAL = /^[1-9][0-9]{0,9}$/u;
+function parseRuntimeScope(input3) {
+  if (!OWNER.test(input3.owner) || !REPOSITORY.test(input3.repository) || input3.repository === "." || input3.repository === ".." || !DECIMAL.test(input3.projectNumber) || !DECIMAL.test(input3.issueNumber)) throw new TypeError("invalid runtime input");
+  const projectNumber = Number(input3.projectNumber), issueNumber2 = Number(input3.issueNumber);
+  if (projectNumber > 2147483647 || issueNumber2 > 2147483647) throw new TypeError("invalid runtime input");
+  return { ownerLogin: input3.owner, repositoryName: input3.repository, projectNumber, issueNumber: issueNumber2 };
 }
-function createGitHubRateLedger(options = {}) {
-  const restReserve = options.restReserve ?? 500, graphqlReserve = options.graphqlReserve ?? 500, maxRestRequests = options.maxRestRequests ?? 32, maxGraphqlRequests = options.maxGraphqlRequests ?? 1, maxGraphqlPoints = options.maxGraphqlPoints ?? 100;
-  if (![restReserve, graphqlReserve, maxRestRequests, maxGraphqlRequests, maxGraphqlPoints].every(finiteNonnegative) || restReserve < 500 || graphqlReserve < 500 || maxRestRequests > 64 || maxGraphqlRequests > 2 || maxGraphqlPoints > 500) throw new TypeError("invalid rate ledger options");
-  let restRemaining = options.restRemaining ?? Number.POSITIVE_INFINITY, graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY, restRequests = 0, graphqlRequests = 0, graphqlPoints = 0;
-  if (!(finiteNonnegative(restRemaining) || restRemaining === Number.POSITIVE_INFINITY) || !(finiteNonnegative(graphqlRemaining) || graphqlRemaining === Number.POSITIVE_INFINITY)) throw new TypeError("invalid provider rate state");
-  return {
-    reserve: (resource, cost = 1) => {
-      if (!finiteNonnegative(cost) || cost < 1) return false;
-      if (resource === "rest") {
-        if (restRequests >= maxRestRequests || restRemaining - cost < restReserve) return false;
-        restRequests++;
-        if (Number.isFinite(restRemaining)) restRemaining -= cost;
-        return true;
-      }
-      if (resource !== "graphql" || graphqlRequests >= maxGraphqlRequests || graphqlPoints + cost > maxGraphqlPoints || graphqlRemaining - cost < graphqlReserve) return false;
-      graphqlRequests++;
-      graphqlPoints += cost;
-      if (Number.isFinite(graphqlRemaining)) graphqlRemaining -= cost;
-      return true;
-    },
-    observe: (resource, remaining) => {
-      if (!finiteNonnegative(remaining)) return;
-      if (resource === "rest") restRemaining = Math.min(restRemaining, remaining);
-      else if (resource === "graphql") graphqlRemaining = Math.min(graphqlRemaining, remaining);
-    },
-    snapshot: () => ({ restRequests, graphqlRequests, graphqlPoints, restRemaining, graphqlRemaining })
-  };
+async function loadWorkspacePolicy(workspace, policyPath = ".yukh/project.yaml") {
+  if (!policyPath || isAbsolute(policyPath) || policyPath.split(/[\\/]/u).includes("..") || /[\u0000-\u001f\u007f]/u.test(policyPath)) throw new TypeError("invalid policy path");
+  const root = await realpath(workspace), candidate = resolve(root, policyPath), resolved = await realpath(candidate);
+  const rel = relative(root, resolved);
+  if (rel === "" || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new TypeError("invalid policy path");
+  const metadata = await lstat(candidate);
+  if (metadata.isSymbolicLink() || !metadata.isFile() || metadata.size > 64 * 1024) throw new TypeError("invalid policy file");
+  const source = await readFile(resolved, "utf8");
+  if (Buffer.byteLength(source, "utf8") > 64 * 1024) throw new TypeError("invalid policy file");
+  return source;
 }
 
-// src/github-rest-snapshot.ts
-var API = "https://api.github.com";
-var GRAPHQL = `${API}/graphql`;
-var API_VERSION = "2026-03-10";
-var RELATIONSHIP_QUERY = `query YukhRelationshipSnapshot($ids:[ID!]!){nodes(ids:$ids){... on Issue{id number repository{id} parent{number repository{id}} subIssues(first:100){nodes{number repository{id}}pageInfo{hasNextPage}} blockedBy(first:100){nodes{number repository{id}}pageInfo{hasNextPage}} blocking(first:100){nodes{number repository{id}}pageInfo{hasNextPage}}}} rateLimit{cost remaining resetAt}}`;
-var RELATIONSHIP_QUERY_ESTIMATED_COST = 100;
-function rec(v) {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
+// src/apply-runtime-input.ts
+import { constants, createReadStream } from "node:fs";
+import { open as open2, realpath as realpath2 } from "node:fs/promises";
+import { basename, dirname as dirname2, isAbsolute as isAbsolute2, relative as relative2, resolve as resolve2, sep as sep2 } from "node:path";
+var VALUES = /* @__PURE__ */ new Set(["--mode", "--owner", "--repository", "--project-number", "--issue-number", "--policy-path", "--approved-plan-id", "--approval-file", "--approval-public-key-file", "--environment", "--github-read-token-fd", "--github-write-token-fd", "--host-capsule-fd"]);
+var DIGEST = /^[a-f0-9]{64}$/u;
+var FD = /^(?:[3-9][0-9]{0,2}|1[0-9]{3})$/u;
+function bounded(value2, max = 256) {
+  return value2.length > 0 && value2.length <= max && !/[\u0000-\u001f\u007f]/u.test(value2);
 }
-function array(v) {
-  if (!Array.isArray(v) || !v.every(rec)) throw new GitHubTransportError("YKP-REST-001");
-  return v;
+function fd(value2) {
+  if (!value2 || !FD.test(value2)) throw new TypeError("invalid apply arguments");
+  const parsed = Number(value2);
+  if (!Number.isSafeInteger(parsed) || parsed > 1024) throw new TypeError("invalid apply arguments");
+  return parsed;
 }
-function text(v, max = 512) {
-  if (typeof v !== "string" || v.length === 0 || [...v].length > max || /[\u0000-\u001f\u007f]/u.test(v)) throw new GitHubTransportError("YKP-REST-001");
-  return v;
-}
-function integer(v) {
-  if (!Number.isSafeInteger(v) || v <= 0) throw new GitHubTransportError("YKP-REST-001");
-  return v;
-}
-function rawName(v) {
-  if (typeof v === "string") return text(v, 128);
-  if (rec(v) && rec(v.name) && typeof v.name.raw === "string") return text(v.name.raw, 128);
-  if (rec(v) && typeof v.raw === "string") return text(v.raw, 128);
-  throw new GitHubTransportError("YKP-REST-001");
-}
-function value(v) {
-  if (v === null) return null;
-  if (typeof v === "string" || typeof v === "number" && Number.isFinite(v)) return v;
-  if (rec(v)) {
-    if (rec(v.name) && typeof v.name.raw === "string") return v.name.raw;
-    if (typeof v.raw === "string") return v.raw;
+function parseApplyCliArgs(argv) {
+  const values = /* @__PURE__ */ new Map();
+  for (let index = 0; index < argv.length; index++) {
+    const key = argv[index];
+    if (!VALUES.has(key) || values.has(key)) throw new TypeError("invalid apply arguments");
+    const value2 = argv[++index];
+    if (value2 === void 0 || value2.startsWith("--") || !bounded(value2, 1024)) throw new TypeError("invalid apply arguments");
+    values.set(key, value2);
   }
-  return null;
+  for (const key of VALUES) if (key !== "--policy-path" && !values.has(key)) throw new TypeError("invalid apply arguments");
+  if (values.get("--mode") !== "apply" || !DIGEST.test(values.get("--approved-plan-id") ?? "") || !bounded(values.get("--environment") ?? "", 64)) throw new TypeError("invalid apply arguments");
+  parseRuntimeScope({ owner: values.get("--owner"), repository: values.get("--repository"), projectNumber: values.get("--project-number"), issueNumber: values.get("--issue-number") });
+  const readTokenFd = fd(values.get("--github-read-token-fd")), writeTokenFd = fd(values.get("--github-write-token-fd")), hostCapsuleFd = fd(values.get("--host-capsule-fd"));
+  if ((/* @__PURE__ */ new Set([readTokenFd, writeTokenFd, hostCapsuleFd])).size !== 3) throw new TypeError("invalid apply arguments");
+  return { mode: "apply", owner: values.get("--owner"), repository: values.get("--repository"), projectNumber: values.get("--project-number"), issueNumber: values.get("--issue-number"), policyPath: values.get("--policy-path") ?? ".yukh/project.yaml", approvedPlanId: values.get("--approved-plan-id"), approvalFile: values.get("--approval-file"), approvalPublicKeyFile: values.get("--approval-public-key-file"), environment: values.get("--environment"), readTokenFd, writeTokenFd, hostCapsuleFd };
 }
-function kind(v) {
-  const map = { text: "text", number: "number", date: "date", single_select: "single_select", iteration: "iteration" };
-  const out = map[String(v)];
-  if (!out) throw new GitHubTransportError("YKP-REST-001");
-  return out;
-}
-function nextLink(value2) {
-  if (!value2) return null;
-  for (const part of value2.split(",")) {
-    const match = part.match(/<([^>]+)>;\s*rel="next"/u);
-    if (match) return match[1] ?? null;
+async function readBoundedFd(fdValue, maxBytes = 8192) {
+  if (!Number.isSafeInteger(fdValue) || fdValue < 3 || fdValue > 1024 || maxBytes < 1 || maxBytes > 64 * 1024) throw new TypeError("invalid credential descriptor");
+  let bytes = 0, value2 = "";
+  for await (const chunk of createReadStream("", { fd: fdValue, autoClose: true })) {
+    const buffer = Buffer.from(chunk);
+    bytes += buffer.byteLength;
+    if (bytes > maxBytes) throw new TypeError("invalid credential");
+    value2 += buffer.toString("utf8");
   }
-  return null;
-}
-function normalizedPath(value2) {
-  if (value2.startsWith("/")) return value2;
-  let parsed;
-  try {
-    parsed = new URL(value2);
-  } catch {
-    throw new GitHubTransportError("YKP-CAPABILITY-001");
-  }
-  if (parsed.origin !== API || parsed.username || parsed.password || parsed.hash) throw new GitHubTransportError("YKP-CAPABILITY-001");
-  return `${parsed.pathname}${parsed.search}`;
-}
-function issueNumberFromUrl(v) {
-  if (typeof v !== "string") return void 0;
-  const match = v.match(/\/issues\/(\d+)$/u);
-  return match ? Number(match[1]) : void 0;
-}
-function relationshipSummary(content) {
-  const summary = rec(content.issue_dependencies_summary) ? content.issue_dependencies_summary : {};
-  const blockedBy = Number(summary.total_blocked_by ?? summary.blocked_by ?? 0), blocking = Number(summary.total_blocking ?? summary.blocking ?? 0);
-  if (!Number.isSafeInteger(blockedBy) || blockedBy < 0 || !Number.isSafeInteger(blocking) || blocking < 0) throw new GitHubTransportError("YKP-REST-001");
-  return { blockedBy, blocking };
-}
-var RestSnapshotClient = class {
-  constructor(options) {
-    this.options = options;
-    if (typeof options.token !== "string" || !options.token || /[\u0000-\u001f\u007f]/u.test(options.token)) throw new TypeError("invalid credential");
-    this.request = options.fetch ?? globalThis.fetch;
-    this.now = options.now ?? Date.now;
-    this.ttl = options.cacheTtlMs ?? 3e5;
-    this.ledger = options.rateLedger ?? createGitHubRateLedger({ graphqlRemaining: options.graphqlRemaining, restReserve: options.restReserve, graphqlReserve: options.graphqlReserve, maxRestRequests: options.maxRestRequests, maxGraphqlRequests: options.maxGraphqlRequests });
-  }
-  options;
-  request;
-  now;
-  ttl;
-  cache = /* @__PURE__ */ new Map();
-  flights = /* @__PURE__ */ new Map();
-  generations = /* @__PURE__ */ new Map();
-  ledger;
-  bytes = 0;
-  evidence = { restRequests: 0, graphqlRequests: 0, restCacheHits: 0, conditionalRequests: 0, coalescedRequests: 0 };
-  headers(etag) {
-    return { accept: "application/vnd.github+json", authorization: `Bearer ${this.options.token}`, "x-github-api-version": API_VERSION, ...etag ? { "if-none-match": etag } : {} };
-  }
-  classify(response) {
-    if (response.status === 401) throw new GitHubTransportError("YKP-GH-READ-002");
-    if (response.status === 403) throw new GitHubTransportError(response.headers.get("x-ratelimit-remaining") === "0" ? "YKP-RATE-001" : "YKP-GH-READ-003");
-    if (response.status === 429) throw new GitHubTransportError("YKP-RATE-001");
-    if ([502, 503, 504].includes(response.status)) throw new GitHubTransportError("YKP-GH-READ-004");
-    throw new GitHubTransportError("YKP-REST-001");
-  }
-  updateRate(resource, headers) {
-    const value2 = headers.get("x-ratelimit-remaining");
-    if (value2 !== null && /^\d+$/u.test(value2)) this.ledger.observe(resource, Number(value2));
-  }
-  invalidate(input, effect) {
-    if (!/^[A-Za-z0-9-]{1,39}$/u.test(input.ownerLogin) || !Number.isSafeInteger(input.projectNumber) || input.projectNumber < 1) throw new GitHubTransportError("YKP-GH-READ-001");
-    const prefix = new RegExp(`^/(?:orgs|users)/${input.ownerLogin}/projectsV2/${input.projectNumber}/(?:${effect === "schema" ? "fields|items" : "items"})\\?`, `u`), keys = /* @__PURE__ */ new Set([...this.cache.keys(), ...this.flights.keys()]);
-    for (const key of keys) if (prefix.test(key)) {
-      this.generations.set(key, (this.generations.get(key) ?? 0) + 1);
-      this.cache.delete(key);
-      this.flights.delete(key);
-    }
-  }
-  async get(path) {
-    if (!/^\/(repos|users|orgs)\/[A-Za-z0-9_.\/-]+(?:\?[A-Za-z0-9_.,=&-]+)?$/u.test(path)) throw new GitHubTransportError("YKP-CAPABILITY-001");
-    const key = path, cached = this.cache.get(key), current = this.now();
-    if (cached && cached.expires > current) {
-      this.evidence.restCacheHits++;
-      return { body: cached.body, bytes: cached.bytes, headers: new Headers(cached.link ? { link: cached.link } : {}) };
-    }
-    const existing = this.flights.get(key);
-    if (existing) {
-      this.evidence.coalescedRequests++;
-      return existing;
-    }
-    const generation = this.generations.get(key) ?? 0, task = (async () => {
-      if (!this.ledger.reserve("rest")) throw new GitHubTransportError("YKP-RATE-001");
-      this.evidence.restRequests++;
-      if (cached?.etag) this.evidence.conditionalRequests++;
-      let response;
-      try {
-        response = await this.request(`${API}${path}`, { method: "GET", redirect: "manual", headers: this.headers(cached?.etag) });
-      } catch {
-        throw new GitHubTransportError("YKP-GH-READ-004");
-      }
-      this.updateRate("rest", response.headers);
-      if (response.status === 304 && cached) {
-        const refreshed = { ...cached, expires: current + this.ttl };
-        if ((this.generations.get(key) ?? 0) === generation) this.cache.set(key, refreshed);
-        return { body: refreshed.body, bytes: 0, headers: new Headers(refreshed.link ? { link: refreshed.link } : {}) };
-      }
-      if (response.status >= 300 && response.status < 400 || !response.ok) this.classify(response);
-      if (!response.headers.get("content-type")?.toLowerCase().includes("json")) throw new GitHubTransportError("YKP-REST-001");
-      const raw = new Uint8Array(await response.arrayBuffer());
-      this.bytes += raw.byteLength;
-      if (raw.byteLength > 8 * 1024 * 1024 || this.bytes > 64 * 1024 * 1024) throw new GitHubTransportError("YKP-GH-READ-005");
-      let body;
-      try {
-        body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw));
-      } catch {
-        throw new GitHubTransportError("YKP-REST-001");
-      }
-      if ((this.generations.get(key) ?? 0) === generation) this.cache.set(key, { body, bytes: raw.byteLength, etag: response.headers.get("etag") ?? void 0, link: response.headers.get("link") ?? void 0, expires: current + this.ttl });
-      return { body, bytes: raw.byteLength, headers: response.headers };
-    })();
-    this.flights.set(key, task);
-    try {
-      return await task;
-    } finally {
-      this.flights.delete(key);
-    }
-  }
-  async list(path) {
-    const nodes = [];
-    let bytes = 0, next = path;
-    for (let page2 = 0; next && page2 < 20; page2++) {
-      const response = await this.get(normalizedPath(next));
-      nodes.push(...array(response.body));
-      bytes += response.bytes;
-      if (nodes.length > 1e4) throw new GitHubTransportError("YKP-GH-READ-005");
-      next = nextLink(response.headers.get("link"));
-    }
-    if (next) throw new GitHubTransportError("YKP-GH-READ-005");
-    return { nodes, bytes };
-  }
-  async relationships(ids) {
-    const result = /* @__PURE__ */ new Map();
-    if (ids.length === 0) return result;
-    if (ids.length > 100) throw new GitHubTransportError("YKP-GH-READ-005");
-    if (this.options.graphqlRemaining === 0 && !this.options.rateLedger) return result;
-    if (!this.ledger.reserve("graphql", RELATIONSHIP_QUERY_ESTIMATED_COST)) throw new GitHubTransportError("YKP-RATE-001");
-    this.evidence.graphqlRequests++;
-    let response;
-    try {
-      response = await this.request(GRAPHQL, { method: "POST", redirect: "manual", headers: { accept: "application/vnd.github+json", "content-type": "application/json", authorization: `Bearer ${this.options.token}`, "x-github-api-version": "2022-11-28" }, body: JSON.stringify({ query: RELATIONSHIP_QUERY, variables: { ids } }) });
-    } catch {
-      throw new GitHubTransportError("YKP-GH-READ-004");
-    }
-    this.updateRate("graphql", response.headers);
-    if (!response.ok) this.classify(response);
-    let payload;
-    try {
-      payload = await response.json();
-    } catch {
-      throw new GitHubTransportError("YKP-REST-001");
-    }
-    if (!rec(payload) || Array.isArray(payload.errors) || !rec(payload.data) || !Array.isArray(payload.data.nodes) || !rec(payload.data.rateLimit)) throw new GitHubTransportError("YKP-REST-001");
-    this.ledger.observe("graphql", Number(payload.data.rateLimit.remaining));
-    for (const node of payload.data.nodes) {
-      if (!rec(node)) throw new GitHubTransportError("YKP-REST-001");
-      const connections = ["subIssues", "blockedBy", "blocking"].map((name) => {
-        const c = node[name];
-        if (!rec(c) || !Array.isArray(c.nodes) || !rec(c.pageInfo) || c.pageInfo.hasNextPage === true) throw new GitHubTransportError("YKP-GH-READ-005");
-        return c.nodes.map((v) => {
-          if (!rec(v)) throw new GitHubTransportError("YKP-REST-001");
-          return integer(v.number);
-        });
-      });
-      result.set(text(node.id), { number: integer(node.number), ...rec(node.parent) ? { parent: integer(node.parent.number) } : {}, blockedBy: connections[1], blocking: connections[2] });
-    }
-    return result;
-  }
-};
-function subject(token) {
-  return `github-token:${createHash("sha256").update(token).digest("hex")}`;
-}
-function fieldOptions(field) {
-  if (!Array.isArray(field.options)) return [];
-  return field.options.map((option) => {
-    if (!rec(option)) throw new GitHubTransportError("YKP-REST-001");
-    const colors = ["GRAY", "BLUE", "GREEN", "YELLOW", "ORANGE", "RED", "PINK", "PURPLE"], color = typeof option.color === "string" && colors.includes(option.color) ? option.color : void 0, description = typeof option.description === "string" && [...option.description].length <= 256 && !/[\u0000-\u001f\u007f]/u.test(option.description) ? option.description : void 0;
-    return { id: text(option.id), name: rawName(option.name), ...color ? { color } : {}, ...description !== void 0 ? { description } : {} };
-  }).sort((a, b) => a.id.localeCompare(b.id));
-}
-function itemValues(item) {
-  const out = {};
-  for (const field of array(item.fields ?? [])) {
-    const name = text(field.name, 128);
-    if (Object.hasOwn(out, name)) throw new GitHubTransportError("YKP-REST-001");
-    out[name] = value(field.value);
-  }
-  return out;
-}
-function nativeIssueFields(content) {
-  const out = {};
-  if (!Array.isArray(content.issue_field_values)) return out;
-  for (const entry of content.issue_field_values) {
-    if (!rec(entry) || typeof entry.issue_field_name !== "string") throw new GitHubTransportError("YKP-REST-001");
-    const observed = entry.single_select_option;
-    if (rec(observed) && typeof observed.name === "string") out[entry.issue_field_name] = observed.name;
-    else if (typeof entry.value === "string" || typeof entry.value === "number") out[entry.issue_field_name] = entry.value;
-  }
-  return out;
-}
-async function readWithClient(input, options, client) {
-  const numbers = [...new Set(input.issueNumbers)].sort((a, b) => a - b);
-  if (!/^[A-Za-z0-9-]{1,39}$/u.test(input.ownerLogin) || !/^[A-Za-z0-9_.-]{1,100}$/u.test(input.repositoryName) || !Number.isSafeInteger(input.projectNumber) || input.projectNumber < 1 || numbers.length < 1 || numbers.length > 100 || numbers.some((n) => !Number.isSafeInteger(n) || n < 1)) throw new GitHubTransportError("YKP-GH-READ-001");
-  const repoPage = await client.get(`/repos/${input.ownerLogin}/${input.repositoryName}`), repo = repoPage.body;
-  if (!rec(repo) || !rec(repo.owner)) throw new GitHubTransportError("YKP-REST-001");
-  const ownerKind = repo.owner.type === "Organization" ? "orgs" : repo.owner.type === "User" ? "users" : (() => {
-    throw new GitHubTransportError("YKP-CAPABILITY-001");
-  })();
-  const projectPage = await client.get(`/${ownerKind}/${input.ownerLogin}/projectsV2/${input.projectNumber}`), project = projectPage.body;
-  if (!rec(project) || integer(project.number) !== input.projectNumber) throw new GitHubTransportError("YKP-SNAPSHOT-001");
-  const projectRef = text(project.node_id);
-  const fieldsPage = await client.list(`/${ownerKind}/${input.ownerLogin}/projectsV2/${input.projectNumber}/fields?per_page=100`);
-  const fields = fieldsPage.nodes.filter((f) => ["text", "number", "date", "single_select", "iteration"].includes(String(f.data_type))).map((f) => ({ id: text(f.node_id), name: text(f.name, 128), kind: kind(f.data_type), options: fieldOptions(f) }));
-  const fieldSelector = fieldsPage.nodes.map((f) => String(integer(f.id))).join(",");
-  if (fieldSelector.length > 4096) throw new GitHubTransportError("YKP-GH-READ-005");
-  const itemsPage = await client.list(`/${ownerKind}/${input.ownerLogin}/projectsV2/${input.projectNumber}/items?per_page=100${fieldSelector ? `&fields=${fieldSelector}` : ""}`);
-  const wanted = new Set(numbers), selected = /* @__PURE__ */ new Map();
-  for (const item of itemsPage.nodes) {
-    if (!rec(item.content) || !rec(item.content.repository) || item.content.repository.full_name !== `${input.ownerLogin}/${input.repositoryName}`) continue;
-    const n = item.content.number;
-    if (Number.isSafeInteger(n) && wanted.has(n)) {
-      if (selected.has(n)) throw new GitHubTransportError("YKP-SNAPSHOT-001");
-      selected.set(n, item);
-    }
-  }
-  if (selected.size !== numbers.length) throw new GitHubTransportError("YKP-SNAPSHOT-001");
-  const relationshipIds = numbers.flatMap((n) => {
-    const content = selected.get(n).content, summary = relationshipSummary(content);
-    return summary.blockedBy + summary.blocking > 0 ? [text(content.node_id)] : [];
-  });
-  const relationships = await client.relationships(relationshipIds), issues = /* @__PURE__ */ new Map();
-  for (const n of numbers) {
-    const item = selected.get(n), content = item.content, relation = relationships.get(text(content.node_id));
-    const parent = relation?.parent ?? issueNumberFromUrl(content.parent_issue_url), labels = Array.isArray(content.labels) ? content.labels.map((label) => {
-      if (!rec(label)) throw new GitHubTransportError("YKP-REST-001");
-      return text(label.name, 128);
-    }).sort() : [], milestone = rec(content.milestone) && typeof content.milestone.title === "string" ? text(content.milestone.title, 128) : void 0, issueType = rec(content.type) && typeof content.type.name === "string" ? text(content.type.name, 128) : void 0, summary = relationshipSummary(content), relationshipsComplete = Boolean(relation) || summary.blockedBy === 0 && summary.blocking === 0;
-    issues.set(n, { issueRef: text(content.node_id), issueDatabaseId: integer(content.id), body: typeof content.body === "string" ? content.body : "", itemRef: text(item.node_id), fingerprint: text(item.node_id), values: itemValues(item), ...issueType ? { issueType } : {}, labels, ...milestone ? { milestone } : {}, issueFields: nativeIssueFields(content), ...parent ? { parent } : {}, blockedBy: relation?.blockedBy ?? [], blocking: relation?.blocking ?? [], relationshipsComplete });
-  }
-  return { subjectRef: subject(options.token), ownerLogin: input.ownerLogin, repositoryName: input.repositoryName, projectNumber: input.projectNumber, repositoryRef: text(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), issues, evidence: { ...client.evidence } };
-}
-function createRestProjectSnapshotReader(options) {
-  const client = new RestSnapshotClient(options);
-  return { read: (input) => readWithClient(input, options, client), invalidate: (input, effect) => client.invalidate(input, effect) };
-}
-async function readRestProjectSnapshot(input, options) {
-  return createRestProjectSnapshotReader(options).read(input);
-}
-function createGitHubRestSnapshotReadTransportFromReader(reader) {
-  let snapshotPromise;
-  let bound;
-  return { execute: async (operation, variables) => {
-    const ownerLogin = text(variables.ownerLogin), repositoryName = text(variables.repositoryName), projectNumber = integer(variables.projectNumber), issueNumber2 = integer(variables.issueNumber);
-    const key = `${ownerLogin}/${repositoryName}/${projectNumber}/${issueNumber2}`;
-    if (bound && bound !== key) throw new GitHubTransportError("YKP-SNAPSHOT-001");
-    bound = key;
-    snapshotPromise ??= reader.read({ ownerLogin, repositoryName, projectNumber, issueNumbers: [issueNumber2] });
-    const snapshot = await snapshotPromise, issue = snapshot.issues.get(issueNumber2);
-    if (!issue) throw new GitHubTransportError("YKP-SNAPSHOT-001");
-    let data;
-    if (operation === "resolve_scope") data = { subjectRef: snapshot.subjectRef, ownerLogin, repositoryName, projectNumber, issueNumber: issueNumber2, repositoryRef: snapshot.repositoryRef, projectRef: snapshot.projectRef, issueRef: issue.issueRef, issueBody: issue.body };
-    else if (operation === "read_project_fields") data = { projectRef: snapshot.projectRef, nodes: snapshot.fields, pageInfo: { hasNextPage: false, endCursor: null } };
-    else if (operation === "read_project_item") data = { projectRef: snapshot.projectRef, issueRef: issue.issueRef, itemRef: issue.itemRef, fingerprint: issue.fingerprint, nodes: Object.entries(issue.values).map(([key2, value2]) => ({ key: key2, value: value2 })), pageInfo: { hasNextPage: false, endCursor: null } };
-    else {
-      const nodes = /* @__PURE__ */ new Set([issueNumber2, ...issue.blockedBy, ...issue.blocking, ...issue.parent ? [issue.parent] : []]);
-      data = { repositoryRef: snapshot.repositoryRef, issueRef: issue.issueRef, nodes: [...nodes].sort((a, b) => a - b).map((issueNumber3) => ({ issueNumber: issueNumber3 })), parent: issue.parent ? [{ from: issueNumber2, to: issue.parent }] : [], blocks: [...issue.blockedBy.map((from) => ({ from, to: issueNumber2 })), ...issue.blocking.map((to) => ({ from: issueNumber2, to }))], pageInfo: { hasNextPage: false, endCursor: null } };
-    }
-    return { byteCount: Buffer.byteLength(JSON.stringify(data)), data };
-  } };
-}
-function createGitHubRestSnapshotReadTransport(options) {
-  return createGitHubRestSnapshotReadTransportFromReader(createRestProjectSnapshotReader(options));
-}
-
-// src/issue-contract.ts
-var import_yaml = __toESM(require_dist(), 1);
-var MESSAGES = {
-  "YKP-CONTRACT-001": "required field is missing",
-  "YKP-CONTRACT-002": "contract envelope is ambiguous or incomplete",
-  "YKP-CONTRACT-003": "input byte limit is exceeded",
-  "YKP-CONTRACT-004": "YAML syntax or feature is forbidden",
-  "YKP-CONTRACT-005": "structural limit is exceeded",
-  "YKP-CONTRACT-006": "field is not recognized",
-  "YKP-CONTRACT-007": "value has an invalid type",
-  "YKP-CONTRACT-008": "value is invalid or unsupported",
-  "YKP-CONTRACT-009": "sequence value is duplicated",
-  "YKP-CONTRACT-010": "relationship is invalid",
-  "YKP-CONTRACT-011": "date range is inconsistent"
-};
-var OPEN = "<!-- yukh:issue:v1";
-var WORK_TYPES = /* @__PURE__ */ new Set(["epic", "gate", "feature", "task", "bug", "technical-debt"]);
-var ROOT_FIELDS = /* @__PURE__ */ new Set(["schema", "work_type", "area", "priority", "size", "estimate", "iteration", "project", "relationships"]);
-var PROJECT_FIELDS = /* @__PURE__ */ new Set(["status", "start_date", "target_date"]);
-var RELATIONSHIP_FIELDS = /* @__PURE__ */ new Set(["parent", "blocks", "blocked_by"]);
-function add(target, code, path, offset = Number.MAX_SAFE_INTEGER) {
-  target.push({ code, path, severity: "error", message: MESSAGES[code], offset });
-}
-function finish(contract, source) {
-  const seen = /* @__PURE__ */ new Set();
-  const diagnostics2 = source.sort((a, b) => a.offset - b.offset || a.code.localeCompare(b.code) || a.path.localeCompare(b.path)).filter((item) => {
-    const key = `${item.code}\0${item.path}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).map(({ offset: _offset, ...item }) => item);
-  return { contract: diagnostics2.length === 0 ? contract : null, diagnostics: diagnostics2 };
-}
-function exactLineOffsets(body, line) {
-  const result = [];
-  let offset = 0;
-  for (const part of body.split(/(?<=\n)/u)) {
-    const value2 = part.replace(/\r?\n$/u, "");
-    if (value2 === line) result.push(offset);
-    offset += part.length;
-  }
-  return result;
-}
-function inspectStructure(node, depth, path, diagnostics2, state) {
-  const value2 = node;
-  const offset = value2?.range?.[0] ?? Number.MAX_SAFE_INTEGER;
-  if (depth > 8) add(diagnostics2, "YKP-CONTRACT-005", path, offset);
-  if ((0, import_yaml.isAlias)(node) || value2?.anchor || value2?.tag) {
-    add(diagnostics2, "YKP-CONTRACT-004", path, offset);
-    return;
-  }
-  if ((0, import_yaml.isMap)(node)) {
-    const limit = depth === 0 ? 32 : 16;
-    if (node.items.length > limit) add(diagnostics2, "YKP-CONTRACT-005", path, offset);
-    for (const pair of node.items) {
-      if (!(0, import_yaml.isScalar)(pair.key) || typeof pair.key.value !== "string" || pair.key.value === "<<") {
-        add(diagnostics2, "YKP-CONTRACT-004", path, pair.key?.range?.[0] ?? offset);
-        continue;
-      }
-      inspectStructure(pair.value, depth + 1, `${path}.${pair.key.value}`, diagnostics2, state);
-    }
-    return;
-  }
-  if ((0, import_yaml.isSeq)(node)) {
-    if (node.items.length > 100) add(diagnostics2, "YKP-CONTRACT-005", path, offset);
-    node.items.forEach((item, index) => inspectStructure(item, depth + 1, `${path}[${index}]`, diagnostics2, state));
-    return;
-  }
-  if ((0, import_yaml.isScalar)(node)) {
-    state.scalars += 1;
-    if (state.scalars > 512) add(diagnostics2, "YKP-CONTRACT-005", path, offset);
-    if (typeof node.value === "string" && [...node.value].length > 512) add(diagnostics2, "YKP-CONTRACT-005", path, offset);
-  }
-}
-function isRecord(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
-}
-function vocabulary(value2, max, path, diagnostics2) {
-  if (typeof value2 !== "string") {
-    add(diagnostics2, "YKP-CONTRACT-007", path);
-    return void 0;
-  }
-  const normalized = value2.trim();
-  if (!normalized || [...normalized].length > max || /[\u0000-\u001f\u007f]/u.test(normalized)) {
-    add(diagnostics2, "YKP-CONTRACT-008", path);
-    return void 0;
-  }
-  return normalized;
-}
-function calendarDate(value2, path, diagnostics2) {
-  if (typeof value2 !== "string") {
-    add(diagnostics2, "YKP-CONTRACT-007", path);
-    return void 0;
-  }
-  if (!/^\d{4}-\d{2}-\d{2}$/u.test(value2)) {
-    add(diagnostics2, "YKP-CONTRACT-008", path);
-    return void 0;
-  }
-  const [year, month, day] = value2.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
-    add(diagnostics2, "YKP-CONTRACT-008", path);
-    return void 0;
-  }
+  value2 = value2.replace(/\r?\n$/u, "");
+  if (!value2 || /[\u0000-\u001f\u007f]/u.test(value2)) throw new TypeError("invalid credential");
   return value2;
 }
-function issueNumber(value2, path, diagnostics2) {
-  if (!Number.isSafeInteger(value2) || value2 <= 0) {
-    add(diagnostics2, typeof value2 === "number" ? "YKP-CONTRACT-008" : "YKP-CONTRACT-007", path);
-    return void 0;
-  }
-  return value2;
-}
-function relationList(value2, path, current, diagnostics2) {
-  if (!Array.isArray(value2)) {
-    add(diagnostics2, "YKP-CONTRACT-007", path);
-    return void 0;
-  }
-  if (value2.length > 100) {
-    add(diagnostics2, "YKP-CONTRACT-005", path);
-    return void 0;
-  }
-  const result = [];
-  const seen = /* @__PURE__ */ new Set();
-  value2.forEach((entry, index) => {
-    const parsed = issueNumber(entry, `${path}[${index}]`, diagnostics2);
-    if (parsed === void 0) return;
-    if (seen.has(parsed)) add(diagnostics2, "YKP-CONTRACT-009", `${path}[${index}]`);
-    else if (current !== void 0 && parsed === current) add(diagnostics2, "YKP-CONTRACT-010", `${path}[${index}]`);
-    else {
-      seen.add(parsed);
-      result.push(parsed);
-    }
-  });
-  return result;
-}
-function unknownFields(value2, allowed, path, diagnostics2) {
-  for (const field of Object.keys(value2)) if (!allowed.has(field)) add(diagnostics2, "YKP-CONTRACT-006", `${path}.${field}`);
-}
-function semantic(value2, options, diagnostics2) {
-  if (!isRecord(value2)) {
-    add(diagnostics2, "YKP-CONTRACT-007", "$");
-    return null;
-  }
-  unknownFields(value2, ROOT_FIELDS, "$", diagnostics2);
-  for (const field of ["schema", "work_type", "area"]) if (!(field in value2)) add(diagnostics2, "YKP-CONTRACT-001", `$.${field}`);
-  const result = {};
-  if ("schema" in value2) {
-    if (value2.schema === 1) result.schema = 1;
-    else add(diagnostics2, typeof value2.schema === "number" ? "YKP-CONTRACT-008" : "YKP-CONTRACT-007", "$.schema");
-  }
-  if ("work_type" in value2) {
-    if (typeof value2.work_type !== "string") add(diagnostics2, "YKP-CONTRACT-007", "$.work_type");
-    else if (!WORK_TYPES.has(value2.work_type)) add(diagnostics2, "YKP-CONTRACT-008", "$.work_type");
-    else result.work_type = value2.work_type;
-  }
-  if ("area" in value2) result.area = vocabulary(value2.area, 64, "$.area", diagnostics2);
-  if ("priority" in value2) result.priority = vocabulary(value2.priority, 32, "$.priority", diagnostics2);
-  if ("size" in value2) result.size = vocabulary(value2.size, 32, "$.size", diagnostics2);
-  if ("iteration" in value2) result.iteration = vocabulary(value2.iteration, 128, "$.iteration", diagnostics2);
-  if ("estimate" in value2) {
-    if (typeof value2.estimate !== "number") add(diagnostics2, "YKP-CONTRACT-007", "$.estimate");
-    else if (!Number.isFinite(value2.estimate) || value2.estimate < 0 || value2.estimate > 1e4) add(diagnostics2, "YKP-CONTRACT-008", "$.estimate");
-    else result.estimate = value2.estimate;
-  }
-  if ("project" in value2) {
-    if (!isRecord(value2.project)) add(diagnostics2, "YKP-CONTRACT-007", "$.project");
-    else {
-      unknownFields(value2.project, PROJECT_FIELDS, "$.project", diagnostics2);
-      const project = {};
-      if ("status" in value2.project) project.status = vocabulary(value2.project.status, 64, "$.project.status", diagnostics2);
-      if ("start_date" in value2.project) project.start_date = calendarDate(value2.project.start_date, "$.project.start_date", diagnostics2);
-      if ("target_date" in value2.project) project.target_date = calendarDate(value2.project.target_date, "$.project.target_date", diagnostics2);
-      if (project.start_date && project.target_date && project.target_date < project.start_date) add(diagnostics2, "YKP-CONTRACT-011", "$.project.target_date");
-      result.project = project;
-    }
-  }
-  if ("relationships" in value2) {
-    if (!isRecord(value2.relationships)) add(diagnostics2, "YKP-CONTRACT-007", "$.relationships");
-    else {
-      unknownFields(value2.relationships, RELATIONSHIP_FIELDS, "$.relationships", diagnostics2);
-      const relationships = {};
-      if ("parent" in value2.relationships) {
-        const parent = issueNumber(value2.relationships.parent, "$.relationships.parent", diagnostics2);
-        if (parent !== void 0 && options.issueNumber === parent) add(diagnostics2, "YKP-CONTRACT-010", "$.relationships.parent");
-        else if (parent !== void 0) relationships.parent = parent;
-      }
-      if ("blocks" in value2.relationships) relationships.blocks = relationList(value2.relationships.blocks, "$.relationships.blocks", options.issueNumber, diagnostics2);
-      if ("blocked_by" in value2.relationships) relationships.blocked_by = relationList(value2.relationships.blocked_by, "$.relationships.blocked_by", options.issueNumber, diagnostics2);
-      result.relationships = relationships;
-    }
-  }
-  return result;
-}
-function parseIssueContract(body, options = {}) {
-  const diagnostics2 = [];
-  if (Buffer.byteLength(body, "utf8") > 256 * 1024) {
-    add(diagnostics2, "YKP-CONTRACT-003", "$", 0);
-    return finish(null, diagnostics2);
-  }
-  const openings = exactLineOffsets(body, OPEN);
-  if (openings.length === 0) return finish(null, diagnostics2);
-  if (openings.length !== 1) {
-    add(diagnostics2, "YKP-CONTRACT-002", "$", openings[1] ?? openings[0]);
-    return finish(null, diagnostics2);
-  }
-  const start = openings[0];
-  const contentStart = body.indexOf("\n", start);
-  if (contentStart < 0) {
-    add(diagnostics2, "YKP-CONTRACT-002", "$", start);
-    return finish(null, diagnostics2);
-  }
-  const closing = exactLineOffsets(body.slice(contentStart + 1), "-->").map((offset) => offset + contentStart + 1);
-  if (closing.length === 0) {
-    add(diagnostics2, "YKP-CONTRACT-002", "$", start);
-    return finish(null, diagnostics2);
-  }
-  const end = closing[0];
-  const content = body.slice(contentStart + 1, end);
-  if (Buffer.byteLength(content, "utf8") > 16 * 1024) {
-    add(diagnostics2, "YKP-CONTRACT-003", "$", start);
-    return finish(null, diagnostics2);
-  }
-  const documents = (0, import_yaml.parseAllDocuments)(content, { schema: "core", uniqueKeys: true, strict: true, prettyErrors: false });
-  if (documents.length !== 1 || documents.some((document2) => document2.errors.length > 0)) {
-    add(diagnostics2, "YKP-CONTRACT-004", "$", start);
-    return finish(null, diagnostics2);
-  }
-  const document = documents[0];
-  inspectStructure(document.contents, 0, "$", diagnostics2, { scalars: 0 });
-  if (diagnostics2.length > 0) return finish(null, diagnostics2);
-  let value2;
+async function readExclusiveWorkspaceFile(workspace, filePath, maxBytes = 64 * 1024) {
+  if (!bounded(filePath, 1024) || isAbsolute2(filePath) || filePath.split(/[\\/]/u).includes("..") || maxBytes < 1 || maxBytes > 1024 * 1024) throw new TypeError("invalid protected file");
+  const root = await realpath2(workspace), candidate = resolve2(root, filePath), parent = await realpath2(dirname2(candidate)), rel = relative2(root, parent);
+  if (rel === ".." || rel.startsWith(`..${sep2}`) || isAbsolute2(rel)) throw new TypeError("invalid protected file");
+  const resolved = resolve2(parent, basename(candidate)), handle = await open2(resolved, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
-    value2 = document.toJS({ maxAliasCount: 0, mapAsMap: false });
-  } catch {
-    add(diagnostics2, "YKP-CONTRACT-004", "$", start);
-    return finish(null, diagnostics2);
+    const metadata = await handle.stat();
+    if (!metadata.isFile() || metadata.size < 1 || metadata.size > maxBytes) throw new TypeError("invalid protected file");
+    const value2 = await handle.readFile();
+    if (value2.length < 1 || value2.length > maxBytes) throw new TypeError("invalid protected file");
+    return value2;
+  } finally {
+    await handle.close();
   }
-  const contract = semantic(value2, options, diagnostics2);
-  return finish(contract, diagnostics2);
+}
+async function readApprovalArtifact(workspace, filePath) {
+  const bytes = await readExclusiveWorkspaceFile(workspace, filePath);
+  try {
+    return JSON.parse(bytes.toString("utf8"));
+  } catch {
+    throw new TypeError("invalid approval artifact");
+  }
 }
 
-// src/github-readonly.ts
-import { createHash as createHash3 } from "node:crypto";
+// src/apply-approval.ts
+import { createHash as createHash2, createPublicKey, verify } from "node:crypto";
 
 // src/planner.ts
-import { createHash as createHash2 } from "node:crypto";
-var MESSAGES2 = {
+import { createHash } from "node:crypto";
+var MESSAGES = {
   "YKP-PLAN-001": "input boundary is invalid",
   "YKP-PLAN-002": "effective schema is not executable",
   "YKP-PLAN-003": "required managed field binding is missing",
@@ -8000,8 +7475,8 @@ var MESSAGES2 = {
   "YKP-GRAPH-006": "relationship declaration is contradictory",
   "YKP-REPORT-001": "value cannot be safely rendered"
 };
-function add2(target, code, path) {
-  target.push({ code, path, severity: "error", message: MESSAGES2[code], offset: Number.MAX_SAFE_INTEGER });
+function add(target, code, path) {
+  target.push({ code, path, severity: "error", message: MESSAGES[code], offset: Number.MAX_SAFE_INTEGER });
 }
 function diagnostics(source) {
   const seen = /* @__PURE__ */ new Set();
@@ -8031,7 +7506,7 @@ function canonicalJson(value2) {
   return JSON.stringify(canonicalValue(value2));
 }
 function planId(plan) {
-  return createHash2("sha256").update(canonicalJson(plan), "utf8").digest("hex");
+  return createHash("sha256").update(canonicalJson(plan), "utf8").digest("hex");
 }
 function opKey(...parts) {
   return parts.join(".");
@@ -8094,12 +7569,12 @@ function edgeKey(edge) {
 }
 function validateGraph(graph, internal) {
   if (!graph || !Array.isArray(graph.nodes) || !Array.isArray(graph.parent) || !Array.isArray(graph.blocks) || graph.nodes.length > 512 || graph.parent.length > 511 || graph.blocks.length > 4096) {
-    add2(internal, "YKP-GRAPH-001", "$.relationships");
+    add(internal, "YKP-GRAPH-001", "$.relationships");
     return;
   }
   const nodes = /* @__PURE__ */ new Set();
   graph.nodes.forEach((node, index) => {
-    if (!Number.isSafeInteger(node) || node <= 0 || nodes.has(node)) add2(internal, "YKP-GRAPH-002", `$.relationships.nodes[${index}]`);
+    if (!Number.isSafeInteger(node) || node <= 0 || nodes.has(node)) add(internal, "YKP-GRAPH-002", `$.relationships.nodes[${index}]`);
     else nodes.add(node);
   });
   const validate = (edges, name) => {
@@ -8108,60 +7583,60 @@ function validateGraph(graph, internal) {
     edges.forEach((edge, index) => {
       const path = `$.relationships.${name}[${index}]`;
       const key = edgeKey(edge);
-      if (!nodes.has(edge.from) || !nodes.has(edge.to) || edge.from === edge.to || seen.has(key)) add2(internal, "YKP-GRAPH-002", path);
+      if (!nodes.has(edge.from) || !nodes.has(edge.to) || edge.from === edge.to || seen.has(key)) add(internal, "YKP-GRAPH-002", path);
       else seen.add(key);
-      if (name === "parent" && parents.has(edge.from)) add2(internal, "YKP-GRAPH-003", path);
+      if (name === "parent" && parents.has(edge.from)) add(internal, "YKP-GRAPH-003", path);
       else if (name === "parent") parents.add(edge.from);
     });
   };
   validate(graph.parent, "parent");
   validate(graph.blocks, "blocks");
-  if (internal.length === 0 && hasCycle(graph.nodes, graph.parent)) add2(internal, "YKP-GRAPH-004", "$.relationships.parent");
-  if (internal.length === 0 && hasCycle(graph.nodes, graph.blocks)) add2(internal, "YKP-GRAPH-005", "$.relationships.blocks");
+  if (internal.length === 0 && hasCycle(graph.nodes, graph.parent)) add(internal, "YKP-GRAPH-004", "$.relationships.parent");
+  if (internal.length === 0 && hasCycle(graph.nodes, graph.blocks)) add(internal, "YKP-GRAPH-005", "$.relationships.blocks");
 }
-function planReconciliation(input) {
+function planReconciliation(input3) {
   const internal = [];
   const operations = [];
   const observations = [];
-  const scope = input?.scope;
-  if (!scope || !boundedRef(scope.subjectRef) || !boundedRef(scope.repositoryRef) || !boundedRef(scope.projectRef) || !boundedRef(scope.issueRef) || !Number.isSafeInteger(scope.issueNumber) || scope.issueNumber <= 0) add2(internal, "YKP-PLAN-001", "$.scope");
-  if (!input?.schema?.executable || input.schema.diagnostics.length > 0) add2(internal, "YKP-PLAN-002", "$.schema");
-  const observed = input?.observedItem;
-  if (!observed || !boundedRef(observed.fingerprint) || !observed.values || Object.keys(observed.values).length > 64) add2(internal, "YKP-PLAN-001", "$.observedItem");
-  else for (const [key, value2] of Object.entries(observed.values)) if (!/^[a-z][a-z0-9_]{0,63}$/u.test(key) || !(typeof value2 === "number" && Number.isFinite(value2) || value2 === null || safeString(value2))) add2(internal, "YKP-PLAN-006", `$.observedItem.values.${key}`);
-  validateGraph(input.relationships, internal);
-  if (scope && input.relationships && !input.relationships.nodes.includes(scope.issueNumber)) add2(internal, "YKP-GRAPH-002", "1relationships.nodes");
+  const scope = input3?.scope;
+  if (!scope || !boundedRef(scope.subjectRef) || !boundedRef(scope.repositoryRef) || !boundedRef(scope.projectRef) || !boundedRef(scope.issueRef) || !Number.isSafeInteger(scope.issueNumber) || scope.issueNumber <= 0) add(internal, "YKP-PLAN-001", "$.scope");
+  if (!input3?.schema?.executable || input3.schema.diagnostics.length > 0) add(internal, "YKP-PLAN-002", "$.schema");
+  const observed = input3?.observedItem;
+  if (!observed || !boundedRef(observed.fingerprint) || !observed.values || Object.keys(observed.values).length > 64) add(internal, "YKP-PLAN-001", "$.observedItem");
+  else for (const [key, value2] of Object.entries(observed.values)) if (!/^[a-z][a-z0-9_]{0,63}$/u.test(key) || !(typeof value2 === "number" && Number.isFinite(value2) || value2 === null || safeString(value2))) add(internal, "YKP-PLAN-006", `$.observedItem.values.${key}`);
+  validateGraph(input3.relationships, internal);
+  if (scope && input3.relationships && !input3.relationships.nodes.includes(scope.issueNumber)) add(internal, "YKP-GRAPH-002", "1relationships.nodes");
   if (internal.length > 0) return finishPlan(internal, operations, observations);
-  input.schema.operations.map((operation) => operationFromSchema(operation, scope)).filter((operation) => operation !== null).forEach((operation) => operations.push(operation));
+  input3.schema.operations.map((operation) => operationFromSchema(operation, scope)).filter((operation) => operation !== null).forEach((operation) => operations.push(operation));
   for (const mapping of FIELD_MAP) {
-    const raw = mapping.source(input.contract);
+    const raw = mapping.source(input3.contract);
     if (raw === void 0) continue;
-    const declaration = input.policy.fields[mapping.fieldKey];
+    const declaration = input3.policy.fields[mapping.fieldKey];
     if (!declaration) {
-      add2(internal, "YKP-PLAN-003", `$.policy.fields.${mapping.fieldKey}`);
+      add(internal, "YKP-PLAN-003", `$.policy.fields.${mapping.fieldKey}`);
       continue;
     }
     if (declaration.mode !== "managed" || declaration.kind !== mapping.kind) {
-      add2(internal, "YKP-PLAN-004", `$.policy.fields.${mapping.fieldKey}`);
+      add(internal, "YKP-PLAN-004", `$.policy.fields.${mapping.fieldKey}`);
       continue;
     }
     let desired;
     let optionKey;
     if (mapping.kind === "single_select") {
       if (typeof raw !== "string" || !declaration.options?.[raw]) {
-        add2(internal, "YKP-PLAN-005", mapping.path);
+        add(internal, "YKP-PLAN-005", mapping.path);
         continue;
       }
       optionKey = raw;
       desired = declaration.options[raw];
     } else {
       if (!(typeof raw === "number" && Number.isFinite(raw) || safeString(raw))) {
-        add2(internal, "YKP-PLAN-006", mapping.path);
+        add(internal, "YKP-PLAN-006", mapping.path);
         continue;
       }
       desired = raw;
     }
-    const previous = input.observedItem.values[mapping.fieldKey] ?? null;
+    const previous = input3.observedItem.values[mapping.fieldKey] ?? null;
     if (previous === desired) {
       observations.push({ type: "preserve_field_value", logicalKey: mapping.fieldKey, displayValue: desired });
       continue;
@@ -8177,48 +7652,48 @@ function planReconciliation(input) {
       action: "set",
       environment: "dry-run",
       reason: "item.value.differs",
-      preconditions: [{ kind: "item_fingerprint", logicalKey: "item", expected: input.observedItem.fingerprint }, { kind: "old_value", logicalKey: mapping.fieldKey, expected: previous }],
+      preconditions: [{ kind: "item_fingerprint", logicalKey: "item", expected: input3.observedItem.fingerprint }, { kind: "old_value", logicalKey: mapping.fieldKey, expected: previous }],
       dependsOn: dependencies,
       desired
     });
   }
   const current = scope.issueNumber;
-  const nodes = new Set(input.relationships.nodes);
-  const desiredBlocks = new Set(input.contract.relationships?.blocks ?? []);
-  const desiredBlockedBy = new Set(input.contract.relationships?.blocked_by ?? []);
-  for (const issue of desiredBlocks) if (desiredBlockedBy.has(issue)) add2(internal, "YKP-GRAPH-006", "$.contract.relationships");
-  const parent = input.contract.relationships?.parent;
-  const proposedParent = [...input.relationships.parent];
+  const nodes = new Set(input3.relationships.nodes);
+  const desiredBlocks = new Set(input3.contract.relationships?.blocks ?? []);
+  const desiredBlockedBy = new Set(input3.contract.relationships?.blocked_by ?? []);
+  for (const issue of desiredBlocks) if (desiredBlockedBy.has(issue)) add(internal, "YKP-GRAPH-006", "$.contract.relationships");
+  const parent = input3.contract.relationships?.parent;
+  const proposedParent = [...input3.relationships.parent];
   if (parent !== void 0) {
-    if (!nodes.has(parent) || !nodes.has(current)) add2(internal, "YKP-GRAPH-002", "$.contract.relationships.parent");
+    if (!nodes.has(parent) || !nodes.has(current)) add(internal, "YKP-GRAPH-002", "$.contract.relationships.parent");
     else {
-      const existing = input.relationships.parent.find((edge) => edge.from === current);
+      const existing = input3.relationships.parent.find((edge) => edge.from === current);
       if (existing?.to === parent) observations.push({ type: "preserve_parent", logicalKey: "parent", displayValue: parent });
-      else if (existing) add2(internal, "YKP-GRAPH-003", "$.contract.relationships.parent");
+      else if (existing) add(internal, "YKP-GRAPH-003", "$.contract.relationships.parent");
       else {
         proposedParent.push({ from: current, to: parent });
         operations.push({ operationKey: opKey("relationship", "parent", parent, "set"), type: "set_parent", subject: { ref: scope.subjectRef }, resource: { kind: "issue_parent", logicalKey: "parent", scopeRef: scope.repositoryRef }, action: "set", environment: "dry-run", reason: "relationship.parent.missing", preconditions: [{ kind: "parent_absent", logicalKey: "parent", expected: true }], dependsOn: [], desired: parent });
       }
     }
   }
-  const proposedBlocks = [...input.relationships.blocks];
+  const proposedBlocks = [...input3.relationships.blocks];
   const desiredEdges = [...desiredBlocks].map((to) => ({ from: current, to }));
   desiredBlockedBy.forEach((from) => desiredEdges.push({ from, to: current }));
-  if (desiredEdges.length + (parent === void 0 ? 0 : 1) > 100) add2(internal, "YKP-GRAPH-001", "1contract.relationships");
+  if (desiredEdges.length + (parent === void 0 ? 0 : 1) > 100) add(internal, "YKP-GRAPH-001", "1contract.relationships");
   desiredEdges.sort((a, b) => a.from - b.from || a.to - b.to).forEach((edge) => {
     const path = "1contract.relationships";
     if (!nodes.has(edge.from) || !nodes.has(edge.to) || edge.from === edge.to) {
-      add2(internal, "YKP-GRAPH-002", path);
+      add(internal, "YKP-GRAPH-002", path);
       return;
     }
-    if (input.relationships.blocks.some((existing) => edgeKey(existing) === edgeKey(edge))) observations.push({ type: "preserve_dependency", logicalKey: edgeKey(edge), displayValue: edge.to });
+    if (input3.relationships.blocks.some((existing) => edgeKey(existing) === edgeKey(edge))) observations.push({ type: "preserve_dependency", logicalKey: edgeKey(edge), displayValue: edge.to });
     else {
       proposedBlocks.push(edge);
       operations.push({ operationKey: opKey("relationship", "dependency", edge.from, edge.to, "add"), type: "add_dependency", subject: { ref: scope.subjectRef }, resource: { kind: "issue_dependency", logicalKey: edgeKey(edge), scopeRef: scope.repositoryRef }, action: "add", environment: "dry-run", reason: "relationship.dependency.missing", preconditions: [{ kind: "dependency_absent", logicalKey: edgeKey(edge), expected: true }], dependsOn: [], desired: edge.to });
     }
   });
-  if (hasCycle(input.relationships.nodes, proposedParent)) add2(internal, "YKP-GRAPH-004", "$.contract.relationships.parent");
-  if (hasCycle(input.relationships.nodes, proposedBlocks)) add2(internal, "YKP-GRAPH-005", "$.contract.relationships.blocks");
+  if (hasCycle(input3.relationships.nodes, proposedParent)) add(internal, "YKP-GRAPH-004", "$.contract.relationships.parent");
+  if (hasCycle(input3.relationships.nodes, proposedBlocks)) add(internal, "YKP-GRAPH-005", "$.contract.relationships.blocks");
   return finishPlan(internal, operations, observations);
 }
 var PHASE = { create_field: 0, add_option: 1, set_field_value: 2, set_parent: 3, add_dependency: 4 };
@@ -8229,32 +7704,757 @@ function finishPlan(internal, operations, observations) {
   const base = { schema: 1, executable: found.length === 0, diagnostics: found, observations, operations };
   return { ...base, planId: planId(base) };
 }
-function renderPublicReport(plan) {
-  const reportOperations = plan.operations.map((operation) => {
-    const relationship = operation.type === "set_parent" || operation.type === "add_dependency";
-    return { type: operation.type, logicalKey: relationship ? operation.type === "set_parent" ? "parent" : "dependency" : operation.resource.logicalKey, ...!relationship && operation.desired !== void 0 ? { desired: operation.desired } : {}, reason: operation.reason, dependsOn: [...operation.dependsOn] };
+
+// src/apply-approval.ts
+var APPLY_VERSIONS = { contract: "controlled-apply-v1", planner: "reconciliation-plan-v1", snapshot: "rest-project-snapshot-v2", entrypoint: "apply-entrypoint-v1" };
+var DIGEST2 = /^[a-f0-9]{64}$/u;
+var SIGNATURE = /^[A-Za-z0-9_-]{86}$/u;
+var CLAIM_KEYS = ["schema", "issuerRef", "subjectRef", "repositoryRef", "projectRef", "issueRef", "issueNumber", "scopeDigest", "planId", "operationDigest", "environment", "protectedEnvironment", "issuedAtMs", "expiresAtMs", "nonce", "keyFingerprint", "contractVersion", "plannerVersion", "snapshotVersion", "entrypointVersion"];
+var ENVELOPE_KEYS = ["schema", "algorithm", "keyFingerprint", "claims", "signature"];
+function exactKeys(value2, keys2) {
+  return !!value2 && typeof value2 === "object" && !Array.isArray(value2) && Object.keys(value2).length === keys2.length && Object.keys(value2).every((key) => keys2.includes(key));
+}
+function bounded2(value2, max = 256) {
+  return typeof value2 === "string" && value2.length > 0 && value2.length <= max && !/[\u0000-\u001f\u007f]/u.test(value2);
+}
+function publicKey(value2) {
+  try {
+    const key = createPublicKey(value2);
+    if (key.asymmetricKeyType !== "ed25519") return null;
+    const der = key.export({ type: "spki", format: "der" });
+    return { key, fingerprint: createHash2("sha256").update(der).digest("hex") };
+  } catch {
+    return null;
+  }
+}
+function claimsShape(value2) {
+  if (!exactKeys(value2, CLAIM_KEYS)) return false;
+  const c = value2;
+  return c.schema === 1 && bounded2(c.issuerRef) && bounded2(c.subjectRef) && bounded2(c.repositoryRef) && bounded2(c.projectRef) && bounded2(c.issueRef) && Number.isSafeInteger(c.issueNumber) && c.issueNumber > 0 && DIGEST2.test(c.scopeDigest) && DIGEST2.test(c.planId) && DIGEST2.test(c.operationDigest) && c.environment === "apply" && bounded2(c.protectedEnvironment, 64) && Number.isSafeInteger(c.issuedAtMs) && Number.isSafeInteger(c.expiresAtMs) && bounded2(c.nonce) && DIGEST2.test(c.keyFingerprint) && c.contractVersion === APPLY_VERSIONS.contract && c.plannerVersion === APPLY_VERSIONS.planner && c.snapshotVersion === APPLY_VERSIONS.snapshot && c.entrypointVersion === APPLY_VERSIONS.entrypoint;
+}
+function signatureInput(envelope) {
+  return Buffer.from(`yukh-projects-approval-v1\0${canonicalJson(envelope)}`, "utf8");
+}
+function verifySignedApproval(artifact, trust) {
+  if (!exactKeys(artifact, ENVELOPE_KEYS)) return null;
+  const envelope = artifact;
+  if (envelope.schema !== 1 || envelope.algorithm !== "Ed25519" || !DIGEST2.test(envelope.keyFingerprint) || !SIGNATURE.test(envelope.signature) || !claimsShape(envelope.claims)) return null;
+  const trusted = publicKey(trust.publicKey);
+  if (!trusted || trusted.fingerprint !== envelope.keyFingerprint || envelope.claims.keyFingerprint !== trusted.fingerprint || !trust.allowedIssuerRefs.includes(envelope.claims.issuerRef)) return null;
+  try {
+    const signature = Buffer.from(envelope.signature, "base64url");
+    if (signature.length !== 64 || !verify(null, signatureInput({ schema: 1, algorithm: "Ed25519", keyFingerprint: envelope.keyFingerprint, claims: envelope.claims }), trusted.key, signature)) return null;
+  } catch {
+    return null;
+  }
+  return { ...envelope.claims };
+}
+
+// src/apply-coordination.ts
+import { createHash as createHash4 } from "node:crypto";
+
+// src/executor.ts
+import { createHash as createHash3 } from "node:crypto";
+var ApplyPortError = class extends Error {
+  constructor(failureClass) {
+    super("apply port failed");
+    this.failureClass = failureClass;
+    this.name = "ApplyPortError";
+  }
+  failureClass;
+};
+var MESSAGE = { "YKP-APPLY-001": "apply request is invalid", "YKP-APPLY-002": "apply is not explicitly enabled", "YKP-APPLY-003": "approval is invalid or does not match", "YKP-APPLY-004": "approval is expired or has invalid lifetime", "YKP-APPLY-005": "operation is unsupported", "YKP-APPLY-006": "scope lease is unavailable or lost", "YKP-APPLY-007": "fresh preflight does not match approved plan", "YKP-APPLY-008": "approval nonce is already consumed", "YKP-APPLY-009": "operation precondition does not match", "YKP-APPLY-010": "mutation attempt failed", "YKP-APPLY-011": "operation verification failed", "YKP-APPLY-012": "final convergence verification failed", "YKP-APPLY-013": "provider authentication failed", "YKP-APPLY-014": "provider authorization failed", "YKP-APPLY-015": "provider budget is reserved", "YKP-APPLY-016": "provider is unavailable", "YKP-APPLY-017": "provider invariant is invalid" };
+var MAP = { create_field: "create_project_field", add_option: "update_project_field_options", set_field_value: "update_project_item_field_value", set_parent: "add_sub_issue", add_dependency: "add_blocked_by" };
+function hash(v) {
+  return createHash3("sha256").update(canonicalJson(v)).digest("hex");
+}
+function integrity(plan) {
+  if (!plan || plan.schema !== 1 || !plan.executable || plan.diagnostics.length !== 0 || !Array.isArray(plan.operations) || !Array.isArray(plan.observations)) return false;
+  const { planId: planId2, ...base } = plan;
+  return /^[a-f0-9]{64}$/u.test(planId2) && hash(base) === planId2;
+}
+function bounded3(v) {
+  return typeof v === "string" && [...v].length > 0 && [...v].length <= 256 && !/[\u0000-\u001f\u007f]/u.test(v);
+}
+function validScope(s) {
+  return !!s && bounded3(s.subjectRef) && bounded3(s.repositoryRef) && bounded3(s.projectRef) && bounded3(s.issueRef) && Number.isSafeInteger(s.issueNumber) && s.issueNumber > 0;
+}
+function diag(code) {
+  return { code, severity: "error", message: MESSAGE[code] };
+}
+function result(planId2, ops, states, code, remaining = ops.length) {
+  return { schema: 1, status: code === "YKP-APPLY-015" ? "deferred" : code ? "error" : "success", planId: planId2, outcomes: ops.map((o) => ({ operationKey: o.operationKey, outcome: states.get(o.operationKey) ?? "not_attempted" })), remaining, diagnostics: code ? [diag(code)] : [] };
+}
+function portCode(error, fallback) {
+  if (!(error instanceof ApplyPortError)) return fallback;
+  const codes = { authentication: "YKP-APPLY-013", authorization: "YKP-APPLY-014", deferred_rate_budget: "YKP-APPLY-015", provider: "YKP-APPLY-016", invariant: "YKP-APPLY-017" };
+  return codes[error.failureClass];
+}
+function claimsValid(c, request, now, scopeDigest) {
+  return !!c && c.schema === 1 && bounded3(c.issuerRef) && c.subjectRef === request.scope.subjectRef && c.repositoryRef === request.scope.repositoryRef && c.projectRef === request.scope.projectRef && c.issueRef === request.scope.issueRef && c.issueNumber === request.scope.issueNumber && c.scopeDigest === scopeDigest && c.planId === request.approvedPlanId && /^[a-f0-9]{64}$/u.test(c.operationDigest) && c.environment === "apply" && bounded3(c.protectedEnvironment) && c.protectedEnvironment === request.protectedEnvironment && Number.isSafeInteger(c.issuedAtMs) && Number.isSafeInteger(c.expiresAtMs) && c.issuedAtMs <= now && c.expiresAtMs >= now && c.expiresAtMs - c.issuedAtMs <= 15 * 60 * 1e3 && bounded3(c.nonce) && [...c.nonce].length >= 22 && /^[a-f0-9]{64}$/u.test(c.keyFingerprint) && c.contractVersion === "controlled-apply-v1" && c.plannerVersion === "reconciliation-plan-v1" && c.snapshotVersion === "rest-project-snapshot-v2" && c.entrypointVersion === "apply-entrypoint-v1";
+}
+function dependenciesValid(ops) {
+  const prior = /* @__PURE__ */ new Set();
+  for (const op of ops) {
+    if (!bounded3(op.operationKey) || op.environment !== "dry-run" || op.dependsOn.some((d) => !prior.has(d))) return false;
+    prior.add(op.operationKey);
+  }
+  return prior.size === ops.length;
+}
+function operationsMatchScope(ops, scope) {
+  return ops.every((op) => op.subject.ref === scope.subjectRef && (op.resource.scopeRef === scope.repositoryRef || op.resource.scopeRef === scope.projectRef));
+}
+async function executeControlledPlan(request, ports) {
+  const planId2 = request?.approvedPlanId ?? "invalid", states = /* @__PURE__ */ new Map();
+  let operations = [];
+  if (!validScope(request?.scope) || !/^[a-f0-9]{64}$/u.test(planId2) || !bounded3(request?.protectedEnvironment)) return result(planId2, operations, states, "YKP-APPLY-001");
+  if (request.enablement !== "apply-explicitly-enabled") return result(planId2, operations, states, "YKP-APPLY-002");
+  const scopeDigest = hash(request.scope);
+  let approval;
+  try {
+    approval = await ports.verifyApproval(request.approval);
+  } catch {
+    return result(planId2, operations, states, "YKP-APPLY-003");
+  }
+  const now = ports.nowMs();
+  if (!claimsValid(approval, request, now, scopeDigest)) return result(planId2, operations, states, approval && approval.expiresAtMs < now ? "YKP-APPLY-004" : "YKP-APPLY-003");
+  let lease = null;
+  try {
+    try {
+      lease = await ports.acquireLease(scopeDigest);
+    } catch (error) {
+      return result(planId2, operations, states, portCode(error, "YKP-APPLY-006"));
+    }
+    if (!lease || !await lease.valid()) return result(planId2, operations, states, "YKP-APPLY-006");
+    let fresh;
+    try {
+      fresh = await ports.replan();
+    } catch (error) {
+      return result(planId2, operations, states, portCode(error, "YKP-APPLY-017"));
+    }
+    operations = fresh?.operations ?? [];
+    if (!integrity(fresh) || fresh.planId !== planId2 || !dependenciesValid(operations) || !operationsMatchScope(operations, request.scope) || hash(operations) !== approval.operationDigest) return result(planId2, operations, states, "YKP-APPLY-007");
+    if (operations.some((op) => !MAP[op.type])) return result(planId2, operations, states, "YKP-APPLY-005");
+    if (!await ports.consumeNonce(approval.nonce)) return result(planId2, operations, states, "YKP-APPLY-008");
+    await ports.audit({ type: "apply_started", planId: planId2, outcome: "approved" });
+    for (const op of operations) {
+      if (!await lease.valid()) {
+        await ports.audit({ type: "apply_stopped", planId: planId2, operationKey: op.operationKey, outcome: "lease_lost" });
+        return result(planId2, operations, states, "YKP-APPLY-006");
+      }
+      if (op.dependsOn.some((d) => !["verified", "already_converged"].includes(states.get(d) ?? "not_attempted"))) return result(planId2, operations, states, "YKP-APPLY-009");
+      let observed;
+      try {
+        observed = await ports.inspect(op);
+      } catch (error) {
+        return result(planId2, operations, states, portCode(error, "YKP-APPLY-009"));
+      }
+      if (observed === "already_converged") {
+        states.set(op.operationKey, "already_converged");
+        await ports.audit({ type: "operation", planId: planId2, operationKey: op.operationKey, outcome: "already_converged" });
+        continue;
+      }
+      if (observed !== "ready") {
+        states.set(op.operationKey, "failed");
+        return result(planId2, operations, states, "YKP-APPLY-009");
+      }
+      if (!Number.isSafeInteger(lease.fencingToken) || lease.fencingToken < 1 || !await lease.valid()) return result(planId2, operations, states, "YKP-APPLY-006");
+      const mutationKind = MAP[op.type];
+      try {
+        await ports.mutate(mutationKind, op, hash([planId2, op.operationKey]).slice(0, 64), lease.fencingToken);
+      } catch (error) {
+        states.set(op.operationKey, "failed");
+        await ports.audit({ type: "operation", planId: planId2, operationKey: op.operationKey, outcome: "failed" });
+        return result(planId2, operations, states, portCode(error, "YKP-APPLY-010"));
+      }
+      let verified = false;
+      try {
+        await ports.invalidateAfterMutation(mutationKind, op);
+        verified = await ports.verify(op);
+      } catch (error) {
+        return result(planId2, operations, states, portCode(error, "YKP-APPLY-011"));
+      }
+      if (!verified) {
+        states.set(op.operationKey, "failed");
+        return result(planId2, operations, states, "YKP-APPLY-011");
+      }
+      states.set(op.operationKey, "verified");
+      await ports.audit({ type: "operation", planId: planId2, operationKey: op.operationKey, outcome: "verified" });
+    }
+    let finalPlan;
+    try {
+      finalPlan = await ports.replan();
+    } catch (error) {
+      return result(planId2, operations, states, portCode(error, "YKP-APPLY-012"));
+    }
+    if (!integrity(finalPlan) || !finalPlan.executable || finalPlan.operations.length !== 0 || finalPlan.diagnostics.length !== 0) return result(planId2, operations, states, "YKP-APPLY-012", finalPlan.operations.length);
+    await ports.audit({ type: "apply_finished", planId: planId2, outcome: "verified" });
+    return result(planId2, operations, states, void 0, 0);
+  } catch (error) {
+    return result(planId2, operations, states, portCode(error, "YKP-APPLY-012"));
+  } finally {
+    if (lease) try {
+      await lease.release();
+    } catch {
+    }
+  }
+}
+function renderPublicApplyReport(value2) {
+  const counts = { already_converged: 0, verified: 0, failed: 0, not_attempted: 0 };
+  for (const item of value2.outcomes) counts[item.outcome]++;
+  return { schema: 1, status: value2.status, planId: value2.planId, counts, remaining: value2.remaining, diagnostics: value2.diagnostics.map((d) => ({ ...d })) };
+}
+
+// src/apply-coordination.ts
+var ApplyCoordinationError = class extends Error {
+  constructor(code) {
+    super("apply coordination failed");
+    this.code = code;
+    this.name = "ApplyCoordinationError";
+  }
+  code;
+};
+var DIGEST3 = /^[a-f0-9]{64}$/u;
+function digest(value2) {
+  return createHash4("sha256").update(value2).digest("hex");
+}
+function portFailure(error) {
+  if (error instanceof ApplyCoordinationError) {
+    if (error.code === "YKP-COORD-004") throw new ApplyPortError("authentication");
+    if (error.code === "YKP-COORD-005") throw new ApplyPortError("authorization");
+    if (error.code === "YKP-COORD-002") throw new ApplyPortError("provider");
+    throw new ApplyPortError("invariant");
+  }
+  throw new ApplyPortError("provider");
+}
+function bindApplyCoordination(base, store, options) {
+  if (!DIGEST3.test(options.holderDigest) || !Number.isSafeInteger(options.expiresAtMs) || !Number.isSafeInteger(options.epoch) || options.epoch < 1) throw new TypeError("invalid apply coordination binding");
+  return { ...base, consumeNonce: async (nonce) => {
+    try {
+      return await store.consumeNonce({ keyDigest: digest(`nonce-key\0${nonce}`), valueDigest: digest(`nonce-value\0${nonce}`), expiresAtMs: options.expiresAtMs, epoch: options.epoch }) === "consumed";
+    } catch (error) {
+      return portFailure(error);
+    }
+  }, acquireLease: async (scopeDigest) => {
+    let lease;
+    try {
+      lease = await store.acquireLease({ keyDigest: digest(`lease-key\0${scopeDigest}`), holderDigest: options.holderDigest, expiresAtMs: options.expiresAtMs, epoch: options.epoch });
+    } catch (error) {
+      return portFailure(error);
+    }
+    return lease ? { fencingToken: lease.fencingToken, valid: async () => {
+      try {
+        return await lease.valid();
+      } catch (error) {
+        return portFailure(error);
+      }
+    }, release: async () => {
+      await lease.release();
+    } } : null;
+  } };
+}
+
+// src/apply-entrypoint.ts
+async function runApplyEntrypoint(request, host) {
+  const now = host.ports.nowMs();
+  if (!Number.isSafeInteger(now)) throw new TypeError("invalid apply host clock");
+  const ports = bindApplyCoordination({ ...host.ports, verifyApproval: async (artifact) => verifySignedApproval(artifact, { publicKey: request.approvalPublicKey, allowedIssuerRefs: host.allowedIssuerRefs }) }, host.coordinationStore, { holderDigest: host.holderDigest, expiresAtMs: now + 15 * 60 * 1e3, epoch: host.coordinationEpoch });
+  return renderPublicApplyReport(await executeControlledPlan({ approvedPlanId: request.approvedPlanId, scope: request.scope, approval: request.approvalArtifact, enablement: host.enablement, protectedEnvironment: request.protectedEnvironment }, ports));
+}
+
+// src/apply-action.ts
+function input(io, name) {
+  const value2 = io.env[`INPUT_${name.toUpperCase()}`];
+  if (value2 === void 0 || value2 === "") throw new TypeError("invalid action input");
+  return value2;
+}
+function failure(planId2) {
+  return { schema: 1, status: "error", planId: /^[a-f0-9]{64}$/u.test(planId2) ? planId2 : "invalid", counts: { already_converged: 0, verified: 0, failed: 0, not_attempted: 0 }, remaining: 0, diagnostics: [{ code: "YKP-APPLY-001", severity: "error", message: "apply request is invalid" }] };
+}
+async function applyActionMain(io, factory) {
+  let approvedPlanId = "invalid";
+  try {
+    if (input(io, "MODE") !== "apply") throw new TypeError("invalid action mode");
+    const readToken = input(io, "GITHUB-READ-TOKEN");
+    io.mask(readToken);
+    const writeToken = input(io, "GITHUB-WRITE-TOKEN");
+    io.mask(writeToken);
+    if (readToken === writeToken) throw new TypeError("credential profiles must be distinct");
+    approvedPlanId = input(io, "APPROVED-PLAN-ID");
+    const workspace = io.env.GITHUB_WORKSPACE;
+    if (!workspace) throw new TypeError("invalid action environment");
+    const requestedScope = parseRuntimeScope({ owner: input(io, "OWNER"), repository: input(io, "REPOSITORY"), projectNumber: input(io, "PROJECT-NUMBER"), issueNumber: input(io, "ISSUE-NUMBER") }), [policySource, approvalArtifact, approvalPublicKey] = await Promise.all([loadWorkspacePolicy(workspace, io.env["INPUT_POLICY-PATH"] || ".yukh/project.yaml"), readApprovalArtifact(workspace, input(io, "APPROVAL-FILE")), readExclusiveWorkspaceFile(workspace, input(io, "APPROVAL-PUBLIC-KEY-FILE"))]), runtime = await factory.create({ requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId, protectedEnvironment: input(io, "ENVIRONMENT"), scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host);
+    await io.output("status", report.status);
+    await io.output("plan-id", report.planId);
+    await io.output("remaining", String(report.remaining));
+    await io.output("report", JSON.stringify(report));
+    if (report.status !== "success") io.error(report.diagnostics[0]?.code ?? "YKP-APPLY-001");
+    return report;
+  } catch {
+    const report = failure(approvedPlanId);
+    io.error("YKP-APPLY-001");
+    return report;
+  }
+}
+
+// src/apply-cli.ts
+function failure2(planId2) {
+  return { schema: 1, status: "error", planId: /^[a-f0-9]{64}$/u.test(planId2) ? planId2 : "invalid", counts: { already_converged: 0, verified: 0, failed: 0, not_attempted: 0 }, remaining: 0, diagnostics: [{ code: "YKP-APPLY-001", severity: "error", message: "apply request is invalid" }] };
+}
+async function applyCliMain(argv, workspace, factory, write) {
+  let approvedPlanId = "invalid";
+  try {
+    const options = parseApplyCliArgs(argv);
+    approvedPlanId = options.approvedPlanId;
+    const [readToken, writeToken, policySource, approvalArtifact, approvalPublicKey] = await Promise.all([readBoundedFd(options.readTokenFd), readBoundedFd(options.writeTokenFd), loadWorkspacePolicy(workspace, options.policyPath), readApprovalArtifact(workspace, options.approvalFile), readExclusiveWorkspaceFile(workspace, options.approvalPublicKeyFile)]);
+    if (readToken === writeToken) throw new TypeError("credential profiles must be distinct");
+    const requestedScope = parseRuntimeScope({ owner: options.owner, repository: options.repository, projectNumber: options.projectNumber, issueNumber: options.issueNumber }), runtime = await factory.create({ requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId: options.approvedPlanId, protectedEnvironment: options.environment, scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host);
+    write(`${JSON.stringify(report)}
+`);
+    return report.status === "success" ? 0 : report.status === "deferred" ? 6 : 5;
+  } catch {
+    write(`${JSON.stringify(failure2(approvedPlanId))}
+`);
+    return 2;
+  }
+}
+
+// src/apply-coordination-http.ts
+var MEDIA = "application/yukh-coordination-primitives+json;version=1";
+var DIGEST4 = /^[a-f0-9]{64}$/u;
+var MAX_BODY = 4096;
+var MAX_CAPABILITY = 3800;
+function canonical(value2) {
+  if (value2 === null || typeof value2 === "boolean" || typeof value2 === "string") return JSON.stringify(value2);
+  if (typeof value2 === "number") {
+    if (!Number.isSafeInteger(value2)) throw new ApplyCoordinationError("YKP-COORD-001");
+    return JSON.stringify(value2);
+  }
+  if (Array.isArray(value2)) return `[${value2.map(canonical).join(",")}]`;
+  if (typeof value2 !== "object") throw new ApplyCoordinationError("YKP-COORD-001");
+  const record = value2, keys2 = Object.keys(record).sort();
+  return `{${keys2.map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`).join(",")}}`;
+}
+function expiry(value2) {
+  if (!Number.isSafeInteger(value2)) throw new ApplyCoordinationError("YKP-COORD-001");
+  const formatted = new Date(value2).toISOString();
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(formatted)) throw new ApplyCoordinationError("YKP-COORD-001");
+  return formatted;
+}
+function validRequest(value2, epoch) {
+  return DIGEST4.test(value2.keyDigest) && DIGEST4.test("valueDigest" in value2 ? value2.valueDigest : value2.holderDigest) && value2.epoch === epoch && Number.isSafeInteger(value2.expiresAtMs);
+}
+function object(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function beforeDeadline(promise, signal) {
+  if (signal.aborted) return Promise.reject(new ApplyCoordinationError("YKP-COORD-002"));
+  return new Promise((resolve3, reject) => {
+    const aborted = () => reject(new ApplyCoordinationError("YKP-COORD-002"));
+    signal.addEventListener("abort", aborted, { once: true });
+    promise.then((value2) => {
+      signal.removeEventListener("abort", aborted);
+      resolve3(value2);
+    }, (error) => {
+      signal.removeEventListener("abort", aborted);
+      reject(error);
+    });
   });
-  const reportObservations = plan.observations.map((item) => item.type === "preserve_field_value" ? { ...item } : { ...item, logicalKey: item.type === "preserve_parent" ? "parent" : "dependency", displayValue: "present" });
-  return { schema: 1, planId: plan.planId, executable: plan.executable, counts: { diagnostics: plan.diagnostics.length, observations: reportObservations.length, operations: reportOperations.length }, diagnostics: plan.diagnostics.map((item) => ({ ...item })), observations: reportObservations, operations: reportOperations };
+}
+async function bounded4(response, signal) {
+  const reader = response.body?.getReader();
+  if (!reader) throw new ApplyCoordinationError("YKP-COORD-001");
+  const chunks = [];
+  let length = 0;
+  try {
+    for (; ; ) {
+      const { done, value: value2 } = await beforeDeadline(reader.read(), signal);
+      if (done) break;
+      if (!(value2 instanceof Uint8Array) || (length += value2.byteLength) > MAX_BODY) {
+        await reader.cancel();
+        throw new ApplyCoordinationError("YKP-COORD-001");
+      }
+      chunks.push(value2);
+    }
+  } catch (error) {
+    if (error instanceof ApplyCoordinationError) throw error;
+    throw new ApplyCoordinationError("YKP-COORD-002");
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  let text5;
+  try {
+    text5 = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    throw new ApplyCoordinationError("YKP-COORD-001");
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(text5);
+  } catch {
+    throw new ApplyCoordinationError("YKP-COORD-001");
+  }
+  if (canonical(parsed) !== text5) throw new ApplyCoordinationError("YKP-COORD-001");
+  return parsed;
+}
+function createApplyCoordinationHttpStore(options) {
+  let base;
+  try {
+    base = new URL(options?.baseUri);
+  } catch {
+    throw new TypeError("invalid coordination configuration");
+  }
+  if (base.protocol !== "https:" || base.username || base.password || base.search || base.hash || base.pathname !== "/" || options.baseUri.endsWith("/") || !Number.isSafeInteger(options.epoch) || options.epoch < 1 || !Number.isSafeInteger(options.deadlineMs) || options.deadlineMs < 1 || options.deadlineMs > 5e3 || typeof options.authenticate !== "function") throw new TypeError("invalid coordination configuration");
+  const fetcher = options.fetch ?? globalThis.fetch;
+  async function call(path, body) {
+    const target = `${options.baseUri}${path}`, raw = canonical(body);
+    if (Buffer.byteLength(raw) > MAX_BODY) throw new ApplyCoordinationError("YKP-COORD-001");
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), options.deadlineMs);
+    try {
+      let auth;
+      try {
+        auth = await beforeDeadline(options.authenticate({ method: "POST", targetUri: target, signal: controller.signal }), controller.signal);
+      } catch {
+        throw new ApplyCoordinationError("YKP-COORD-002");
+      }
+      if (typeof auth?.credential !== "string" || auth.credential.length < 1 || auth.credential.length > 8192 || typeof auth.proof !== "string" || auth.proof.length < 1 || auth.proof.length > 16384) throw new ApplyCoordinationError("YKP-COORD-001");
+      let response;
+      try {
+        response = await fetcher(target, { method: "POST", redirect: "manual", signal: controller.signal, headers: { authorization: `DPoP ${auth.credential}`, dpop: auth.proof, "content-type": MEDIA }, body: raw });
+      } catch {
+        throw new ApplyCoordinationError("YKP-COORD-002");
+      }
+      if (response.status >= 300 && response.status < 400) throw new ApplyCoordinationError("YKP-COORD-002");
+      if (response.headers.get("content-type")?.split(";").map((part) => part.trim()).join(";") !== MEDIA) throw new ApplyCoordinationError("YKP-COORD-001");
+      const parsed = await bounded4(response, controller.signal);
+      if (!object(parsed)) throw new ApplyCoordinationError("YKP-COORD-001");
+      if (!response.ok) {
+        if (response.status === 401) throw new ApplyCoordinationError("YKP-COORD-004");
+        if (response.status === 403) throw new ApplyCoordinationError("YKP-COORD-005");
+        const code = parsed.code;
+        throw new ApplyCoordinationError(code === "conflict" || code === "replayed" || code === "stale_fence" ? "YKP-COORD-003" : code === "temporarily_unavailable" ? "YKP-COORD-002" : "YKP-COORD-001");
+      }
+      if (parsed.specversion !== "1" || typeof parsed.outcome !== "string") throw new ApplyCoordinationError("YKP-COORD-001");
+      return parsed;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return {
+    consumeNonce: async (request) => {
+      if (!validRequest(request, options.epoch)) throw new ApplyCoordinationError("YKP-COORD-001");
+      const result2 = await call("/coordination-primitives/v1/nonces:consume", { epoch: request.epoch, expires_at: expiry(request.expiresAtMs), scope_digest: request.keyDigest, value_digest: request.valueDigest });
+      if (result2.outcome !== "consumed" && result2.outcome !== "replayed") throw new ApplyCoordinationError("YKP-COORD-001");
+      return result2.outcome;
+    },
+    acquireLease: async (request) => {
+      if (!validRequest(request, options.epoch)) throw new ApplyCoordinationError("YKP-COORD-001");
+      let result2;
+      try {
+        result2 = await call("/coordination-primitives/v1/leases:acquire", { epoch: request.epoch, expires_at: expiry(request.expiresAtMs), holder_digest: request.holderDigest, scope_digest: request.keyDigest });
+      } catch (error) {
+        if (error instanceof ApplyCoordinationError && error.code === "YKP-COORD-003") return null;
+        throw error;
+      }
+      if (result2.outcome !== "acquired" || typeof result2.lease_capability !== "string" || result2.lease_capability.length < 1 || result2.lease_capability.length > MAX_CAPABILITY || !Number.isSafeInteger(result2.fencing_token) || Number(result2.fencing_token) < 1) throw new ApplyCoordinationError("YKP-COORD-001");
+      let capability = result2.lease_capability, fencingToken = Number(result2.fencing_token);
+      const lease = { get fencingToken() {
+        return fencingToken;
+      }, renew: async (expiresAtMs) => {
+        try {
+          const renewed = await call("/coordination-primitives/v1/leases:renew", { expires_at: expiry(expiresAtMs), lease_capability: capability });
+          if (renewed.outcome !== "renewed" || typeof renewed.lease_capability !== "string" || renewed.lease_capability.length < 1 || renewed.lease_capability.length > MAX_CAPABILITY || !Number.isSafeInteger(renewed.fencing_token) || Number(renewed.fencing_token) <= fencingToken) throw new ApplyCoordinationError("YKP-COORD-001");
+          capability = renewed.lease_capability;
+          fencingToken = Number(renewed.fencing_token);
+          return true;
+        } catch (error) {
+          if (error instanceof ApplyCoordinationError && error.code === "YKP-COORD-003") return false;
+          throw error;
+        }
+      }, valid: async () => {
+        const inspected = await call("/coordination-primitives/v1/leases:inspect", { lease_capability: capability });
+        if (!["valid", "expired", "released", "stale"].includes(String(inspected.outcome))) throw new ApplyCoordinationError("YKP-COORD-001");
+        return inspected.outcome === "valid";
+      }, release: async () => {
+        try {
+          const released = await call("/coordination-primitives/v1/leases:release", { lease_capability: capability });
+          return released.outcome === "released";
+        } catch (error) {
+          if (error instanceof ApplyCoordinationError && error.code === "YKP-COORD-003") return false;
+          throw error;
+        }
+      } };
+      return lease;
+    }
+  };
+}
+
+// src/issue-contract.ts
+var import_yaml = __toESM(require_dist(), 1);
+var MESSAGES2 = {
+  "YKP-CONTRACT-001": "required field is missing",
+  "YKP-CONTRACT-002": "contract envelope is ambiguous or incomplete",
+  "YKP-CONTRACT-003": "input byte limit is exceeded",
+  "YKP-CONTRACT-004": "YAML syntax or feature is forbidden",
+  "YKP-CONTRACT-005": "structural limit is exceeded",
+  "YKP-CONTRACT-006": "field is not recognized",
+  "YKP-CONTRACT-007": "value has an invalid type",
+  "YKP-CONTRACT-008": "value is invalid or unsupported",
+  "YKP-CONTRACT-009": "sequence value is duplicated",
+  "YKP-CONTRACT-010": "relationship is invalid",
+  "YKP-CONTRACT-011": "date range is inconsistent"
+};
+var OPEN = "<!-- yukh:issue:v1";
+var WORK_TYPES = /* @__PURE__ */ new Set(["epic", "gate", "feature", "task", "bug", "technical-debt"]);
+var ROOT_FIELDS = /* @__PURE__ */ new Set(["schema", "work_type", "area", "priority", "size", "estimate", "iteration", "project", "relationships"]);
+var PROJECT_FIELDS = /* @__PURE__ */ new Set(["status", "start_date", "target_date"]);
+var RELATIONSHIP_FIELDS = /* @__PURE__ */ new Set(["parent", "blocks", "blocked_by"]);
+function add2(target, code, path, offset = Number.MAX_SAFE_INTEGER) {
+  target.push({ code, path, severity: "error", message: MESSAGES2[code], offset });
+}
+function finish(contract, source) {
+  const seen = /* @__PURE__ */ new Set();
+  const diagnostics2 = source.sort((a, b) => a.offset - b.offset || a.code.localeCompare(b.code) || a.path.localeCompare(b.path)).filter((item) => {
+    const key = `${item.code}\0${item.path}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).map(({ offset: _offset, ...item }) => item);
+  return { contract: diagnostics2.length === 0 ? contract : null, diagnostics: diagnostics2 };
+}
+function exactLineOffsets(body, line) {
+  const result2 = [];
+  let offset = 0;
+  for (const part of body.split(/(?<=\n)/u)) {
+    const value2 = part.replace(/\r?\n$/u, "");
+    if (value2 === line) result2.push(offset);
+    offset += part.length;
+  }
+  return result2;
+}
+function inspectStructure(node, depth, path, diagnostics2, state) {
+  const value2 = node;
+  const offset = value2?.range?.[0] ?? Number.MAX_SAFE_INTEGER;
+  if (depth > 8) add2(diagnostics2, "YKP-CONTRACT-005", path, offset);
+  if ((0, import_yaml.isAlias)(node) || value2?.anchor || value2?.tag) {
+    add2(diagnostics2, "YKP-CONTRACT-004", path, offset);
+    return;
+  }
+  if ((0, import_yaml.isMap)(node)) {
+    const limit = depth === 0 ? 32 : 16;
+    if (node.items.length > limit) add2(diagnostics2, "YKP-CONTRACT-005", path, offset);
+    for (const pair of node.items) {
+      if (!(0, import_yaml.isScalar)(pair.key) || typeof pair.key.value !== "string" || pair.key.value === "<<") {
+        add2(diagnostics2, "YKP-CONTRACT-004", path, pair.key?.range?.[0] ?? offset);
+        continue;
+      }
+      inspectStructure(pair.value, depth + 1, `${path}.${pair.key.value}`, diagnostics2, state);
+    }
+    return;
+  }
+  if ((0, import_yaml.isSeq)(node)) {
+    if (node.items.length > 100) add2(diagnostics2, "YKP-CONTRACT-005", path, offset);
+    node.items.forEach((item, index) => inspectStructure(item, depth + 1, `${path}[${index}]`, diagnostics2, state));
+    return;
+  }
+  if ((0, import_yaml.isScalar)(node)) {
+    state.scalars += 1;
+    if (state.scalars > 512) add2(diagnostics2, "YKP-CONTRACT-005", path, offset);
+    if (typeof node.value === "string" && [...node.value].length > 512) add2(diagnostics2, "YKP-CONTRACT-005", path, offset);
+  }
+}
+function isRecord(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function vocabulary(value2, max, path, diagnostics2) {
+  if (typeof value2 !== "string") {
+    add2(diagnostics2, "YKP-CONTRACT-007", path);
+    return void 0;
+  }
+  const normalized = value2.trim();
+  if (!normalized || [...normalized].length > max || /[\u0000-\u001f\u007f]/u.test(normalized)) {
+    add2(diagnostics2, "YKP-CONTRACT-008", path);
+    return void 0;
+  }
+  return normalized;
+}
+function calendarDate(value2, path, diagnostics2) {
+  if (typeof value2 !== "string") {
+    add2(diagnostics2, "YKP-CONTRACT-007", path);
+    return void 0;
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/u.test(value2)) {
+    add2(diagnostics2, "YKP-CONTRACT-008", path);
+    return void 0;
+  }
+  const [year, month, day] = value2.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    add2(diagnostics2, "YKP-CONTRACT-008", path);
+    return void 0;
+  }
+  return value2;
+}
+function issueNumber(value2, path, diagnostics2) {
+  if (!Number.isSafeInteger(value2) || value2 <= 0) {
+    add2(diagnostics2, typeof value2 === "number" ? "YKP-CONTRACT-008" : "YKP-CONTRACT-007", path);
+    return void 0;
+  }
+  return value2;
+}
+function relationList(value2, path, current, diagnostics2) {
+  if (!Array.isArray(value2)) {
+    add2(diagnostics2, "YKP-CONTRACT-007", path);
+    return void 0;
+  }
+  if (value2.length > 100) {
+    add2(diagnostics2, "YKP-CONTRACT-005", path);
+    return void 0;
+  }
+  const result2 = [];
+  const seen = /* @__PURE__ */ new Set();
+  value2.forEach((entry, index) => {
+    const parsed = issueNumber(entry, `${path}[${index}]`, diagnostics2);
+    if (parsed === void 0) return;
+    if (seen.has(parsed)) add2(diagnostics2, "YKP-CONTRACT-009", `${path}[${index}]`);
+    else if (current !== void 0 && parsed === current) add2(diagnostics2, "YKP-CONTRACT-010", `${path}[${index}]`);
+    else {
+      seen.add(parsed);
+      result2.push(parsed);
+    }
+  });
+  return result2;
+}
+function unknownFields(value2, allowed, path, diagnostics2) {
+  for (const field2 of Object.keys(value2)) if (!allowed.has(field2)) add2(diagnostics2, "YKP-CONTRACT-006", `${path}.${field2}`);
+}
+function semantic(value2, options, diagnostics2) {
+  if (!isRecord(value2)) {
+    add2(diagnostics2, "YKP-CONTRACT-007", "$");
+    return null;
+  }
+  unknownFields(value2, ROOT_FIELDS, "$", diagnostics2);
+  for (const field2 of ["schema", "work_type", "area"]) if (!(field2 in value2)) add2(diagnostics2, "YKP-CONTRACT-001", `$.${field2}`);
+  const result2 = {};
+  if ("schema" in value2) {
+    if (value2.schema === 1) result2.schema = 1;
+    else add2(diagnostics2, typeof value2.schema === "number" ? "YKP-CONTRACT-008" : "YKP-CONTRACT-007", "$.schema");
+  }
+  if ("work_type" in value2) {
+    if (typeof value2.work_type !== "string") add2(diagnostics2, "YKP-CONTRACT-007", "$.work_type");
+    else if (!WORK_TYPES.has(value2.work_type)) add2(diagnostics2, "YKP-CONTRACT-008", "$.work_type");
+    else result2.work_type = value2.work_type;
+  }
+  if ("area" in value2) result2.area = vocabulary(value2.area, 64, "$.area", diagnostics2);
+  if ("priority" in value2) result2.priority = vocabulary(value2.priority, 32, "$.priority", diagnostics2);
+  if ("size" in value2) result2.size = vocabulary(value2.size, 32, "$.size", diagnostics2);
+  if ("iteration" in value2) result2.iteration = vocabulary(value2.iteration, 128, "$.iteration", diagnostics2);
+  if ("estimate" in value2) {
+    if (typeof value2.estimate !== "number") add2(diagnostics2, "YKP-CONTRACT-007", "$.estimate");
+    else if (!Number.isFinite(value2.estimate) || value2.estimate < 0 || value2.estimate > 1e4) add2(diagnostics2, "YKP-CONTRACT-008", "$.estimate");
+    else result2.estimate = value2.estimate;
+  }
+  if ("project" in value2) {
+    if (!isRecord(value2.project)) add2(diagnostics2, "YKP-CONTRACT-007", "$.project");
+    else {
+      unknownFields(value2.project, PROJECT_FIELDS, "$.project", diagnostics2);
+      const project = {};
+      if ("status" in value2.project) project.status = vocabulary(value2.project.status, 64, "$.project.status", diagnostics2);
+      if ("start_date" in value2.project) project.start_date = calendarDate(value2.project.start_date, "$.project.start_date", diagnostics2);
+      if ("target_date" in value2.project) project.target_date = calendarDate(value2.project.target_date, "$.project.target_date", diagnostics2);
+      if (project.start_date && project.target_date && project.target_date < project.start_date) add2(diagnostics2, "YKP-CONTRACT-011", "$.project.target_date");
+      result2.project = project;
+    }
+  }
+  if ("relationships" in value2) {
+    if (!isRecord(value2.relationships)) add2(diagnostics2, "YKP-CONTRACT-007", "$.relationships");
+    else {
+      unknownFields(value2.relationships, RELATIONSHIP_FIELDS, "$.relationships", diagnostics2);
+      const relationships = {};
+      if ("parent" in value2.relationships) {
+        const parent = issueNumber(value2.relationships.parent, "$.relationships.parent", diagnostics2);
+        if (parent !== void 0 && options.issueNumber === parent) add2(diagnostics2, "YKP-CONTRACT-010", "$.relationships.parent");
+        else if (parent !== void 0) relationships.parent = parent;
+      }
+      if ("blocks" in value2.relationships) relationships.blocks = relationList(value2.relationships.blocks, "$.relationships.blocks", options.issueNumber, diagnostics2);
+      if ("blocked_by" in value2.relationships) relationships.blocked_by = relationList(value2.relationships.blocked_by, "$.relationships.blocked_by", options.issueNumber, diagnostics2);
+      result2.relationships = relationships;
+    }
+  }
+  return result2;
+}
+function parseIssueContract(body, options = {}) {
+  const diagnostics2 = [];
+  if (Buffer.byteLength(body, "utf8") > 256 * 1024) {
+    add2(diagnostics2, "YKP-CONTRACT-003", "$", 0);
+    return finish(null, diagnostics2);
+  }
+  const openings = exactLineOffsets(body, OPEN);
+  if (openings.length === 0) return finish(null, diagnostics2);
+  if (openings.length !== 1) {
+    add2(diagnostics2, "YKP-CONTRACT-002", "$", openings[1] ?? openings[0]);
+    return finish(null, diagnostics2);
+  }
+  const start = openings[0];
+  const contentStart = body.indexOf("\n", start);
+  if (contentStart < 0) {
+    add2(diagnostics2, "YKP-CONTRACT-002", "$", start);
+    return finish(null, diagnostics2);
+  }
+  const closing = exactLineOffsets(body.slice(contentStart + 1), "-->").map((offset) => offset + contentStart + 1);
+  if (closing.length === 0) {
+    add2(diagnostics2, "YKP-CONTRACT-002", "$", start);
+    return finish(null, diagnostics2);
+  }
+  const end = closing[0];
+  const content = body.slice(contentStart + 1, end);
+  if (Buffer.byteLength(content, "utf8") > 16 * 1024) {
+    add2(diagnostics2, "YKP-CONTRACT-003", "$", start);
+    return finish(null, diagnostics2);
+  }
+  const documents = (0, import_yaml.parseAllDocuments)(content, { schema: "core", uniqueKeys: true, strict: true, prettyErrors: false });
+  if (documents.length !== 1 || documents.some((document2) => document2.errors.length > 0)) {
+    add2(diagnostics2, "YKP-CONTRACT-004", "$", start);
+    return finish(null, diagnostics2);
+  }
+  const document = documents[0];
+  inspectStructure(document.contents, 0, "$", diagnostics2, { scalars: 0 });
+  if (diagnostics2.length > 0) return finish(null, diagnostics2);
+  let value2;
+  try {
+    value2 = document.toJS({ maxAliasCount: 0, mapAsMap: false });
+  } catch {
+    add2(diagnostics2, "YKP-CONTRACT-004", "$", start);
+    return finish(null, diagnostics2);
+  }
+  const contract = semantic(value2, options, diagnostics2);
+  return finish(contract, diagnostics2);
 }
 
 // src/github-readonly.ts
+import { createHash as createHash5 } from "node:crypto";
 var READ_OPERATIONS = ["resolve_scope", "read_project_fields", "read_project_item", "read_issue_relationships"];
 var MSG = { "YKP-GH-READ-001": "requested scope is invalid", "YKP-GH-READ-002": "authentication failed", "YKP-GH-READ-003": "access is denied", "YKP-GH-READ-004": "provider is unavailable", "YKP-GH-READ-005": "response limit is exceeded", "YKP-GH-READ-006": "resource binding does not match", "YKP-GH-READ-007": "pagination invariant is invalid", "YKP-GH-READ-008": "provider response is invalid", "YKP-GH-READ-009": "provider rate limit is reached", "YKP-GH-READ-010": "failure could not be safely classified", "YKP-GH-READ-011": "required provider capability is unavailable", "YKP-RATE-001": "provider budget is reserved", "YKP-CACHE-001": "cached observation is invalid", "YKP-CAPABILITY-001": "required provider capability is unavailable", "YKP-REST-001": "REST response is invalid", "YKP-SNAPSHOT-001": "snapshot is incomplete" };
-function failure(code, operation, retry = "never") {
+function failure3(code, operation, retry = "never") {
   return { observation: null, diagnostics: [{ code, severity: "error", message: MSG[code], operation, retry }] };
 }
-function rec2(v) {
+function rec(v) {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
-function text2(v, max = 256) {
+function text(v, max = 256) {
   return typeof v === "string" && v.trim() === v && [...v].length > 0 && [...v].length <= max && !/[\u0000-\u001f\u007f]/u.test(v);
 }
 function scopeOK(s) {
-  return !!s && text2(s.ownerLogin) && text2(s.repositoryName) && Number.isSafeInteger(s.projectNumber) && s.projectNumber > 0 && Number.isSafeInteger(s.issueNumber) && s.issueNumber > 0;
+  return !!s && text(s.ownerLogin) && text(s.repositoryName) && Number.isSafeInteger(s.projectNumber) && s.projectNumber > 0 && Number.isSafeInteger(s.issueNumber) && s.issueNumber > 0;
 }
 function page(v) {
-  return rec2(v) && Array.isArray(v.nodes) && rec2(v.pageInfo) && typeof v.pageInfo.hasNextPage === "boolean" && (v.pageInfo.endCursor === null || text2(v.pageInfo.endCursor));
+  return rec(v) && Array.isArray(v.nodes) && rec(v.pageInfo) && typeof v.pageInfo.hasNextPage === "boolean" && (v.pageInfo.endCursor === null || text(v.pageInfo.endCursor));
 }
 var ReadFailure = class {
   constructor(code, operation) {
@@ -8265,7 +8465,7 @@ var ReadFailure = class {
   operation;
 };
 async function readGitHubObservation(scope, transport) {
-  if (!scopeOK(scope)) return failure("YKP-GH-READ-001", "scope");
+  if (!scopeOK(scope)) return failure3("YKP-GH-READ-001", "scope");
   const counts = Object.fromEntries(READ_OPERATIONS.map((k) => [k, 0]));
   let bytes = 0, pages = 0;
   const execute = async (op, cursor) => {
@@ -8273,12 +8473,12 @@ async function readGitHubObservation(scope, transport) {
     const e = await transport.execute(op, Object.freeze({ ownerLogin: scope.ownerLogin, repositoryName: scope.repositoryName, projectNumber: scope.projectNumber, issueNumber: scope.issueNumber, cursor, first: 50 }));
     pages++;
     if (!Number.isSafeInteger(e?.byteCount) || e.byteCount < 0 || e.byteCount > 2 * 1024 * 1024 || (bytes += e.byteCount) > 16 * 1024 * 1024) throw new ReadFailure("YKP-GH-READ-005", op);
-    if (!rec2(e.data)) throw new ReadFailure("YKP-GH-READ-008", op);
+    if (!rec(e.data)) throw new ReadFailure("YKP-GH-READ-008", op);
     return e.data;
   };
   try {
     const resolved = await execute("resolve_scope", null);
-    if (resolved.ownerLogin !== scope.ownerLogin || resolved.repositoryName !== scope.repositoryName || resolved.projectNumber !== scope.projectNumber || resolved.issueNumber !== scope.issueNumber || !text2(resolved.subjectRef) || !text2(resolved.repositoryRef) || !text2(resolved.projectRef) || !text2(resolved.issueRef)) throw new ReadFailure("YKP-GH-READ-006", "resolve_scope");
+    if (resolved.ownerLogin !== scope.ownerLogin || resolved.repositoryName !== scope.repositoryName || resolved.projectNumber !== scope.projectNumber || resolved.issueNumber !== scope.issueNumber || !text(resolved.subjectRef) || !text(resolved.repositoryRef) || !text(resolved.projectRef) || !text(resolved.issueRef)) throw new ReadFailure("YKP-GH-READ-006", "resolve_scope");
     if (typeof resolved.issueBody !== "string") throw new ReadFailure("YKP-GH-READ-008", "resolve_scope");
     if (Buffer.byteLength(resolved.issueBody, "utf8") > 256 * 1024) throw new ReadFailure("YKP-GH-READ-005", "resolve_scope");
     const paginate = async (op) => {
@@ -8304,11 +8504,11 @@ async function readGitHubObservation(scope, transport) {
     for (const p of fieldPages) {
       if (p.projectRef !== resolved.projectRef) throw new ReadFailure("YKP-GH-READ-006", "read_project_fields");
       for (const v of p.nodes) {
-        if (!rec2(v) || !text2(v.id) || !text2(v.name) || !["text", "number", "date", "single_select", "iteration"].includes(String(v.kind)) || fieldIds.has(v.id) || !Array.isArray(v.options) || v.options.length > 256) throw new ReadFailure("YKP-GH-READ-008", "read_project_fields");
+        if (!rec(v) || !text(v.id) || !text(v.name) || !["text", "number", "date", "single_select", "iteration"].includes(String(v.kind)) || fieldIds.has(v.id) || !Array.isArray(v.options) || v.options.length > 256) throw new ReadFailure("YKP-GH-READ-008", "read_project_fields");
         fieldIds.add(v.id);
         const options = [];
         for (const o of v.options) {
-          if (!rec2(o) || !text2(o.id) || !text2(o.name) || optionIds.has(o.id)) throw new ReadFailure("YKP-GH-READ-008", "read_project_fields");
+          if (!rec(o) || !text(o.id) || !text(o.name) || optionIds.has(o.id)) throw new ReadFailure("YKP-GH-READ-008", "read_project_fields");
           optionIds.add(o.id);
           options.push({ id: o.id, name: o.name });
           if (++optionCount > 2048) throw new ReadFailure("YKP-GH-READ-005", "read_project_fields");
@@ -8327,11 +8527,11 @@ async function readGitHubObservation(scope, transport) {
         if (p.nodes.length || itemRef) throw new ReadFailure("YKP-GH-READ-008", "read_project_item");
         continue;
       }
-      if (p.projectRef !== resolved.projectRef || !text2(p.itemRef) || !text2(p.fingerprint) || itemRef && p.itemRef !== itemRef || fingerprint && p.fingerprint !== fingerprint) throw new ReadFailure("YKP-GH-READ-006", "read_project_item");
+      if (p.projectRef !== resolved.projectRef || !text(p.itemRef) || !text(p.fingerprint) || itemRef && p.itemRef !== itemRef || fingerprint && p.fingerprint !== fingerprint) throw new ReadFailure("YKP-GH-READ-006", "read_project_item");
       itemRef = p.itemRef;
       fingerprint = p.fingerprint;
       for (const v of p.nodes) {
-        if (!rec2(v) || !text2(v.key, 64) || v.key in values || !(v.value === null || typeof v.value === "string" || typeof v.value === "number" && Number.isFinite(v.value))) throw new ReadFailure("YKP-GH-READ-008", "read_project_item");
+        if (!rec(v) || !text(v.key, 64) || v.key in values || !(v.value === null || typeof v.value === "string" || typeof v.value === "number" && Number.isFinite(v.value))) throw new ReadFailure("YKP-GH-READ-008", "read_project_item");
         values[v.key] = v.value;
         if (Object.keys(values).length > 256) throw new ReadFailure("YKP-GH-READ-005", "read_project_item");
       }
@@ -8342,18 +8542,18 @@ async function readGitHubObservation(scope, transport) {
     for (const p of relationPages) {
       if (p.repositoryRef !== resolved.repositoryRef || p.issueRef !== resolved.issueRef) throw new ReadFailure("YKP-GH-READ-006", "read_issue_relationships");
       for (const v of p.nodes) {
-        if (!rec2(v) || !Number.isSafeInteger(v.issueNumber) || v.issueNumber <= 0 || nodes.has(v.issueNumber)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
+        if (!rec(v) || !Number.isSafeInteger(v.issueNumber) || v.issueNumber <= 0 || nodes.has(v.issueNumber)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
         nodes.add(v.issueNumber);
         if (nodes.size > 512) throw new ReadFailure("YKP-GH-READ-005", "read_issue_relationships");
       }
       for (const [key, target, limit] of [["parent", parents, 511], ["blocks", blocks, 4096]]) {
-        const list2 = p[key];
-        if (!Array.isArray(list2)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
-        for (const e of list2) {
-          if (!rec2(e) || !Number.isSafeInteger(e.from) || !Number.isSafeInteger(e.to)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
-          const id = `${key}:${e.from}->${e.to}`;
-          if (edges.has(id)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
-          edges.add(id);
+        const list = p[key];
+        if (!Array.isArray(list)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
+        for (const e of list) {
+          if (!rec(e) || !Number.isSafeInteger(e.from) || !Number.isSafeInteger(e.to)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
+          const id2 = `${key}:${e.from}->${e.to}`;
+          if (edges.has(id2)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
+          edges.add(id2);
           target.push({ from: e.from, to: e.to });
           if (target.length > limit) throw new ReadFailure("YKP-GH-READ-005", "read_issue_relationships");
         }
@@ -8363,15 +8563,15 @@ async function readGitHubObservation(scope, transport) {
     fields.sort((a, b) => a.id.localeCompare(b.id));
     const relationships = { nodes: [...nodes].sort((a, b) => a - b), parent: parents.sort((a, b) => a.from - b.from || a.to - b.to), blocks: blocks.sort((a, b) => a.from - b.from || a.to - b.to) };
     const base = { scope: { subjectRef: resolved.subjectRef, repositoryRef: resolved.repositoryRef, projectRef: resolved.projectRef, issueRef: resolved.issueRef, issueNumber: scope.issueNumber }, projectSchema: { fields }, item, relationships };
-    const fingerprintOut = createHash3("sha256").update(canonicalJson(base)).digest("hex");
+    const fingerprintOut = createHash5("sha256").update(canonicalJson(base)).digest("hex");
     return { observation: { ...base, issueBody: resolved.issueBody, evidence: { schema: 1, operationCounts: counts, pageCount: pages, fingerprint: fingerprintOut } }, diagnostics: [] };
   } catch (e) {
-    if (e instanceof ReadFailure) return failure(e.code, e.operation, e.code === "YKP-GH-READ-008" ? "review" : "never");
-    if (rec2(e) && typeof e.code === "string" && Object.hasOwn(MSG, e.code)) {
+    if (e instanceof ReadFailure) return failure3(e.code, e.operation, e.code === "YKP-GH-READ-008" ? "review" : "never");
+    if (rec(e) && typeof e.code === "string" && Object.hasOwn(MSG, e.code)) {
       const code = e.code;
-      return failure(code, "scope", code === "YKP-GH-READ-004" ? "full-read" : code === "YKP-GH-READ-009" || code === "YKP-RATE-001" ? "reset" : code === "YKP-GH-READ-008" || code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" ? "review" : "never");
+      return failure3(code, "scope", code === "YKP-GH-READ-004" ? "full-read" : code === "YKP-GH-READ-009" || code === "YKP-RATE-001" ? "reset" : code === "YKP-GH-READ-008" || code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" ? "review" : "never");
     }
-    return failure("YKP-GH-READ-004", "scope", "full-read");
+    return failure3("YKP-GH-READ-004", "scope", "full-read");
   }
 }
 
@@ -8551,33 +8751,33 @@ function validateObserved(schema, diagnostics2) {
   const ids = /* @__PURE__ */ new Set();
   const names = /* @__PURE__ */ new Map();
   let totalOptions = 0;
-  schema.fields.forEach((field, index) => {
+  schema.fields.forEach((field2, index) => {
     const path = `$.observed.fields[${index}]`;
-    if (!field || !boundedOpaque(field.providerId) || !boundedOpaque(field.name) || !KINDS.has(field.kind)) {
+    if (!field2 || !boundedOpaque(field2.providerId) || !boundedOpaque(field2.name) || !KINDS.has(field2.kind)) {
       add3(diagnostics2, "YKP-SCHEMA-001", path);
       return;
     }
-    if (ids.has(field.providerId)) add3(diagnostics2, "YKP-SCHEMA-002", `${path}.providerId`);
-    else ids.add(field.providerId);
-    const folded = comparisonFold(field.name);
+    if (ids.has(field2.providerId)) add3(diagnostics2, "YKP-SCHEMA-002", `${path}.providerId`);
+    else ids.add(field2.providerId);
+    const folded = comparisonFold(field2.name);
     if (names.has(folded)) add3(diagnostics2, "YKP-SCHEMA-002", `${path}.name`);
     else names.set(folded, path);
-    const options = field.options ?? [];
-    if (!Array.isArray(options) || options.length > 256 || field.kind !== "single_select" && options.length > 0) {
+    const options = field2.options ?? [];
+    if (!Array.isArray(options) || options.length > 256 || field2.kind !== "single_select" && options.length > 0) {
       add3(diagnostics2, "YKP-SCHEMA-001", `${path}.options`);
       return;
     }
     totalOptions += options.length;
     const optionNames = /* @__PURE__ */ new Map();
-    options.forEach((option, optionIndex) => {
+    options.forEach((option2, optionIndex) => {
       const optionPath = `${path}.options[${optionIndex}]`;
-      if (!option || !boundedOpaque(option.providerId) || !boundedOpaque(option.name)) {
+      if (!option2 || !boundedOpaque(option2.providerId) || !boundedOpaque(option2.name)) {
         add3(diagnostics2, "YKP-SCHEMA-001", optionPath);
         return;
       }
-      if (ids.has(option.providerId)) add3(diagnostics2, "YKP-SCHEMA-002", `${optionPath}.providerId`);
-      else ids.add(option.providerId);
-      const optionFold = comparisonFold(option.name);
+      if (ids.has(option2.providerId)) add3(diagnostics2, "YKP-SCHEMA-002", `${optionPath}.providerId`);
+      else ids.add(option2.providerId);
+      const optionFold = comparisonFold(option2.name);
       if (optionNames.has(optionFold)) add3(diagnostics2, "YKP-SCHEMA-002", `${optionPath}.name`);
       else optionNames.set(optionFold, optionPath);
     });
@@ -8594,16 +8794,16 @@ function calculateEffectiveSchema(policy, observed) {
   for (const fieldKey of Object.keys(policy.fields).sort()) {
     const desired = policy.fields[fieldKey];
     managedNames.add(desired.name);
-    const exact = observed.fields.filter((field) => field.name === desired.name);
-    const folded = observed.fields.filter((field) => comparisonFold(field.name) === comparisonFold(desired.name));
+    const exact3 = observed.fields.filter((field2) => field2.name === desired.name);
+    const folded = observed.fields.filter((field2) => comparisonFold(field2.name) === comparisonFold(desired.name));
     const path = `$.fields.${fieldKey}`;
-    if (exact.length === 0) {
+    if (exact3.length === 0) {
       if (folded.length > 0) add3(internal, "YKP-SCHEMA-005", `${path}.name`);
       else if (desired.mode === "observed") add3(internal, "YKP-SCHEMA-003", path);
       else operations.push({ type: "create_field", fieldKey, name: desired.name, kind: desired.kind, options: Object.entries(desired.options ?? {}).sort(([a], [b]) => a.localeCompare(b)).map(([optionKey, name]) => ({ optionKey, name })) });
       continue;
     }
-    const current = exact[0];
+    const current = exact3[0];
     if (current.kind !== desired.kind) {
       add3(internal, "YKP-SCHEMA-004", `${path}.kind`);
       continue;
@@ -8612,35 +8812,35 @@ function calculateEffectiveSchema(policy, observed) {
     if (desired.mode !== "managed" || desired.kind !== "single_select") continue;
     for (const [optionKey, optionName] of Object.entries(desired.options ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
       const optionPath = `${path}.options.${optionKey}`;
-      const exactOption = (current.options ?? []).find((option) => option.name === optionName);
-      const foldedOption = (current.options ?? []).find((option) => comparisonFold(option.name) === comparisonFold(optionName));
+      const exactOption = (current.options ?? []).find((option2) => option2.name === optionName);
+      const foldedOption = (current.options ?? []).find((option2) => comparisonFold(option2.name) === comparisonFold(optionName));
       if (exactOption) operations.push({ type: "preserve_option", fieldKey, fieldProviderId: current.providerId, optionKey, optionProviderId: exactOption.providerId, name: exactOption.name });
       else if (foldedOption) add3(internal, "YKP-SCHEMA-005", optionPath);
       else operations.push({ type: "add_option", fieldKey, fieldProviderId: current.providerId, optionKey, name: optionName });
     }
   }
-  const observations = observed.fields.filter((field) => !managedNames.has(field.name)).map((field) => ({ type: "preserve_unmanaged_field", name: field.name })).sort((a, b) => a.name.localeCompare(b.name));
+  const observations = observed.fields.filter((field2) => !managedNames.has(field2.name)).map((field2) => ({ type: "preserve_unmanaged_field", name: field2.name })).sort((a, b) => a.name.localeCompare(b.name));
   operations.sort((a, b) => a.fieldKey.localeCompare(b.fieldKey) || OPERATION_RANK[a.type] - OPERATION_RANK[b.type] || ("optionKey" in a ? a.optionKey : "").localeCompare("optionKey" in b ? b.optionKey : ""));
   const diagnostics2 = finalize(internal);
   return { executable: diagnostics2.length === 0, diagnostics: diagnostics2, observations, operations };
 }
 
 // src/dry-run.ts
-var MESSAGE = "dry-run could not produce a complete report";
+var MESSAGE2 = "dry-run could not produce a complete report";
 function fail(failureClass, codes) {
-  return { status: "error", failureClass, diagnostics: codes.slice(0, 64).map((code) => ({ code, message: MESSAGE })) };
+  return { status: "error", failureClass, diagnostics: codes.slice(0, 64).map((code) => ({ code, message: MESSAGE2 })) };
 }
 function readClass(code) {
   return code === "YKP-GH-READ-002" ? "authentication" : code === "YKP-GH-READ-003" ? "authorization" : code === "YKP-RATE-001" ? "deferred" : code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" || code === "YKP-CACHE-001" ? "invariant" : "provider";
 }
-async function prepareReconciliation(input) {
-  const policy = parseRepositoryPolicy(input.policySource);
+async function prepareReconciliation(input3) {
+  const policy = parseRepositoryPolicy(input3.policySource);
   if (!policy.policy) return fail("input", policy.diagnostics.map((d) => d.code));
-  const read = await readGitHubObservation(input.scope, input.transport);
+  const read = await readGitHubObservation(input3.scope, input3.transport);
   if (!read.observation) return fail(readClass(read.diagnostics[0]?.code ?? ""), read.diagnostics.map((d) => d.code));
-  const contract = parseIssueContract(read.observation.issueBody, { issueNumber: input.scope.issueNumber });
+  const contract = parseIssueContract(read.observation.issueBody, { issueNumber: input3.scope.issueNumber });
   if (!contract.contract) return fail("input", contract.diagnostics.length ? contract.diagnostics.map((d) => d.code) : ["YKP-RUNTIME-001"]);
-  const observed = { fields: read.observation.projectSchema.fields.map((field) => ({ providerId: field.id, name: field.name, kind: field.kind, options: field.options.map((option) => ({ providerId: option.id, name: option.name })) })) };
+  const observed = { fields: read.observation.projectSchema.fields.map((field2) => ({ providerId: field2.id, name: field2.name, kind: field2.kind, options: field2.options.map((option2) => ({ providerId: option2.id, name: option2.name })) })) };
   const schema = calculateEffectiveSchema(policy.policy, observed);
   if (!schema.executable) return fail("invariant", schema.diagnostics.map((d) => d.code));
   if (!read.observation.item) return fail("invariant", ["YKP-RUNTIME-002"]);
@@ -8652,288 +8852,681 @@ async function prepareReconciliation(input) {
   const plan = planReconciliation({ scope: read.observation.scope, contract: contract.contract, policy: policy.policy, schema, observedItem: item, relationships: read.observation.relationships });
   return { status: "success", plan, observation: read.observation, policy: policy.policy, schema };
 }
-async function runDryRun(input) {
-  const prepared = await prepareReconciliation(input);
-  return prepared.status === "success" ? { status: "success", report: renderPublicReport(prepared.plan) } : prepared;
+
+// src/github-mutation-transport.ts
+var ENDPOINT = "https://api.github.com/graphql";
+var GITHUB_MUTATION_DOCUMENTS = Object.freeze({
+  create_project_field: `mutation YukhCreateProjectField($input:CreateProjectV2FieldInput!){createProjectV2Field(input:$input){clientMutationId projectV2Field{id}}}`,
+  update_project_field_options: `mutation YukhUpdateProjectFieldOptions($input:UpdateProjectV2FieldInput!){updateProjectV2Field(input:$input){clientMutationId projectV2Field{id}}}`,
+  update_project_item_field_value: `mutation YukhUpdateProjectItemFieldValue($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){clientMutationId projectV2Item{id}}}`,
+  add_sub_issue: `mutation YukhAddSubIssue($input:AddSubIssueInput!){addSubIssue(input:$input){clientMutationId issue{id} subIssue{id}}}`,
+  add_blocked_by: `mutation YukhAddBlockedBy($input:AddBlockedByInput!){addBlockedBy(input:$input){clientMutationId issue{id} blockingIssue{id}}}`
+});
+var GITHUB_MUTATION_ESTIMATED_COSTS = Object.freeze({ create_project_field: 100, update_project_field_options: 100, update_project_item_field_value: 100, add_sub_issue: 100, add_blocked_by: 100 });
+var GitHubMutationTransportError = class extends Error {
+  constructor(code) {
+    super("GitHub mutation transport failed");
+    this.code = code;
+    this.name = "GitHubMutationTransportError";
+  }
+  code;
+};
+function rec2(v) {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+function text2(v, max = 256) {
+  return typeof v === "string" && [...v].length > 0 && [...v].length <= max && !/[\u0000-\u001f\u007f]/u.test(v);
+}
+function keys(v, expected) {
+  return Object.keys(v).sort().join("\0") === [...expected].sort().join("\0");
+}
+function id(v) {
+  return text2(v, 256);
+}
+function option(v, withId) {
+  if (!rec2(v)) return false;
+  const expected = withId ? ["id", "name", "color", "description"] : ["name", "color", "description"];
+  return keys(v, expected) && (!withId || id(v.id)) && text2(v.name, 128) && ["GRAY", "BLUE", "GREEN", "YELLOW", "ORANGE", "RED", "PINK", "PURPLE"].includes(String(v.color)) && typeof v.description === "string" && [...v.description].length <= 256 && !/[\u0000-\u001f\u007f]/u.test(v.description);
+}
+function permissionsExact(kind2, p, approvedKinds) {
+  const allowed = /* @__PURE__ */ new Set(["create_project_field", "update_project_field_options", "update_project_item_field_value", "add_sub_issue", "add_blocked_by"]), kinds = new Set(approvedKinds);
+  if (kinds.size !== approvedKinds.length || kinds.size < 1 || [...kinds].some((value2) => !allowed.has(value2)) || !kinds.has(kind2)) return false;
+  const needsProjects = [...kinds].some((value2) => value2 === "create_project_field" || value2 === "update_project_field_options" || value2 === "update_project_item_field_value"), needsIssues = [...kinds].some((value2) => value2 === "add_sub_issue" || value2 === "add_blocked_by"), approved = new Set(p.approvedExtraPermissions ?? []);
+  return p.projects === (needsProjects ? "write" : "none") && p.issues === (needsIssues ? "write" : "none") && p.extraPermissions.length === approved.size && p.extraPermissions.every((value2) => approved.has(value2));
+}
+function input2(kind2, v, clientMutationId) {
+  if (!rec2(v) || v.kind !== kind2 || !/^[a-f0-9]{64}$/u.test(clientMutationId)) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
+  if (kind2 === "create_project_field" && v.kind === kind2) {
+    if (!keys(v, ["kind", "projectId", "dataType", "name", ...v.options === void 0 ? [] : ["options"]]) || !id(v.projectId) || !text2(v.name, 128) || !["TEXT", "SINGLE_SELECT", "NUMBER", "DATE"].includes(v.dataType) || v.dataType === "SINGLE_SELECT" !== Array.isArray(v.options) || v.options?.length === 0 || v.options && (!v.options.every((x) => option(x, false)) || v.options.length > 256)) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
+    return { input: { projectId: v.projectId, dataType: v.dataType, name: v.name, ...v.options ? { singleSelectOptions: v.options } : {}, clientMutationId }, expected: {} };
+  }
+  if (kind2 === "update_project_field_options" && v.kind === kind2) {
+    if (!keys(v, ["kind", "fieldId", "observedOptions", "newOption"]) || !id(v.fieldId) || !Array.isArray(v.observedOptions) || v.observedOptions.length >= 256 || !v.observedOptions.every((x) => option(x, true)) || new Set(v.observedOptions.map((x) => x.id)).size !== v.observedOptions.length || !option(v.newOption, false) || v.newOption.color !== "GRAY" || v.newOption.description !== "" || v.observedOptions.some((x) => x.name === v.newOption.name)) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
+    return { input: { fieldId: v.fieldId, singleSelectOptions: [...v.observedOptions, v.newOption], clientMutationId }, expected: { projectV2Field: v.fieldId } };
+  }
+  if (kind2 === "update_project_item_field_value" && v.kind === kind2) {
+    if (!keys(v, ["kind", "projectId", "itemId", "fieldId", "value"]) || !id(v.projectId) || !id(v.itemId) || !id(v.fieldId) || !rec2(v.value) || Object.keys(v.value).length !== 1) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
+    const valueRecord = v.value, [k] = Object.keys(valueRecord), x = valueRecord[k];
+    if (!(["text", "date", "singleSelectOptionId", "iterationId"].includes(k) && text2(x, 512) || k === "number" && typeof x === "number" && Number.isFinite(x))) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
+    return { input: { projectId: v.projectId, itemId: v.itemId, fieldId: v.fieldId, value: v.value, clientMutationId }, expected: { projectV2Item: v.itemId } };
+  }
+  if (kind2 === "add_sub_issue" && v.kind === kind2) {
+    if (!keys(v, ["kind", "parentIssueId", "subIssueId"]) || !id(v.parentIssueId) || !id(v.subIssueId) || v.parentIssueId === v.subIssueId) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
+    return { input: { issueId: v.parentIssueId, subIssueId: v.subIssueId, replaceParent: false, clientMutationId }, expected: { issue: v.parentIssueId, subIssue: v.subIssueId } };
+  }
+  if (kind2 === "add_blocked_by" && v.kind === kind2) {
+    if (!keys(v, ["kind", "blockedIssueId", "blockingIssueId"]) || !id(v.blockedIssueId) || !id(v.blockingIssueId) || v.blockedIssueId === v.blockingIssueId) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
+    return { input: { issueId: v.blockedIssueId, blockingIssueId: v.blockingIssueId, clientMutationId }, expected: { issue: v.blockedIssueId, blockingIssue: v.blockingIssueId } };
+  }
+  throw new GitHubMutationTransportError("YKP-GH-WRITE-002");
+}
+function createGitHubMutationTransport(options) {
+  if (!text2(options?.token, 4096) || !Array.isArray(options.approvedKinds)) throw new TypeError("invalid credential");
+  const fetcher = options.fetch ?? globalThis.fetch;
+  return { execute: async (kind2, variables2, clientMutationId) => {
+    if (!permissionsExact(kind2, options.permissions, options.approvedKinds)) throw new GitHubMutationTransportError("YKP-GH-WRITE-003");
+    const mapped = input2(kind2, variables2, clientMutationId), query = GITHUB_MUTATION_DOCUMENTS[kind2];
+    if (options.rateLedger && !options.rateLedger.reserve("graphql", GITHUB_MUTATION_ESTIMATED_COSTS[kind2])) throw new GitHubMutationTransportError("YKP-GH-WRITE-008");
+    let response;
+    try {
+      response = await fetcher(ENDPOINT, { method: "POST", redirect: "manual", headers: { accept: "application/vnd.github+json", "content-type": "application/json", authorization: `Bearer ${options.token}`, "x-github-api-version": "2022-11-28" }, body: JSON.stringify({ query, variables: { input: mapped.input } }) });
+    } catch {
+      throw new GitHubMutationTransportError("YKP-GH-WRITE-004");
+    }
+    const remaining = response.headers.get("x-ratelimit-remaining");
+    if (options.rateLedger && remaining !== null && /^\d+$/u.test(remaining)) options.rateLedger.observe("graphql", Number(remaining));
+    if (response.status >= 300 && response.status < 400) throw new GitHubMutationTransportError("YKP-GH-WRITE-005");
+    if (response.status === 401) throw new GitHubMutationTransportError("YKP-GH-WRITE-006");
+    if (response.status === 403) throw new GitHubMutationTransportError(response.headers.get("x-ratelimit-remaining") === "0" ? "YKP-GH-WRITE-008" : "YKP-GH-WRITE-007");
+    if (response.status === 429) throw new GitHubMutationTransportError("YKP-GH-WRITE-008");
+    if ([502, 503, 504].includes(response.status)) throw new GitHubMutationTransportError("YKP-GH-WRITE-004");
+    if (!response.ok || !response.headers.get("content-type")?.toLowerCase().includes("application/json")) throw new GitHubMutationTransportError("YKP-GH-WRITE-009");
+    const raw = new Uint8Array(await response.arrayBuffer());
+    if (raw.length > 2 * 1024 * 1024) throw new GitHubMutationTransportError("YKP-GH-WRITE-010");
+    let body;
+    try {
+      body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw));
+    } catch {
+      throw new GitHubMutationTransportError("YKP-GH-WRITE-009");
+    }
+    if (!rec2(body) || Array.isArray(body.errors) || !rec2(body.data)) throw new GitHubMutationTransportError("YKP-GH-WRITE-011");
+    const field2 = { create_project_field: "createProjectV2Field", update_project_field_options: "updateProjectV2Field", update_project_item_field_value: "updateProjectV2ItemFieldValue", add_sub_issue: "addSubIssue", add_blocked_by: "addBlockedBy" }[kind2], payload = body.data[field2];
+    if (!rec2(payload) || payload.clientMutationId !== clientMutationId) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
+    for (const [name, expected] of Object.entries(mapped.expected)) {
+      const node = payload[name];
+      if (!rec2(node) || node.id !== expected) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
+    }
+    if (kind2 === "create_project_field" && (!rec2(payload.projectV2Field) || !id(payload.projectV2Field.id))) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
+    return { kind: kind2, clientMutationId, providerAccepted: true };
+  } };
 }
 
-// src/legacy-shadow.ts
-var import_yaml3 = __toESM(require_dist(), 1);
-var LEGACY_COMPATIBILITY_MATRIX = Object.freeze([
-  { capability: "version-1 repository policy", state: "Supported", note: "parsed as a bounded compatibility input" },
-  { capability: "hidden yukh issue contract", state: "Supported", note: "accepted for shadow planning without backlog rewrite" },
-  { capability: "issue type and managed labels", state: "Supported", note: "observed through versioned REST and compared locally" },
-  { capability: "milestone", state: "Supported", note: "observed through versioned REST and compared locally" },
-  { capability: "Project fields", state: "Supported", note: "schema is read once and values are planned locally" },
-  { capability: "Project-owned Status", state: "Supported", note: "preserved when absent from repository policy" },
-  { capability: "native parent", state: "Supported", note: "read from REST Project item content" },
-  { capability: "native dependencies", state: "Changed", note: "one fixed bounded GraphQL batch; GraphQL-zero requires complete cached state or returns deferred" },
-  { capability: "single issue shadow dry-run", state: "Supported", note: "REST-first immutable snapshot" },
-  { capability: "complete backlog shadow audit", state: "Supported", note: "bounded scopes of at most 100 issues reuse one snapshot reader" },
-  { capability: "full apply and zero-operation second apply", state: "Missing", note: "blocked until controlled apply issues are complete" }
-]);
-function rec3(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+// src/github-transport.ts
+var DOCUMENTS = {
+  resolve_scope: `query YukhResolveScope($ownerLogin:String!,$repositoryName:String!,$projectNumber:Int!,$issueNumber:Int!){viewer{login}repository(owner:$ownerLogin,name:$repositoryName){id issue(number:$issueNumber){id number body projectItems(first:100){nodes{id project{id number}}pageInfo{hasNextPage}}}}repositoryOwner(login:$ownerLogin){... on User{projectV2(number:$projectNumber){id number}}... on Organization{projectV2(number:$projectNumber){id number}}}}`,
+  read_project_fields: `query YukhReadProjectFields($ownerLogin:String!,$projectNumber:Int!,$first:Int!,$cursor:String){repositoryOwner(login:$ownerLogin){... on User{projectV2(number:$projectNumber){id fields(first:$first,after:$cursor){nodes{... on ProjectV2Field{id name dataType}... on ProjectV2SingleSelectField{id name dataType options{id name}}... on ProjectV2IterationField{id name dataType configuration{iterations{id title}completedIterations{id title}}}}pageInfo{hasNextPage endCursor}}}}... on Organization{projectV2(number:$projectNumber){id fields(first:$first,after:$cursor){nodes{... on ProjectV2Field{id name dataType}... on ProjectV2SingleSelectField{id name dataType options{id name}}... on ProjectV2IterationField{id name dataType configuration{iterations{id title}completedIterations{id title}}}}pageInfo{hasNextPage endCursor}}}}}}`,
+  read_project_item: `query YukhReadProjectItem($ownerLogin:String!,$repositoryName:String!,$issueNumber:Int!,$first:Int!,$cursor:String){repository(owner:$ownerLogin,name:$repositoryName){issue(number:$issueNumber){id projectItems(first:100){nodes{id project{id number}fieldValues(first:$first,after:$cursor){nodes{... on ProjectV2ItemFieldTextValue{text field{... on ProjectV2FieldCommon{name}}}... on ProjectV2ItemFieldNumberValue{number field{... on ProjectV2FieldCommon{name}}}... on ProjectV2ItemFieldDateValue{date field{... on ProjectV2FieldCommon{name}}}... on ProjectV2ItemFieldSingleSelectValue{name field{... on ProjectV2FieldCommon{name}}}... on ProjectV2ItemFieldIterationValue{title field{... on ProjectV2FieldCommon{name}}}}pageInfo{hasNextPage endCursor}}}pageInfo{hasNextPage}}}}}`,
+  read_issue_relationships: `query YukhReadIssueRelationships($ownerLogin:String!,$repositoryName:String!,$issueNumber:Int!,$first:Int!,$cursor:String){repository(owner:$ownerLogin,name:$repositoryName){id issue(number:$issueNumber){id number parent{number repository{id}}subIssues(first:$first,after:$cursor){nodes{number repository{id}}pageInfo{hasNextPage endCursor}}blockedBy(first:$first,after:$cursor){nodes{number repository{id}}pageInfo{hasNextPage endCursor}}blocking(first:$first,after:$cursor){nodes{number repository{id}}pageInfo{hasNextPage endCursor}}}}}`
+};
+var GITHUB_READ_QUERY_DOCUMENTS = Object.freeze({ ...DOCUMENTS });
+var GitHubTransportError = class extends Error {
+  constructor(code) {
+    super("GitHub read transport failed");
+    this.code = code;
+    this.name = "GitHubTransportError";
+  }
+  code;
+};
+
+// src/github-apply-failure.ts
+function normalizeGitHubApplyFailure(error) {
+  if (error instanceof ApplyPortError) return error;
+  if (error instanceof GitHubMutationTransportError) {
+    if (error.code === "YKP-GH-WRITE-006") return new ApplyPortError("authentication");
+    if (error.code === "YKP-GH-WRITE-007" || error.code === "YKP-GH-WRITE-003") return new ApplyPortError("authorization");
+    if (error.code === "YKP-GH-WRITE-008") return new ApplyPortError("deferred_rate_budget");
+    if (error.code === "YKP-GH-WRITE-004") return new ApplyPortError("provider");
+    return new ApplyPortError("invariant");
+  }
+  if (error instanceof GitHubTransportError) {
+    if (error.code === "YKP-GH-READ-002") return new ApplyPortError("authentication");
+    if (error.code === "YKP-GH-READ-003" || error.code === "YKP-CAPABILITY-001") return new ApplyPortError("authorization");
+    if (error.code === "YKP-RATE-001" || error.code === "YKP-GH-READ-009") return new ApplyPortError("deferred_rate_budget");
+    if (error.code === "YKP-GH-READ-004") return new ApplyPortError("provider");
+    return new ApplyPortError("invariant");
+  }
+  return new ApplyPortError("invariant");
 }
-function string(value2) {
-  return typeof value2 === "string" && value2.trim() && [...value2.trim()].length <= 256 && !/[\u0000-\u001f\u007f]/u.test(value2) ? value2.trim() : void 0;
+
+// src/github-rate-ledger.ts
+function finiteNonnegative(value2) {
+  return Number.isFinite(value2) && Number.isSafeInteger(value2) && value2 >= 0;
 }
-function stringMap(value2) {
+function createGitHubRateLedger(options = {}) {
+  const restReserve = options.restReserve ?? 500, graphqlReserve = options.graphqlReserve ?? 500, maxRestRequests = options.maxRestRequests ?? 32, maxGraphqlRequests = options.maxGraphqlRequests ?? 1, maxGraphqlPoints = options.maxGraphqlPoints ?? 100;
+  if (![restReserve, graphqlReserve, maxRestRequests, maxGraphqlRequests, maxGraphqlPoints].every(finiteNonnegative) || restReserve < 500 || graphqlReserve < 500 || maxRestRequests > 64 || maxGraphqlRequests > 2 || maxGraphqlPoints > 500) throw new TypeError("invalid rate ledger options");
+  let restRemaining = options.restRemaining ?? Number.POSITIVE_INFINITY, graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY, restRequests = 0, graphqlRequests = 0, graphqlPoints = 0;
+  if (!(finiteNonnegative(restRemaining) || restRemaining === Number.POSITIVE_INFINITY) || !(finiteNonnegative(graphqlRemaining) || graphqlRemaining === Number.POSITIVE_INFINITY)) throw new TypeError("invalid provider rate state");
+  return {
+    reserve: (resource, cost = 1) => {
+      if (!finiteNonnegative(cost) || cost < 1) return false;
+      if (resource === "rest") {
+        if (restRequests >= maxRestRequests || restRemaining - cost < restReserve) return false;
+        restRequests++;
+        if (Number.isFinite(restRemaining)) restRemaining -= cost;
+        return true;
+      }
+      if (resource !== "graphql" || graphqlRequests >= maxGraphqlRequests || graphqlPoints + cost > maxGraphqlPoints || graphqlRemaining - cost < graphqlReserve) return false;
+      graphqlRequests++;
+      graphqlPoints += cost;
+      if (Number.isFinite(graphqlRemaining)) graphqlRemaining -= cost;
+      return true;
+    },
+    observe: (resource, remaining) => {
+      if (!finiteNonnegative(remaining)) return;
+      if (resource === "rest") restRemaining = Math.min(restRemaining, remaining);
+      else if (resource === "graphql") graphqlRemaining = Math.min(graphqlRemaining, remaining);
+    },
+    snapshot: () => ({ restRequests, graphqlRequests, graphqlPoints, restRemaining, graphqlRemaining })
+  };
+}
+
+// src/github-rest-snapshot.ts
+import { createHash as createHash6 } from "node:crypto";
+var API = "https://api.github.com";
+var GRAPHQL = `${API}/graphql`;
+var API_VERSION = "2026-03-10";
+var RELATIONSHIP_QUERY = `query YukhRelationshipSnapshot($ids:[ID!]!){nodes(ids:$ids){... on Issue{id number repository{id} parent{number repository{id}} subIssues(first:100){nodes{number repository{id}}pageInfo{hasNextPage}} blockedBy(first:100){nodes{number repository{id}}pageInfo{hasNextPage}} blocking(first:100){nodes{number repository{id}}pageInfo{hasNextPage}}}} rateLimit{cost remaining resetAt}}`;
+var RELATIONSHIP_QUERY_ESTIMATED_COST = 100;
+function rec3(v) {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+function array(v) {
+  if (!Array.isArray(v) || !v.every(rec3)) throw new GitHubTransportError("YKP-REST-001");
+  return v;
+}
+function text3(v, max = 512) {
+  if (typeof v !== "string" || v.length === 0 || [...v].length > max || /[\u0000-\u001f\u007f]/u.test(v)) throw new GitHubTransportError("YKP-REST-001");
+  return v;
+}
+function integer(v) {
+  if (!Number.isSafeInteger(v) || v <= 0) throw new GitHubTransportError("YKP-REST-001");
+  return v;
+}
+function rawName(v) {
+  if (typeof v === "string") return text3(v, 128);
+  if (rec3(v) && rec3(v.name) && typeof v.name.raw === "string") return text3(v.name.raw, 128);
+  if (rec3(v) && typeof v.raw === "string") return text3(v.raw, 128);
+  throw new GitHubTransportError("YKP-REST-001");
+}
+function value(v) {
+  if (v === null) return null;
+  if (typeof v === "string" || typeof v === "number" && Number.isFinite(v)) return v;
+  if (rec3(v)) {
+    if (rec3(v.name) && typeof v.name.raw === "string") return v.name.raw;
+    if (typeof v.raw === "string") return v.raw;
+  }
+  return null;
+}
+function kind(v) {
+  const map = { text: "text", number: "number", date: "date", single_select: "single_select", iteration: "iteration" };
+  const out = map[String(v)];
+  if (!out) throw new GitHubTransportError("YKP-REST-001");
+  return out;
+}
+function nextLink(value2) {
+  if (!value2) return null;
+  for (const part of value2.split(",")) {
+    const match = part.match(/<([^>]+)>;\s*rel="next"/u);
+    if (match) return match[1] ?? null;
+  }
+  return null;
+}
+function normalizedPath(value2) {
+  if (value2.startsWith("/")) return value2;
+  let parsed;
+  try {
+    parsed = new URL(value2);
+  } catch {
+    throw new GitHubTransportError("YKP-CAPABILITY-001");
+  }
+  if (parsed.origin !== API || parsed.username || parsed.password || parsed.hash) throw new GitHubTransportError("YKP-CAPABILITY-001");
+  return `${parsed.pathname}${parsed.search}`;
+}
+function issueNumberFromUrl(v) {
+  if (typeof v !== "string") return void 0;
+  const match = v.match(/\/issues\/(\d+)$/u);
+  return match ? Number(match[1]) : void 0;
+}
+function relationshipSummary(content) {
+  const summary = rec3(content.issue_dependencies_summary) ? content.issue_dependencies_summary : {};
+  const blockedBy = Number(summary.total_blocked_by ?? summary.blocked_by ?? 0), blocking = Number(summary.total_blocking ?? summary.blocking ?? 0);
+  if (!Number.isSafeInteger(blockedBy) || blockedBy < 0 || !Number.isSafeInteger(blocking) || blocking < 0) throw new GitHubTransportError("YKP-REST-001");
+  return { blockedBy, blocking };
+}
+var RestSnapshotClient = class {
+  constructor(options) {
+    this.options = options;
+    if (typeof options.token !== "string" || !options.token || /[\u0000-\u001f\u007f]/u.test(options.token)) throw new TypeError("invalid credential");
+    this.request = options.fetch ?? globalThis.fetch;
+    this.now = options.now ?? Date.now;
+    this.ttl = options.cacheTtlMs ?? 3e5;
+    this.ledger = options.rateLedger ?? createGitHubRateLedger({ graphqlRemaining: options.graphqlRemaining, restReserve: options.restReserve, graphqlReserve: options.graphqlReserve, maxRestRequests: options.maxRestRequests, maxGraphqlRequests: options.maxGraphqlRequests });
+  }
+  options;
+  request;
+  now;
+  ttl;
+  cache = /* @__PURE__ */ new Map();
+  flights = /* @__PURE__ */ new Map();
+  generations = /* @__PURE__ */ new Map();
+  ledger;
+  bytes = 0;
+  evidence = { restRequests: 0, graphqlRequests: 0, restCacheHits: 0, conditionalRequests: 0, coalescedRequests: 0 };
+  headers(etag) {
+    return { accept: "application/vnd.github+json", authorization: `Bearer ${this.options.token}`, "x-github-api-version": API_VERSION, ...etag ? { "if-none-match": etag } : {} };
+  }
+  classify(response) {
+    if (response.status === 401) throw new GitHubTransportError("YKP-GH-READ-002");
+    if (response.status === 403) throw new GitHubTransportError(response.headers.get("x-ratelimit-remaining") === "0" ? "YKP-RATE-001" : "YKP-GH-READ-003");
+    if (response.status === 429) throw new GitHubTransportError("YKP-RATE-001");
+    if ([502, 503, 504].includes(response.status)) throw new GitHubTransportError("YKP-GH-READ-004");
+    throw new GitHubTransportError("YKP-REST-001");
+  }
+  updateRate(resource, headers) {
+    const value2 = headers.get("x-ratelimit-remaining");
+    if (value2 !== null && /^\d+$/u.test(value2)) this.ledger.observe(resource, Number(value2));
+  }
+  invalidate(input3, effect) {
+    if (!/^[A-Za-z0-9-]{1,39}$/u.test(input3.ownerLogin) || !Number.isSafeInteger(input3.projectNumber) || input3.projectNumber < 1) throw new GitHubTransportError("YKP-GH-READ-001");
+    const prefix = new RegExp(`^/(?:orgs|users)/${input3.ownerLogin}/projectsV2/${input3.projectNumber}/(?:${effect === "schema" ? "fields|items" : "items"})\\?`, `u`), keys2 = /* @__PURE__ */ new Set([...this.cache.keys(), ...this.flights.keys()]);
+    for (const key of keys2) if (prefix.test(key)) {
+      this.generations.set(key, (this.generations.get(key) ?? 0) + 1);
+      this.cache.delete(key);
+      this.flights.delete(key);
+    }
+  }
+  async get(path) {
+    if (!/^\/(repos|users|orgs)\/[A-Za-z0-9_.\/-]+(?:\?[A-Za-z0-9_.,=&-]+)?$/u.test(path)) throw new GitHubTransportError("YKP-CAPABILITY-001");
+    const key = path, cached = this.cache.get(key), current = this.now();
+    if (cached && cached.expires > current) {
+      this.evidence.restCacheHits++;
+      return { body: cached.body, bytes: cached.bytes, headers: new Headers(cached.link ? { link: cached.link } : {}) };
+    }
+    const existing = this.flights.get(key);
+    if (existing) {
+      this.evidence.coalescedRequests++;
+      return existing;
+    }
+    const generation = this.generations.get(key) ?? 0, task = (async () => {
+      if (!this.ledger.reserve("rest")) throw new GitHubTransportError("YKP-RATE-001");
+      this.evidence.restRequests++;
+      if (cached?.etag) this.evidence.conditionalRequests++;
+      let response;
+      try {
+        response = await this.request(`${API}${path}`, { method: "GET", redirect: "manual", headers: this.headers(cached?.etag) });
+      } catch {
+        throw new GitHubTransportError("YKP-GH-READ-004");
+      }
+      this.updateRate("rest", response.headers);
+      if (response.status === 304 && cached) {
+        const refreshed = { ...cached, expires: current + this.ttl };
+        if ((this.generations.get(key) ?? 0) === generation) this.cache.set(key, refreshed);
+        return { body: refreshed.body, bytes: 0, headers: new Headers(refreshed.link ? { link: refreshed.link } : {}) };
+      }
+      if (response.status >= 300 && response.status < 400 || !response.ok) this.classify(response);
+      if (!response.headers.get("content-type")?.toLowerCase().includes("json")) throw new GitHubTransportError("YKP-REST-001");
+      const raw = new Uint8Array(await response.arrayBuffer());
+      this.bytes += raw.byteLength;
+      if (raw.byteLength > 8 * 1024 * 1024 || this.bytes > 64 * 1024 * 1024) throw new GitHubTransportError("YKP-GH-READ-005");
+      let body;
+      try {
+        body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw));
+      } catch {
+        throw new GitHubTransportError("YKP-REST-001");
+      }
+      if ((this.generations.get(key) ?? 0) === generation) this.cache.set(key, { body, bytes: raw.byteLength, etag: response.headers.get("etag") ?? void 0, link: response.headers.get("link") ?? void 0, expires: current + this.ttl });
+      return { body, bytes: raw.byteLength, headers: response.headers };
+    })();
+    this.flights.set(key, task);
+    try {
+      return await task;
+    } finally {
+      this.flights.delete(key);
+    }
+  }
+  async list(path) {
+    const nodes = [];
+    let bytes = 0, next = path;
+    for (let page2 = 0; next && page2 < 20; page2++) {
+      const response = await this.get(normalizedPath(next));
+      nodes.push(...array(response.body));
+      bytes += response.bytes;
+      if (nodes.length > 1e4) throw new GitHubTransportError("YKP-GH-READ-005");
+      next = nextLink(response.headers.get("link"));
+    }
+    if (next) throw new GitHubTransportError("YKP-GH-READ-005");
+    return { nodes, bytes };
+  }
+  async relationships(ids) {
+    const result2 = /* @__PURE__ */ new Map();
+    if (ids.length === 0) return result2;
+    if (ids.length > 100) throw new GitHubTransportError("YKP-GH-READ-005");
+    if (this.options.graphqlRemaining === 0 && !this.options.rateLedger) return result2;
+    if (!this.ledger.reserve("graphql", RELATIONSHIP_QUERY_ESTIMATED_COST)) throw new GitHubTransportError("YKP-RATE-001");
+    this.evidence.graphqlRequests++;
+    let response;
+    try {
+      response = await this.request(GRAPHQL, { method: "POST", redirect: "manual", headers: { accept: "application/vnd.github+json", "content-type": "application/json", authorization: `Bearer ${this.options.token}`, "x-github-api-version": "2022-11-28" }, body: JSON.stringify({ query: RELATIONSHIP_QUERY, variables: { ids } }) });
+    } catch {
+      throw new GitHubTransportError("YKP-GH-READ-004");
+    }
+    this.updateRate("graphql", response.headers);
+    if (!response.ok) this.classify(response);
+    let payload;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new GitHubTransportError("YKP-REST-001");
+    }
+    if (!rec3(payload) || Array.isArray(payload.errors) || !rec3(payload.data) || !Array.isArray(payload.data.nodes) || !rec3(payload.data.rateLimit)) throw new GitHubTransportError("YKP-REST-001");
+    this.ledger.observe("graphql", Number(payload.data.rateLimit.remaining));
+    for (const node of payload.data.nodes) {
+      if (!rec3(node)) throw new GitHubTransportError("YKP-REST-001");
+      const connections = ["subIssues", "blockedBy", "blocking"].map((name) => {
+        const c = node[name];
+        if (!rec3(c) || !Array.isArray(c.nodes) || !rec3(c.pageInfo) || c.pageInfo.hasNextPage === true) throw new GitHubTransportError("YKP-GH-READ-005");
+        return c.nodes.map((v) => {
+          if (!rec3(v)) throw new GitHubTransportError("YKP-REST-001");
+          return integer(v.number);
+        });
+      });
+      result2.set(text3(node.id), { number: integer(node.number), ...rec3(node.parent) ? { parent: integer(node.parent.number) } : {}, blockedBy: connections[1], blocking: connections[2] });
+    }
+    return result2;
+  }
+};
+function subject(token) {
+  return `github-token:${createHash6("sha256").update(token).digest("hex")}`;
+}
+function fieldOptions(field2) {
+  if (!Array.isArray(field2.options)) return [];
+  return field2.options.map((option2) => {
+    if (!rec3(option2)) throw new GitHubTransportError("YKP-REST-001");
+    const colors = ["GRAY", "BLUE", "GREEN", "YELLOW", "ORANGE", "RED", "PINK", "PURPLE"], color = typeof option2.color === "string" && colors.includes(option2.color) ? option2.color : void 0, description = typeof option2.description === "string" && [...option2.description].length <= 256 && !/[\u0000-\u001f\u007f]/u.test(option2.description) ? option2.description : void 0;
+    return { id: text3(option2.id), name: rawName(option2.name), ...color ? { color } : {}, ...description !== void 0 ? { description } : {} };
+  }).sort((a, b) => a.id.localeCompare(b.id));
+}
+function itemValues(item) {
   const out = {};
-  if (!rec3(value2)) return out;
-  for (const key of Object.keys(value2).sort()) {
-    const parsed = string(value2[key]);
-    if (parsed) out[key] = parsed;
+  for (const field2 of array(item.fields ?? [])) {
+    const name = text3(field2.name, 128);
+    if (Object.hasOwn(out, name)) throw new GitHubTransportError("YKP-REST-001");
+    out[name] = value(field2.value);
   }
   return out;
 }
-function list(value2) {
-  if (value2 === void 0) return [];
-  if (!Array.isArray(value2) || value2.length > 100 || value2.some((v) => !Number.isSafeInteger(v) || v < 1)) throw new TypeError("invalid legacy relationship");
-  return [...new Set(value2)].sort((a, b) => a - b);
-}
-function parseYaml(source, maxBytes) {
-  if (Buffer.byteLength(source, "utf8") > maxBytes) throw new TypeError("legacy input exceeds bound");
-  const documents = (0, import_yaml3.parseAllDocuments)(source, { schema: "core", strict: true, uniqueKeys: true, prettyErrors: false });
-  if (documents.length !== 1 || documents[0].errors.length) throw new TypeError("legacy YAML is invalid");
-  const value2 = documents[0].toJS({ maxAliasCount: 0, mapAsMap: false });
-  if (!rec3(value2)) throw new TypeError("legacy YAML root is invalid");
-  return value2;
-}
-function parseLegacyPolicy(source) {
-  const root = parseYaml(source, 64 * 1024);
-  if (root.version !== 1 || !rec3(root.fields)) throw new TypeError("legacy policy is invalid");
-  const fields = {};
-  for (const key of Object.keys(root.fields).sort()) {
-    const raw = root.fields[key];
-    if (!rec3(raw) || !string(raw.project_field)) throw new TypeError("legacy policy field is invalid");
-    const target = raw.target === void 0 || raw.target === "project_field" ? "project_field" : raw.target === "issue_type" ? "issue_type" : raw.target === "issue_field" ? "issue_field" : void 0;
-    if (!target) throw new TypeError("legacy target is invalid");
-    const type = raw.type === void 0 || raw.type === "string" ? "string" : raw.type === "number" ? "number" : raw.type === "date" ? "date" : void 0;
-    if (!type) throw new TypeError("legacy field type is invalid");
-    fields[key] = { projectField: string(raw.project_field), target, required: raw.required === true, type, values: stringMap(raw.values), labels: stringMap(raw.labels) };
+function nativeIssueFields(content) {
+  const out = {};
+  if (!Array.isArray(content.issue_field_values)) return out;
+  for (const entry of content.issue_field_values) {
+    if (!rec3(entry) || typeof entry.issue_field_name !== "string") throw new GitHubTransportError("YKP-REST-001");
+    const observed = entry.single_select_option;
+    if (rec3(observed) && typeof observed.name === "string") out[entry.issue_field_name] = observed.name;
+    else if (typeof entry.value === "string" || typeof entry.value === "number") out[entry.issue_field_name] = entry.value;
   }
-  return { fields, milestones: stringMap(root.milestones) };
+  return out;
 }
-function parseLegacyContract(body) {
-  if (Buffer.byteLength(body, "utf8") > 256 * 1024) throw new TypeError("legacy issue body exceeds bound");
-  const marker = "<!-- yukh", start = body.indexOf(marker);
-  if (start < 0 || body.indexOf(marker, start + marker.length) >= 0) throw new TypeError("legacy issue contract is missing or duplicated");
-  const end = body.indexOf("-->", start + marker.length);
-  if (end < 0) throw new TypeError("legacy issue contract is unterminated");
-  const raw = parseYaml(body.slice(start + marker.length, end), 16 * 1024);
-  if (raw.schema !== 1) throw new TypeError("legacy schema is unsupported");
-  const kind2 = string(raw.kind), area = string(raw.area), priority = string(raw.priority);
-  if (!kind2 || !area || !priority) throw new TypeError("legacy required field is missing");
-  const extensions = stringMap(raw.extensions), size = string(raw.size), milestone = string(raw.milestone), estimate = raw.estimate === void 0 ? void 0 : Number(raw.estimate), parent = raw.parent === void 0 ? void 0 : Number(raw.parent);
-  if (estimate !== void 0 && (!Number.isFinite(estimate) || estimate < 0) || parent !== void 0 && (!Number.isSafeInteger(parent) || parent < 1)) throw new TypeError("legacy numeric field is invalid");
-  return { kind: kind2, area, priority, ...size ? { size } : {}, ...estimate !== void 0 ? { estimate } : {}, ...milestone ? { milestone } : {}, ...parent !== void 0 ? { parent } : {}, dependsOn: list(raw.depends_on), blocks: list(raw.blocks), extensions };
+function snapshotInvalidationForMutation(kind2) {
+  return kind2 === "create_project_field" || kind2 === "update_project_field_options" ? "schema" : "item";
 }
-function same(a, b) {
-  return typeof a === "string" && typeof b === "string" ? a === b : a === b;
-}
-function bump(target, kind2) {
-  target[kind2] = (target[kind2] ?? 0) + 1;
-}
-function runLegacyShadowAudit(policySource, snapshot) {
-  let policy;
-  try {
-    policy = parseLegacyPolicy(policySource);
-  } catch {
-    return { schema: 1, status: "error", failureClass: "invariant", diagnostics: [{ code: "YKP-LEGACY-001", message: "legacy policy is invalid" }], issues: [], totals: {}, capabilities: LEGACY_COMPATIBILITY_MATRIX, evidence: snapshot.evidence };
-  }
-  const reports = [], totals = {};
-  let deferred = false, failed = false;
-  for (const [issueNumber2, observed] of [...snapshot.issues.entries()].sort(([a], [b]) => a - b)) {
-    const counts = {}, diagnostics2 = [];
-    let contract;
-    try {
-      contract = parseLegacyContract(observed.body);
-    } catch {
-      reports.push({ issueNumber: issueNumber2, status: "error", operationCounts: {}, diagnostics: [{ code: "YKP-LEGACY-001", message: "legacy contract is invalid" }] });
-      failed = true;
-      continue;
+async function readWithClient(input3, options, client) {
+  const numbers = [...new Set(input3.issueNumbers)].sort((a, b) => a - b);
+  if (!/^[A-Za-z0-9-]{1,39}$/u.test(input3.ownerLogin) || !/^[A-Za-z0-9_.-]{1,100}$/u.test(input3.repositoryName) || !Number.isSafeInteger(input3.projectNumber) || input3.projectNumber < 1 || numbers.length < 1 || numbers.length > 100 || numbers.some((n) => !Number.isSafeInteger(n) || n < 1)) throw new GitHubTransportError("YKP-GH-READ-001");
+  const repoPage = await client.get(`/repos/${input3.ownerLogin}/${input3.repositoryName}`), repo = repoPage.body;
+  if (!rec3(repo) || !rec3(repo.owner)) throw new GitHubTransportError("YKP-REST-001");
+  const ownerKind = repo.owner.type === "Organization" ? "orgs" : repo.owner.type === "User" ? "users" : (() => {
+    throw new GitHubTransportError("YKP-CAPABILITY-001");
+  })();
+  const projectPage = await client.get(`/${ownerKind}/${input3.ownerLogin}/projectsV2/${input3.projectNumber}`), project = projectPage.body;
+  if (!rec3(project) || integer(project.number) !== input3.projectNumber) throw new GitHubTransportError("YKP-SNAPSHOT-001");
+  const projectRef = text3(project.node_id);
+  const fieldsPage = await client.list(`/${ownerKind}/${input3.ownerLogin}/projectsV2/${input3.projectNumber}/fields?per_page=100`);
+  const fields = fieldsPage.nodes.filter((f) => ["text", "number", "date", "single_select", "iteration"].includes(String(f.data_type))).map((f) => ({ id: text3(f.node_id), name: text3(f.name, 128), kind: kind(f.data_type), options: fieldOptions(f) }));
+  const fieldSelector = fieldsPage.nodes.map((f) => String(integer(f.id))).join(",");
+  if (fieldSelector.length > 4096) throw new GitHubTransportError("YKP-GH-READ-005");
+  const itemsPage = await client.list(`/${ownerKind}/${input3.ownerLogin}/projectsV2/${input3.projectNumber}/items?per_page=100${fieldSelector ? `&fields=${fieldSelector}` : ""}`);
+  const wanted = new Set(numbers), selected = /* @__PURE__ */ new Map();
+  for (const item of itemsPage.nodes) {
+    if (!rec3(item.content) || !rec3(item.content.repository) || item.content.repository.full_name !== `${input3.ownerLogin}/${input3.repositoryName}`) continue;
+    const n = item.content.number;
+    if (Number.isSafeInteger(n) && wanted.has(n)) {
+      if (selected.has(n)) throw new GitHubTransportError("YKP-SNAPSHOT-001");
+      selected.set(n, item);
     }
-    const core = { kind: contract.kind, area: contract.area, priority: contract.priority, size: contract.size, estimate: contract.estimate };
-    const desiredLabels = /* @__PURE__ */ new Set();
-    for (const key of Object.keys(policy.fields).sort()) {
-      const field = policy.fields[key], logical = core[key] ?? contract.extensions[key];
-      if (logical === void 0) {
-        if (field.required) diagnostics2.push({ code: "YKP-LEGACY-002", message: "required governed value is missing" });
-        continue;
-      }
-      const mapped = typeof logical === "string" && Object.keys(field.values).length ? field.values[logical] : logical;
-      if (mapped === void 0) {
-        diagnostics2.push({ code: "YKP-LEGACY-003", message: "governed value is unsupported" });
-        continue;
-      }
-      if (typeof logical === "string" && field.labels[logical]) desiredLabels.add(field.labels[logical]);
-      if (field.target === "issue_type") {
-        if (!same(observed.issueType, mapped)) bump(counts, "set_issue_type");
-      } else if (field.target === "issue_field") {
-        if (!same(observed.issueFields[field.projectField], mapped)) bump(counts, "set_issue_field");
-      } else if (!same(observed.values[field.projectField], mapped)) bump(counts, "set_project_field");
-    }
-    const managedLabels = new Set(Object.values(policy.fields).flatMap((field) => Object.values(field.labels))), observedManaged = new Set(observed.labels.filter((label) => managedLabels.has(label)));
-    for (const label of desiredLabels) if (!observedManaged.has(label)) bump(counts, "add_label");
-    for (const label of observedManaged) if (!desiredLabels.has(label)) bump(counts, "remove_label");
-    const desiredMilestone = contract.milestone ? policy.milestones[contract.milestone] : void 0;
-    if (contract.milestone && !desiredMilestone) diagnostics2.push({ code: "YKP-LEGACY-004", message: "milestone mapping is unavailable" });
-    else if (desiredMilestone !== observed.milestone) bump(counts, "set_milestone");
-    if (contract.parent !== observed.parent) bump(counts, "set_parent");
-    if (!observed.relationshipsComplete && (contract.dependsOn.length > 0 || contract.blocks.length > 0)) {
-      diagnostics2.push({ code: "YKP-RATE-001", message: "relationship snapshot requires the bounded fallback or a complete cache" });
-      deferred = true;
-    } else {
-      const wanted = new Set(contract.dependsOn), current = new Set(observed.blockedBy);
-      for (const n of wanted) if (!current.has(n)) bump(counts, "add_dependency");
-      for (const n of current) if (!wanted.has(n)) bump(counts, "remove_dependency");
-      const wantedBlocks = new Set(contract.blocks), currentBlocks = new Set(observed.blocking);
-      for (const n of wantedBlocks) if (!currentBlocks.has(n)) bump(counts, "add_blocking");
-      for (const n of currentBlocks) if (!wantedBlocks.has(n)) bump(counts, "remove_blocking");
-    }
-    for (const [key, value2] of Object.entries(counts)) totals[key] = (totals[key] ?? 0) + value2;
-    const operations = Object.values(counts).reduce((a, b) => a + b, 0), status = diagnostics2.some((d) => d.code !== "YKP-RATE-001") ? "error" : diagnostics2.length ? "deferred" : operations ? "drift" : "converged";
-    if (status === "error") failed = true;
-    reports.push({ issueNumber: issueNumber2, status, operationCounts: counts, diagnostics: diagnostics2 });
   }
-  return { schema: 1, status: failed ? "error" : deferred ? "deferred" : "success", ...failed ? { failureClass: "invariant" } : deferred ? { failureClass: "deferred" } : {}, diagnostics: [], issues: reports, totals, capabilities: LEGACY_COMPATIBILITY_MATRIX, evidence: snapshot.evidence };
-}
-
-// src/runtime-input.ts
-import { lstat, open, readFile, realpath } from "node:fs/promises";
-import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
-var OWNER = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/u;
-var REPOSITORY = /^[A-Za-z0-9_.-]{1,100}$/u;
-var DECIMAL = /^[1-9][0-9]{0,9}$/u;
-function parseRuntimeScope(input) {
-  if (!OWNER.test(input.owner) || !REPOSITORY.test(input.repository) || input.repository === "." || input.repository === ".." || !DECIMAL.test(input.projectNumber) || !DECIMAL.test(input.issueNumber)) throw new TypeError("invalid runtime input");
-  const projectNumber = Number(input.projectNumber), issueNumber2 = Number(input.issueNumber);
-  if (projectNumber > 2147483647 || issueNumber2 > 2147483647) throw new TypeError("invalid runtime input");
-  return { ownerLogin: input.owner, repositoryName: input.repository, projectNumber, issueNumber: issueNumber2 };
-}
-async function loadWorkspacePolicy(workspace, policyPath = ".yukh/project.yaml") {
-  if (!policyPath || isAbsolute(policyPath) || policyPath.split(/[\\/]/u).includes("..") || /[\u0000-\u001f\u007f]/u.test(policyPath)) throw new TypeError("invalid policy path");
-  const root = await realpath(workspace), candidate = resolve(root, policyPath), resolved = await realpath(candidate);
-  const rel = relative(root, resolved);
-  if (rel === "" || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new TypeError("invalid policy path");
-  const metadata = await lstat(candidate);
-  if (metadata.isSymbolicLink() || !metadata.isFile() || metadata.size > 64 * 1024) throw new TypeError("invalid policy file");
-  const source = await readFile(resolved, "utf8");
-  if (Buffer.byteLength(source, "utf8") > 64 * 1024) throw new TypeError("invalid policy file");
-  return source;
-}
-async function writeWorkspaceReport(workspace, reportPath, content) {
-  if (!reportPath || isAbsolute(reportPath) || reportPath.split(/[\\/]/u).includes("..") || /[\u0000-\u001f\u007f]/u.test(reportPath) || Buffer.byteLength(content, "utf8") > 1024 * 1024) throw new TypeError("invalid report path");
-  const root = await realpath(workspace), parent = await realpath(dirname(resolve(root, reportPath))), rel = relative(root, parent);
-  if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new TypeError("invalid report path");
-  const file = await open(resolve(parent, reportPath.split(/[\\/]/u).at(-1)), "wx", 384);
-  try {
-    await file.writeFile(content, "utf8");
-  } finally {
-    await file.close();
-  }
-}
-
-// src/cli.ts
-var KEYS = /* @__PURE__ */ new Set(["--owner", "--repository", "--project-number", "--issue-number", "--issue-numbers", "--policy-path", "--report-file"]);
-function parseCliArgs(argv) {
-  const values = /* @__PURE__ */ new Map();
-  let tokenStdin = false, legacyShadow = false;
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
-    if (arg === "--github-token-stdin") {
-      if (tokenStdin) throw new TypeError("invalid arguments");
-      tokenStdin = true;
-      continue;
-    }
-    if (arg === "--legacy-shadow") {
-      if (legacyShadow) throw new TypeError("invalid arguments");
-      legacyShadow = true;
-      continue;
-    }
-    if (arg === "--apply" || !KEYS.has(arg) || values.has(arg)) throw new TypeError("invalid arguments");
-    const value2 = argv[++i];
-    if (value2 === void 0 || value2.startsWith("--")) throw new TypeError("invalid arguments");
-    values.set(arg, value2);
-  }
-  if (!tokenStdin) throw new TypeError("invalid arguments");
-  for (const key of ["--owner", "--repository", "--project-number"]) if (!values.has(key)) throw new TypeError("invalid arguments");
-  const single = values.get("--issue-number"), batch = values.get("--issue-numbers");
-  if (legacyShadow ? Boolean(single) === Boolean(batch) : !single || Boolean(batch)) throw new TypeError("invalid arguments");
-  let issueNumbers;
-  if (batch) {
-    const parsed = batch.split(",").map((value2) => Number(value2));
-    if (parsed.length < 1 || parsed.length > 100 || parsed.some((value2) => !Number.isSafeInteger(value2) || value2 < 1) || new Set(parsed).size !== parsed.length) throw new TypeError("invalid arguments");
-    issueNumbers = parsed;
-  }
-  return { owner: values.get("--owner"), repository: values.get("--repository"), projectNumber: values.get("--project-number"), ...single ? { issueNumber: single } : {}, ...issueNumbers ? { issueNumbers } : {}, legacyShadow, policyPath: values.get("--policy-path") ?? ".yukh/project.yaml", reportFile: values.get("--report-file"), tokenStdin: true };
-}
-async function readBoundedToken(source) {
-  let bytes = 0, value2 = "";
-  for await (const chunk of source) {
-    const buffer = Buffer.from(chunk);
-    bytes += buffer.byteLength;
-    if (bytes > 8192) throw new TypeError("invalid credential");
-    value2 += buffer.toString("utf8");
-  }
-  value2 = value2.replace(/\r?\n$/u, "");
-  if (!value2 || /[\u0000-\u001f\u007f]/u.test(value2)) throw new TypeError("invalid credential");
-  return value2;
-}
-async function cliMain(argv, stdin, workspace, write) {
-  let options;
-  try {
-    options = parseCliArgs(argv);
-    if (!options.legacyShadow) parseRuntimeScope(options);
-  } catch {
-    return 2;
-  }
-  let token, policySource;
-  try {
-    [token, policySource] = await Promise.all([readBoundedToken(stdin), loadWorkspacePolicy(workspace, options.policyPath)]);
-  } catch {
-    return 2;
-  }
-  if (options.legacyShadow) {
-    let result2;
-    try {
-      const projectNumber = Number(options.projectNumber), issueNumbers = options.issueNumbers ?? [Number(options.issueNumber)];
-      const snapshot = await readRestProjectSnapshot({ ownerLogin: options.owner, repositoryName: options.repository, projectNumber, issueNumbers }, { token, graphqlRemaining: 0 });
-      result2 = runLegacyShadowAudit(policySource, snapshot);
-    } catch (error) {
-      const code = error instanceof GitHubTransportError ? error.code : "YKP-GH-READ-004", failureClass = code === "YKP-GH-READ-002" ? "authentication" : code === "YKP-GH-READ-003" ? "authorization" : code === "YKP-RATE-001" ? "deferred" : code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" || code === "YKP-CACHE-001" ? "invariant" : "provider";
-      result2 = { schema: 1, status: failureClass === "deferred" ? "deferred" : "error", failureClass, diagnostics: [{ code, message: "snapshot acquisition failed" }], issues: [], totals: {}, capabilities: [], evidence: { restRequests: 0, graphqlRequests: 0, restCacheHits: 0, conditionalRequests: 0, coalescedRequests: 0 } };
-    }
-    const rendered2 = `${JSON.stringify(result2)}
-`;
-    try {
-      if (options.reportFile) await writeWorkspaceReport(workspace, options.reportFile, rendered2);
-      else write(rendered2);
-    } catch {
-      return 2;
-    }
-    return result2.status === "success" ? 0 : result2.status === "deferred" ? 6 : result2.failureClass === "authentication" || result2.failureClass === "authorization" ? 3 : result2.failureClass === "provider" ? 4 : 5;
-  }
-  const result = await runDryRun({ scope: parseRuntimeScope(options), policySource, transport: createGitHubRestSnapshotReadTransport({ token }) });
-  const rendered = `${JSON.stringify(result)}
-`;
-  try {
-    if (options.reportFile) await writeWorkspaceReport(workspace, options.reportFile, rendered);
-    else write(rendered);
-  } catch {
-    return 2;
-  }
-  if (result.status === "success") return 0;
-  return result.failureClass === "authentication" ? 3 : result.failureClass === "authorization" ? 3 : result.failureClass === "deferred" ? 6 : result.failureClass === "provider" ? 4 : 5;
-}
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  void cliMain(process.argv.slice(2), process.stdin, process.cwd(), (value2) => process.stdout.write(value2)).then((code) => {
-    process.exitCode = code;
+  if (selected.size !== numbers.length) throw new GitHubTransportError("YKP-SNAPSHOT-001");
+  const relationshipIds = numbers.flatMap((n) => {
+    const content = selected.get(n).content, summary = relationshipSummary(content);
+    return summary.blockedBy + summary.blocking > 0 ? [text3(content.node_id)] : [];
   });
+  const relationships = await client.relationships(relationshipIds), issues = /* @__PURE__ */ new Map();
+  for (const n of numbers) {
+    const item = selected.get(n), content = item.content, relation = relationships.get(text3(content.node_id));
+    const parent = relation?.parent ?? issueNumberFromUrl(content.parent_issue_url), labels = Array.isArray(content.labels) ? content.labels.map((label) => {
+      if (!rec3(label)) throw new GitHubTransportError("YKP-REST-001");
+      return text3(label.name, 128);
+    }).sort() : [], milestone = rec3(content.milestone) && typeof content.milestone.title === "string" ? text3(content.milestone.title, 128) : void 0, issueType = rec3(content.type) && typeof content.type.name === "string" ? text3(content.type.name, 128) : void 0, summary = relationshipSummary(content), relationshipsComplete = Boolean(relation) || summary.blockedBy === 0 && summary.blocking === 0;
+    issues.set(n, { issueRef: text3(content.node_id), issueDatabaseId: integer(content.id), body: typeof content.body === "string" ? content.body : "", itemRef: text3(item.node_id), fingerprint: text3(item.node_id), values: itemValues(item), ...issueType ? { issueType } : {}, labels, ...milestone ? { milestone } : {}, issueFields: nativeIssueFields(content), ...parent ? { parent } : {}, blockedBy: relation?.blockedBy ?? [], blocking: relation?.blocking ?? [], relationshipsComplete });
+  }
+  return { subjectRef: subject(options.token), ownerLogin: input3.ownerLogin, repositoryName: input3.repositoryName, projectNumber: input3.projectNumber, repositoryRef: text3(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), issues, evidence: { ...client.evidence } };
+}
+function createRestProjectSnapshotReader(options) {
+  const client = new RestSnapshotClient(options);
+  return { read: (input3) => readWithClient(input3, options, client), invalidate: (input3, effect) => client.invalidate(input3, effect) };
+}
+function createGitHubRestSnapshotReadTransportFromReader(reader) {
+  let snapshotPromise;
+  let bound;
+  return { execute: async (operation, variables2) => {
+    const ownerLogin = text3(variables2.ownerLogin), repositoryName = text3(variables2.repositoryName), projectNumber = integer(variables2.projectNumber), issueNumber2 = integer(variables2.issueNumber);
+    const key = `${ownerLogin}/${repositoryName}/${projectNumber}/${issueNumber2}`;
+    if (bound && bound !== key) throw new GitHubTransportError("YKP-SNAPSHOT-001");
+    bound = key;
+    snapshotPromise ??= reader.read({ ownerLogin, repositoryName, projectNumber, issueNumbers: [issueNumber2] });
+    const snapshot = await snapshotPromise, issue = snapshot.issues.get(issueNumber2);
+    if (!issue) throw new GitHubTransportError("YKP-SNAPSHOT-001");
+    let data;
+    if (operation === "resolve_scope") data = { subjectRef: snapshot.subjectRef, ownerLogin, repositoryName, projectNumber, issueNumber: issueNumber2, repositoryRef: snapshot.repositoryRef, projectRef: snapshot.projectRef, issueRef: issue.issueRef, issueBody: issue.body };
+    else if (operation === "read_project_fields") data = { projectRef: snapshot.projectRef, nodes: snapshot.fields, pageInfo: { hasNextPage: false, endCursor: null } };
+    else if (operation === "read_project_item") data = { projectRef: snapshot.projectRef, issueRef: issue.issueRef, itemRef: issue.itemRef, fingerprint: issue.fingerprint, nodes: Object.entries(issue.values).map(([key2, value2]) => ({ key: key2, value: value2 })), pageInfo: { hasNextPage: false, endCursor: null } };
+    else {
+      const nodes = /* @__PURE__ */ new Set([issueNumber2, ...issue.blockedBy, ...issue.blocking, ...issue.parent ? [issue.parent] : []]);
+      data = { repositoryRef: snapshot.repositoryRef, issueRef: issue.issueRef, nodes: [...nodes].sort((a, b) => a - b).map((issueNumber3) => ({ issueNumber: issueNumber3 })), parent: issue.parent ? [{ from: issueNumber2, to: issue.parent }] : [], blocks: [...issue.blockedBy.map((from) => ({ from, to: issueNumber2 })), ...issue.blocking.map((to) => ({ from: issueNumber2, to }))], pageInfo: { hasNextPage: false, endCursor: null } };
+    }
+    return { byteCount: Buffer.byteLength(JSON.stringify(data)), data };
+  } };
+}
+
+// src/controlled-apply-host.ts
+var KIND = { create_field: "create_project_field", add_option: "update_project_field_options", set_field_value: "update_project_item_field_value", set_parent: "add_sub_issue", add_dependency: "add_blocked_by" };
+function failure4(value2) {
+  throw new ApplyPortError(value2.failureClass === "authentication" ? "authentication" : value2.failureClass === "authorization" ? "authorization" : value2.failureClass === "deferred" ? "deferred_rate_budget" : value2.failureClass === "provider" ? "provider" : "invariant");
+}
+function sameResource(a, b) {
+  return a.resource.kind === b.resource.kind && a.resource.logicalKey === b.resource.logicalKey && a.resource.scopeRef === b.resource.scopeRef;
+}
+function exact(a, b) {
+  return canonicalJson(a) === canonicalJson(b);
+}
+function field(snapshot, prepared, key) {
+  const declaration = prepared.policy.fields[key], found = declaration && snapshot.fields.find((value2) => value2.name === declaration.name);
+  if (!declaration || !found) throw new ApplyPortError("invariant");
+  return { declaration, found };
+}
+async function variables(operation, prepared, reader, input3) {
+  const snapshot = await reader.read(input3), issue = snapshot.issues.get(input3.issueNumbers[0]);
+  if (!issue) throw new ApplyPortError("invariant");
+  if (operation.type === "create_field") {
+    const declaration = prepared.policy.fields[operation.resource.logicalKey];
+    if (!declaration || declaration.kind === "iteration") throw new ApplyPortError("invariant");
+    const dataType = { text: "TEXT", number: "NUMBER", date: "DATE", single_select: "SINGLE_SELECT" };
+    return { kind: "create_project_field", projectId: snapshot.projectRef, dataType: dataType[declaration.kind], name: declaration.name, ...declaration.kind === "single_select" ? { options: Object.values(declaration.options ?? {}).map((name) => ({ name, color: "GRAY", description: "" })) } : {} };
+  }
+  if (operation.type === "add_option") {
+    const key = operation.resource.logicalKey.split(".")[0], { declaration, found } = field(snapshot, prepared, key), name = String(operation.desired ?? declaration.options?.[operation.resource.logicalKey.split(".")[1] ?? ""]);
+    if (!name || found.options.some((option2) => option2.color === void 0 || option2.description === void 0)) throw new ApplyPortError("invariant");
+    return { kind: "update_project_field_options", fieldId: found.id, observedOptions: found.options.map((option2) => ({ id: option2.id, name: option2.name, color: option2.color, description: option2.description })), newOption: { name, color: "GRAY", description: "" } };
+  }
+  if (operation.type === "set_field_value") {
+    const { declaration, found } = field(snapshot, prepared, operation.resource.logicalKey);
+    let value2;
+    if (declaration.kind === "number") value2 = { number: Number(operation.desired) };
+    else if (declaration.kind === "date") value2 = { date: String(operation.desired) };
+    else if (declaration.kind === "text") value2 = { text: String(operation.desired) };
+    else {
+      const option2 = found.options.find((candidate) => candidate.name === String(operation.desired));
+      if (!option2) throw new ApplyPortError("invariant");
+      value2 = declaration.kind === "iteration" ? { iterationId: option2.id } : { singleSelectOptionId: option2.id };
+    }
+    return { kind: "update_project_item_field_value", projectId: snapshot.projectRef, itemId: issue.itemRef, fieldId: found.id, value: value2 };
+  }
+  if (operation.type === "set_parent") {
+    const parent = Number(operation.desired), related2 = await reader.read({ ...input3, issueNumbers: [input3.issueNumbers[0], parent] });
+    const parentIssue = related2.issues.get(parent), child = related2.issues.get(input3.issueNumbers[0]);
+    if (!parentIssue || !child) throw new ApplyPortError("invariant");
+    return { kind: "add_sub_issue", parentIssueId: parentIssue.issueRef, subIssueId: child.issueRef };
+  }
+  const match = operation.resource.logicalKey.match(/^(\d+)->(\d+)$/u);
+  if (!match) throw new ApplyPortError("invariant");
+  const from = Number(match[1]), to = Number(match[2]), related = await reader.read({ ...input3, issueNumbers: [from, to] }), blocking = related.issues.get(from), blocked = related.issues.get(to);
+  if (!blocking || !blocked) throw new ApplyPortError("invariant");
+  return { kind: "add_blocked_by", blockedIssueId: blocked.issueRef, blockingIssueId: blocking.issueRef };
+}
+function createControlledApplyHostFactory(options) {
+  if (!options || options.coordination.epoch !== options.coordinationEpoch || options.allowedIssuerRefs.length < 1 || new Set(options.allowedIssuerRefs).size !== options.allowedIssuerRefs.length) throw new TypeError("invalid controlled apply host configuration");
+  const coordinationStore = createApplyCoordinationHttpStore(options.coordination), clock = options.nowMs ?? Date.now;
+  return { create: async (input3) => {
+    if (input3.readToken === input3.writeToken) throw new TypeError("credential profiles must be distinct");
+    const ledger = createGitHubRateLedger(options.rate), reader = createRestProjectSnapshotReader({ token: input3.readToken, fetch: options.readFetch, rateLedger: ledger, graphqlRemaining: options.rate.graphqlRemaining }), snapshotInput = { ownerLogin: input3.requestedScope.ownerLogin, repositoryName: input3.requestedScope.repositoryName, projectNumber: input3.requestedScope.projectNumber, issueNumbers: [input3.requestedScope.issueNumber] }, mutation = createGitHubMutationTransport({ token: input3.writeToken, permissions: options.permissions, approvedKinds: options.approvedKinds, fetch: options.writeFetch, rateLedger: ledger });
+    let latest;
+    const replan = async () => {
+      const prepared = await prepareReconciliation({ scope: input3.requestedScope, policySource: input3.policySource, transport: createGitHubRestSnapshotReadTransportFromReader(reader) });
+      if (prepared.status !== "success") return failure4(prepared);
+      latest = prepared;
+      return prepared.plan;
+    };
+    await replan();
+    return { scope: latest.observation.scope, host: { enablement: options.enablement, allowedIssuerRefs: options.allowedIssuerRefs, holderDigest: options.holderDigest, coordinationEpoch: options.coordinationEpoch, coordinationStore, ports: { nowMs: clock, replan, inspect: async (operation) => {
+      const plan = await replan(), found = plan.operations.find((candidate) => candidate.operationKey === operation.operationKey);
+      if (found) return exact(found, operation) ? "ready" : "mismatch";
+      return plan.operations.some((candidate) => sameResource(candidate, operation)) ? "mismatch" : "already_converged";
+    }, mutate: async (kind2, operation, clientMutationId) => {
+      if (KIND[operation.type] !== kind2) throw new ApplyPortError("invariant");
+      try {
+        await mutation.execute(kind2, await variables(operation, latest, reader, snapshotInput), clientMutationId);
+      } catch (error) {
+        throw normalizeGitHubApplyFailure(error);
+      }
+    }, invalidateAfterMutation: async (kind2) => reader.invalidate(snapshotInput, snapshotInvalidationForMutation(kind2)), verify: async (operation) => {
+      const plan = await replan();
+      return !plan.operations.some((candidate) => sameResource(candidate, operation));
+    }, audit: options.audit ?? (async () => {
+    }) } } };
+  } };
+}
+
+// src/protected-host-capsule.ts
+import { createHash as createHash7, createPrivateKey, randomUUID, sign } from "node:crypto";
+var DIGEST5 = /^[a-f0-9]{64}$/u;
+var KINDS2 = ["create_project_field", "update_project_field_options", "update_project_item_field_value", "add_sub_issue", "add_blocked_by"];
+function rec4(v) {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+function exact2(v, keys2) {
+  if (Object.keys(v).sort().join("\0") !== [...keys2].sort().join("\0")) throw new TypeError("invalid host capsule");
+}
+function text4(v, max = 256) {
+  if (typeof v !== "string" || v.length < 1 || v.length > max || /[\u0000-\u001f\u007f]/u.test(v)) throw new TypeError("invalid host capsule");
+  return v;
+}
+function integer2(v, min = 0) {
+  if (!Number.isSafeInteger(v) || v < min) throw new TypeError("invalid host capsule");
+  return v;
+}
+function b64(value2) {
+  return Buffer.from(value2).toString("base64url");
+}
+function canonical2(value2) {
+  if (value2 === null || typeof value2 === "boolean" || typeof value2 === "string") return JSON.stringify(value2);
+  if (typeof value2 === "number") {
+    if (!Number.isSafeInteger(value2)) throw new TypeError("invalid host capsule");
+    return String(value2);
+  }
+  if (Array.isArray(value2)) return `[${value2.map(canonical2).join(",")}]`;
+  if (!rec4(value2)) throw new TypeError("invalid host capsule");
+  return `{${Object.keys(value2).sort().map((key) => `${JSON.stringify(key)}:${canonical2(value2[key])}`).join(",")}}`;
+}
+function proofFactory(credential, jwk, nowMs, jti) {
+  let key;
+  try {
+    key = createPrivateKey({ key: jwk, format: "jwk" });
+  } catch {
+    throw new TypeError("invalid host capsule");
+  }
+  if (key.asymmetricKeyType !== "ec" || key.asymmetricKeyDetails?.namedCurve !== "prime256v1" || typeof jwk.x !== "string" || typeof jwk.y !== "string" || jwk.kty !== "EC" || jwk.crv !== "P-256" || typeof jwk.d !== "string") throw new TypeError("invalid host capsule");
+  const publicJwk = { crv: "P-256", kty: "EC", x: jwk.x, y: jwk.y };
+  return async (request) => {
+    const header = b64(canonical2({ alg: "ES256", jwk: publicJwk, typ: "dpop+jwt" })), payload = b64(canonical2({ ath: b64(createHash7("sha256").update(credential).digest()), htm: request.method, htu: request.targetUri, iat: Math.floor(nowMs() / 1e3), jti: text4(jti(), 128) })), input3 = `${header}.${payload}`, signature = sign("sha256", Buffer.from(input3), { key, dsaEncoding: "ieee-p1363" });
+    return { credential, proof: `${input3}.${b64(signature)}` };
+  };
+}
+function parseProtectedHostCapsule(source, binding, runtime = {}) {
+  let value2;
+  try {
+    value2 = JSON.parse(source);
+  } catch {
+    throw new TypeError("invalid host capsule");
+  }
+  if (!rec4(value2) || canonical2(value2) !== source) throw new TypeError("invalid host capsule");
+  exact2(value2, ["schema", "version", "issued_at_ms", "expires_at_ms", "scope", "enablement", "allowed_issuer_refs", "holder_digest", "coordination", "permissions", "approved_kinds", "rate"]);
+  if (value2.schema !== 1 || value2.version !== "protected-host-capsule-v1" || value2.enablement !== "apply-explicitly-enabled" || !DIGEST5.test(String(value2.holder_digest))) throw new TypeError("invalid host capsule");
+  const now = runtime.nowMs ?? Date.now, issued = integer2(value2.issued_at_ms), expires = integer2(value2.expires_at_ms);
+  if (issued > now() || expires < now() || expires - issued > 15 * 60 * 1e3) throw new TypeError("invalid host capsule");
+  if (!rec4(value2.scope)) throw new TypeError("invalid host capsule");
+  exact2(value2.scope, ["owner", "repository", "project_number", "issue_number", "environment"]);
+  if (value2.scope.owner !== binding.scope.ownerLogin || value2.scope.repository !== binding.scope.repositoryName || value2.scope.project_number !== binding.scope.projectNumber || value2.scope.issue_number !== binding.scope.issueNumber || value2.scope.environment !== binding.environment) throw new TypeError("invalid host capsule");
+  if (!Array.isArray(value2.allowed_issuer_refs) || value2.allowed_issuer_refs.length < 1 || value2.allowed_issuer_refs.length > 16) throw new TypeError("invalid host capsule");
+  const issuers = value2.allowed_issuer_refs.map((v) => text4(v));
+  if (new Set(issuers).size !== issuers.length) throw new TypeError("invalid host capsule");
+  if (!rec4(value2.coordination)) throw new TypeError("invalid host capsule");
+  exact2(value2.coordination, ["base_uri", "epoch", "credential", "dpop_private_jwk"]);
+  const baseUri = text4(value2.coordination.base_uri, 1024), epoch = integer2(value2.coordination.epoch, 1), credential = text4(value2.coordination.credential, 8192);
+  if (!rec4(value2.coordination.dpop_private_jwk)) throw new TypeError("invalid host capsule");
+  if (!rec4(value2.permissions)) throw new TypeError("invalid host capsule");
+  exact2(value2.permissions, ["projects", "issues", "extra_permissions"]);
+  if (!["none", "read", "write"].includes(String(value2.permissions.projects)) || !["none", "read", "write"].includes(String(value2.permissions.issues)) || !Array.isArray(value2.permissions.extra_permissions) || value2.permissions.extra_permissions.length !== 0) throw new TypeError("invalid host capsule");
+  if (!Array.isArray(value2.approved_kinds) || value2.approved_kinds.length < 1 || value2.approved_kinds.some((v) => !KINDS2.includes(v)) || new Set(value2.approved_kinds).size !== value2.approved_kinds.length) throw new TypeError("invalid host capsule");
+  if (!rec4(value2.rate)) throw new TypeError("invalid host capsule");
+  exact2(value2.rate, ["rest_remaining", "graphql_remaining", "rest_reserve", "graphql_reserve", "max_rest_requests", "max_graphql_requests", "max_graphql_points"]);
+  const rate = { restRemaining: integer2(value2.rate.rest_remaining), graphqlRemaining: integer2(value2.rate.graphql_remaining), restReserve: integer2(value2.rate.rest_reserve, 500), graphqlReserve: integer2(value2.rate.graphql_reserve, 500), maxRestRequests: integer2(value2.rate.max_rest_requests, 1), maxGraphqlRequests: integer2(value2.rate.max_graphql_requests), maxGraphqlPoints: integer2(value2.rate.max_graphql_points) };
+  const authenticate = proofFactory(credential, value2.coordination.dpop_private_jwk, now, runtime.jti ?? randomUUID);
+  return { options: { enablement: "apply-explicitly-enabled", allowedIssuerRefs: issuers, holderDigest: String(value2.holder_digest), coordinationEpoch: epoch, coordination: { baseUri, epoch, deadlineMs: 5e3, authenticate }, permissions: { projects: value2.permissions.projects, issues: value2.permissions.issues, extraPermissions: [] }, approvedKinds: value2.approved_kinds, rate, nowMs: now } };
 }
 export {
-  cliMain,
-  parseCliArgs,
-  readBoundedToken
+  applyActionMain,
+  applyCliMain,
+  bindApplyCoordination,
+  createApplyCoordinationHttpStore,
+  createControlledApplyHostFactory,
+  createGitHubMutationTransport,
+  createGitHubRateLedger,
+  createRestProjectSnapshotReader,
+  executeControlledPlan,
+  normalizeGitHubApplyFailure,
+  parseProtectedHostCapsule,
+  renderPublicApplyReport,
+  runApplyEntrypoint,
+  snapshotInvalidationForMutation,
+  verifySignedApproval
 };

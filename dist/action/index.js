@@ -5222,7 +5222,7 @@ ${cb}` : comment;
       }
       /** Advance the composer by one CST token. */
       *next(token) {
-        if (node_process.env.LOG_STREAM)
+        if (false)
           console.dir(token, { depth: null });
         switch (token.type) {
           case "directive":
@@ -6473,7 +6473,7 @@ var require_parser = __commonJS({
        */
       *next(source) {
         this.source = source;
-        if (node_process.env.LOG_TOKENS)
+        if (false)
           console.log("|", cst.prettyToken(source));
         if (this.atScalar) {
           this.atScalar = false;
@@ -7385,11 +7385,45 @@ var GitHubTransportError = class extends Error {
   code;
 };
 
+// src/github-rate-ledger.ts
+function finiteNonnegative(value2) {
+  return Number.isFinite(value2) && Number.isSafeInteger(value2) && value2 >= 0;
+}
+function createGitHubRateLedger(options = {}) {
+  const restReserve = options.restReserve ?? 500, graphqlReserve = options.graphqlReserve ?? 500, maxRestRequests = options.maxRestRequests ?? 32, maxGraphqlRequests = options.maxGraphqlRequests ?? 1, maxGraphqlPoints = options.maxGraphqlPoints ?? 100;
+  if (![restReserve, graphqlReserve, maxRestRequests, maxGraphqlRequests, maxGraphqlPoints].every(finiteNonnegative) || restReserve < 500 || graphqlReserve < 500 || maxRestRequests > 64 || maxGraphqlRequests > 2 || maxGraphqlPoints > 500) throw new TypeError("invalid rate ledger options");
+  let restRemaining = options.restRemaining ?? Number.POSITIVE_INFINITY, graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY, restRequests = 0, graphqlRequests = 0, graphqlPoints = 0;
+  if (!(finiteNonnegative(restRemaining) || restRemaining === Number.POSITIVE_INFINITY) || !(finiteNonnegative(graphqlRemaining) || graphqlRemaining === Number.POSITIVE_INFINITY)) throw new TypeError("invalid provider rate state");
+  return {
+    reserve: (resource, cost = 1) => {
+      if (!finiteNonnegative(cost) || cost < 1) return false;
+      if (resource === "rest") {
+        if (restRequests >= maxRestRequests || restRemaining - cost < restReserve) return false;
+        restRequests++;
+        if (Number.isFinite(restRemaining)) restRemaining -= cost;
+        return true;
+      }
+      if (resource !== "graphql" || graphqlRequests >= maxGraphqlRequests || graphqlPoints + cost > maxGraphqlPoints || graphqlRemaining - cost < graphqlReserve) return false;
+      graphqlRequests++;
+      graphqlPoints += cost;
+      if (Number.isFinite(graphqlRemaining)) graphqlRemaining -= cost;
+      return true;
+    },
+    observe: (resource, remaining) => {
+      if (!finiteNonnegative(remaining)) return;
+      if (resource === "rest") restRemaining = Math.min(restRemaining, remaining);
+      else if (resource === "graphql") graphqlRemaining = Math.min(graphqlRemaining, remaining);
+    },
+    snapshot: () => ({ restRequests, graphqlRequests, graphqlPoints, restRemaining, graphqlRemaining })
+  };
+}
+
 // src/github-rest-snapshot.ts
 var API = "https://api.github.com";
 var GRAPHQL = `${API}/graphql`;
 var API_VERSION = "2026-03-10";
 var RELATIONSHIP_QUERY = `query YukhRelationshipSnapshot($ids:[ID!]!){nodes(ids:$ids){... on Issue{id number repository{id} parent{number repository{id}} subIssues(first:100){nodes{number repository{id}}pageInfo{hasNextPage}} blockedBy(first:100){nodes{number repository{id}}pageInfo{hasNextPage}} blocking(first:100){nodes{number repository{id}}pageInfo{hasNextPage}}}} rateLimit{cost remaining resetAt}}`;
+var RELATIONSHIP_QUERY_ESTIMATED_COST = 100;
 function rec(v) {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
@@ -7463,7 +7497,7 @@ var RestSnapshotClient = class {
     this.request = options.fetch ?? globalThis.fetch;
     this.now = options.now ?? Date.now;
     this.ttl = options.cacheTtlMs ?? 3e5;
-    this.graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY;
+    this.ledger = options.rateLedger ?? createGitHubRateLedger({ graphqlRemaining: options.graphqlRemaining, restReserve: options.restReserve, graphqlReserve: options.graphqlReserve, maxRestRequests: options.maxRestRequests, maxGraphqlRequests: options.maxGraphqlRequests });
   }
   options;
   request;
@@ -7471,8 +7505,8 @@ var RestSnapshotClient = class {
   ttl;
   cache = /* @__PURE__ */ new Map();
   flights = /* @__PURE__ */ new Map();
-  restRemaining = Number.POSITIVE_INFINITY;
-  graphqlRemaining;
+  generations = /* @__PURE__ */ new Map();
+  ledger;
   bytes = 0;
   evidence = { restRequests: 0, graphqlRequests: 0, restCacheHits: 0, conditionalRequests: 0, coalescedRequests: 0 };
   headers(etag) {
@@ -7485,9 +7519,18 @@ var RestSnapshotClient = class {
     if ([502, 503, 504].includes(response.status)) throw new GitHubTransportError("YKP-GH-READ-004");
     throw new GitHubTransportError("YKP-REST-001");
   }
-  updateRate(headers) {
+  updateRate(resource, headers) {
     const value2 = headers.get("x-ratelimit-remaining");
-    if (value2 !== null && /^\d+$/u.test(value2)) this.restRemaining = Number(value2);
+    if (value2 !== null && /^\d+$/u.test(value2)) this.ledger.observe(resource, Number(value2));
+  }
+  invalidate(input2, effect) {
+    if (!/^[A-Za-z0-9-]{1,39}$/u.test(input2.ownerLogin) || !Number.isSafeInteger(input2.projectNumber) || input2.projectNumber < 1) throw new GitHubTransportError("YKP-GH-READ-001");
+    const prefix = new RegExp(`^/(?:orgs|users)/${input2.ownerLogin}/projectsV2/${input2.projectNumber}/(?:${effect === "schema" ? "fields|items" : "items"})\\?`, `u`), keys = /* @__PURE__ */ new Set([...this.cache.keys(), ...this.flights.keys()]);
+    for (const key of keys) if (prefix.test(key)) {
+      this.generations.set(key, (this.generations.get(key) ?? 0) + 1);
+      this.cache.delete(key);
+      this.flights.delete(key);
+    }
   }
   async get(path) {
     if (!/^\/(repos|users|orgs)\/[A-Za-z0-9_.\/-]+(?:\?[A-Za-z0-9_.,=&-]+)?$/u.test(path)) throw new GitHubTransportError("YKP-CAPABILITY-001");
@@ -7501,10 +7544,8 @@ var RestSnapshotClient = class {
       this.evidence.coalescedRequests++;
       return existing;
     }
-    const task = (async () => {
-      const reserve = this.options.restReserve ?? 500;
-      if (this.restRemaining <= reserve) throw new GitHubTransportError("YKP-RATE-001");
-      if (this.evidence.restRequests >= (this.options.maxRestRequests ?? 64)) throw new GitHubTransportError("YKP-RATE-001");
+    const generation = this.generations.get(key) ?? 0, task = (async () => {
+      if (!this.ledger.reserve("rest")) throw new GitHubTransportError("YKP-RATE-001");
       this.evidence.restRequests++;
       if (cached?.etag) this.evidence.conditionalRequests++;
       let response;
@@ -7513,10 +7554,10 @@ var RestSnapshotClient = class {
       } catch {
         throw new GitHubTransportError("YKP-GH-READ-004");
       }
-      this.updateRate(response.headers);
+      this.updateRate("rest", response.headers);
       if (response.status === 304 && cached) {
         const refreshed = { ...cached, expires: current + this.ttl };
-        this.cache.set(key, refreshed);
+        if ((this.generations.get(key) ?? 0) === generation) this.cache.set(key, refreshed);
         return { body: refreshed.body, bytes: 0, headers: new Headers(refreshed.link ? { link: refreshed.link } : {}) };
       }
       if (response.status >= 300 && response.status < 400 || !response.ok) this.classify(response);
@@ -7530,7 +7571,7 @@ var RestSnapshotClient = class {
       } catch {
         throw new GitHubTransportError("YKP-REST-001");
       }
-      this.cache.set(key, { body, bytes: raw.byteLength, etag: response.headers.get("etag") ?? void 0, link: response.headers.get("link") ?? void 0, expires: current + this.ttl });
+      if ((this.generations.get(key) ?? 0) === generation) this.cache.set(key, { body, bytes: raw.byteLength, etag: response.headers.get("etag") ?? void 0, link: response.headers.get("link") ?? void 0, expires: current + this.ttl });
       return { body, bytes: raw.byteLength, headers: response.headers };
     })();
     this.flights.set(key, task);
@@ -7557,10 +7598,8 @@ var RestSnapshotClient = class {
     const result = /* @__PURE__ */ new Map();
     if (ids.length === 0) return result;
     if (ids.length > 100) throw new GitHubTransportError("YKP-GH-READ-005");
-    if (this.graphqlRemaining <= 0) return result;
-    const reserve = this.options.graphqlReserve ?? 500;
-    if (this.graphqlRemaining <= reserve) throw new GitHubTransportError("YKP-RATE-001");
-    if (this.evidence.graphqlRequests >= (this.options.maxGraphqlRequests ?? 2)) throw new GitHubTransportError("YKP-RATE-001");
+    if (this.options.graphqlRemaining === 0 && !this.options.rateLedger) return result;
+    if (!this.ledger.reserve("graphql", RELATIONSHIP_QUERY_ESTIMATED_COST)) throw new GitHubTransportError("YKP-RATE-001");
     this.evidence.graphqlRequests++;
     let response;
     try {
@@ -7568,6 +7607,7 @@ var RestSnapshotClient = class {
     } catch {
       throw new GitHubTransportError("YKP-GH-READ-004");
     }
+    this.updateRate("graphql", response.headers);
     if (!response.ok) this.classify(response);
     let payload;
     try {
@@ -7576,7 +7616,7 @@ var RestSnapshotClient = class {
       throw new GitHubTransportError("YKP-REST-001");
     }
     if (!rec(payload) || Array.isArray(payload.errors) || !rec(payload.data) || !Array.isArray(payload.data.nodes) || !rec(payload.data.rateLimit)) throw new GitHubTransportError("YKP-REST-001");
-    this.graphqlRemaining = Number(payload.data.rateLimit.remaining);
+    this.ledger.observe("graphql", Number(payload.data.rateLimit.remaining));
     for (const node of payload.data.nodes) {
       if (!rec(node)) throw new GitHubTransportError("YKP-REST-001");
       const connections = ["subIssues", "blockedBy", "blocking"].map((name) => {
@@ -7599,7 +7639,8 @@ function fieldOptions(field) {
   if (!Array.isArray(field.options)) return [];
   return field.options.map((option) => {
     if (!rec(option)) throw new GitHubTransportError("YKP-REST-001");
-    return { id: text(option.id), name: rawName(option.name) };
+    const colors = ["GRAY", "BLUE", "GREEN", "YELLOW", "ORANGE", "RED", "PINK", "PURPLE"], color = typeof option.color === "string" && colors.includes(option.color) ? option.color : void 0, description = typeof option.description === "string" && [...option.description].length <= 256 && !/[\u0000-\u001f\u007f]/u.test(option.description) ? option.description : void 0;
+    return { id: text(option.id), name: rawName(option.name), ...color ? { color } : {}, ...description !== void 0 ? { description } : {} };
   }).sort((a, b) => a.id.localeCompare(b.id));
 }
 function itemValues(item) {
@@ -7634,8 +7675,8 @@ async function readWithClient(input2, options, client) {
   if (!rec(project) || integer(project.number) !== input2.projectNumber) throw new GitHubTransportError("YKP-SNAPSHOT-001");
   const projectRef = text(project.node_id);
   const fieldsPage = await client.list(`/${ownerKind}/${input2.ownerLogin}/projectsV2/${input2.projectNumber}/fields?per_page=100`);
-  const fields = fieldsPage.nodes.filter((f) => ["text", "number", "date", "single_select", "iteration"].includes(String(f.data_type))).map((f) => ({ id: String(integer(f.id)), name: text(f.name, 128), kind: kind(f.data_type), options: fieldOptions(f) }));
-  const fieldSelector = fields.map((f) => f.id).join(",");
+  const fields = fieldsPage.nodes.filter((f) => ["text", "number", "date", "single_select", "iteration"].includes(String(f.data_type))).map((f) => ({ id: text(f.node_id), name: text(f.name, 128), kind: kind(f.data_type), options: fieldOptions(f) }));
+  const fieldSelector = fieldsPage.nodes.map((f) => String(integer(f.id))).join(",");
   if (fieldSelector.length > 4096) throw new GitHubTransportError("YKP-GH-READ-005");
   const itemsPage = await client.list(`/${ownerKind}/${input2.ownerLogin}/projectsV2/${input2.projectNumber}/items?per_page=100${fieldSelector ? `&fields=${fieldSelector}` : ""}`);
   const wanted = new Set(numbers), selected = /* @__PURE__ */ new Map();
@@ -7665,12 +7706,9 @@ async function readWithClient(input2, options, client) {
 }
 function createRestProjectSnapshotReader(options) {
   const client = new RestSnapshotClient(options);
-  return { read: (input2) => readWithClient(input2, options, client) };
+  return { read: (input2) => readWithClient(input2, options, client), invalidate: (input2, effect) => client.invalidate(input2, effect) };
 }
-async function readRestProjectSnapshot(input2, options) {
-  return createRestProjectSnapshotReader(options).read(input2);
-}
-function createGitHubRestSnapshotReadTransport(options) {
+function createGitHubRestSnapshotReadTransportFromReader(reader) {
   let snapshotPromise;
   let bound;
   return { execute: async (operation, variables) => {
@@ -7678,7 +7716,7 @@ function createGitHubRestSnapshotReadTransport(options) {
     const key = `${ownerLogin}/${repositoryName}/${projectNumber}/${issueNumber2}`;
     if (bound && bound !== key) throw new GitHubTransportError("YKP-SNAPSHOT-001");
     bound = key;
-    snapshotPromise ??= readRestProjectSnapshot({ ownerLogin, repositoryName, projectNumber, issueNumbers: [issueNumber2] }, options);
+    snapshotPromise ??= reader.read({ ownerLogin, repositoryName, projectNumber, issueNumbers: [issueNumber2] });
     const snapshot = await snapshotPromise, issue = snapshot.issues.get(issueNumber2);
     if (!issue) throw new GitHubTransportError("YKP-SNAPSHOT-001");
     let data;
@@ -7691,6 +7729,9 @@ function createGitHubRestSnapshotReadTransport(options) {
     }
     return { byteCount: Buffer.byteLength(JSON.stringify(data)), data };
   } };
+}
+function createGitHubRestSnapshotReadTransport(options) {
+  return createGitHubRestSnapshotReadTransportFromReader(createRestProjectSnapshotReader(options));
 }
 
 // src/issue-contract.ts
@@ -8589,7 +8630,7 @@ function fail(failureClass, codes) {
 function readClass(code) {
   return code === "YKP-GH-READ-002" ? "authentication" : code === "YKP-GH-READ-003" ? "authorization" : code === "YKP-RATE-001" ? "deferred" : code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" || code === "YKP-CACHE-001" ? "invariant" : "provider";
 }
-async function runDryRun(input2) {
+async function prepareReconciliation(input2) {
   const policy = parseRepositoryPolicy(input2.policySource);
   if (!policy.policy) return fail("input", policy.diagnostics.map((d) => d.code));
   const read = await readGitHubObservation(input2.scope, input2.transport);
@@ -8606,7 +8647,11 @@ async function runDryRun(input2) {
   }
   const item = { values, fingerprint: read.observation.item.fingerprint };
   const plan = planReconciliation({ scope: read.observation.scope, contract: contract.contract, policy: policy.policy, schema, observedItem: item, relationships: read.observation.relationships });
-  return { status: "success", report: renderPublicReport(plan) };
+  return { status: "success", plan, observation: read.observation, policy: policy.policy, schema };
+}
+async function runDryRun(input2) {
+  const prepared = await prepareReconciliation(input2);
+  return prepared.status === "success" ? { status: "success", report: renderPublicReport(prepared.plan) } : prepared;
 }
 
 // src/runtime-input.ts

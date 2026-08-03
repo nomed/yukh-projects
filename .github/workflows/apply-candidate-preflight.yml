@@ -1,0 +1,40 @@
+name: Controlled apply candidate preflight
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apply-candidate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify-executable-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: Qualify without publication authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm test
+          npm audit --audit-level=moderate
+          npm run verify:apply-candidate
+          npm sbom --sbom-format spdx > "${RUNNER_TEMP}/controlled-apply.spdx.json"
+          sha256sum dist/apply/index.js dist/apply/action.js dist/apply/cli.js dist/apply/manifest.json "${RUNNER_TEMP}/controlled-apply.spdx.json" > "${RUNNER_TEMP}/controlled-apply.sha256"
+          test "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" = ""
+          test "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" = ""
+          test "$(jq -r .publication dist/apply/manifest.json)" = "disabled"

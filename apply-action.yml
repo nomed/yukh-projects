@@ -1,0 +1,24 @@
+name: Yukh Projects controlled apply
+description: Apply one freshly approved bounded reconciliation plan
+inputs:
+  mode: {description: Exact apply mode, required: true}
+  github-read-token: {description: Short-lived read credential, required: true}
+  github-write-token: {description: Separate write credential, required: true}
+  owner: {description: GitHub owner login, required: true}
+  repository: {description: GitHub repository name, required: true}
+  project-number: {description: GitHub Project number, required: true}
+  issue-number: {description: GitHub issue number, required: true}
+  policy-path: {description: Workspace-relative policy path, required: false, default: .yukh/project.yaml}
+  approved-plan-id: {description: Exact approved plan digest, required: true}
+  approval-file: {description: Protected approval artifact path, required: true}
+  approval-public-key-file: {description: Protected approval public key path, required: true}
+  environment: {description: Protected environment name, required: true}
+  host-capsule-file: {description: Capsule basename beneath runner temp, required: true}
+outputs:
+  status: {description: success, error, or deferred}
+  plan-id: {description: Applied plan digest}
+  remaining: {description: Remaining drift count}
+  report: {description: Redacted public report}
+runs:
+  using: node24
+  main: dist/apply/action.js
