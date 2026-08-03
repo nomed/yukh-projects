@@ -7385,11 +7385,45 @@ var GitHubTransportError = class extends Error {
   code;
 };
 
+// src/github-rate-ledger.ts
+function finiteNonnegative(value2) {
+  return Number.isFinite(value2) && Number.isSafeInteger(value2) && value2 >= 0;
+}
+function createGitHubRateLedger(options = {}) {
+  const restReserve = options.restReserve ?? 500, graphqlReserve = options.graphqlReserve ?? 500, maxRestRequests = options.maxRestRequests ?? 32, maxGraphqlRequests = options.maxGraphqlRequests ?? 1, maxGraphqlPoints = options.maxGraphqlPoints ?? 100;
+  if (![restReserve, graphqlReserve, maxRestRequests, maxGraphqlRequests, maxGraphqlPoints].every(finiteNonnegative) || restReserve < 500 || graphqlReserve < 500 || maxRestRequests > 64 || maxGraphqlRequests > 2 || maxGraphqlPoints > 500) throw new TypeError("invalid rate ledger options");
+  let restRemaining = options.restRemaining ?? Number.POSITIVE_INFINITY, graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY, restRequests = 0, graphqlRequests = 0, graphqlPoints = 0;
+  if (!(finiteNonnegative(restRemaining) || restRemaining === Number.POSITIVE_INFINITY) || !(finiteNonnegative(graphqlRemaining) || graphqlRemaining === Number.POSITIVE_INFINITY)) throw new TypeError("invalid provider rate state");
+  return {
+    reserve: (resource, cost = 1) => {
+      if (!finiteNonnegative(cost) || cost < 1) return false;
+      if (resource === "rest") {
+        if (restRequests >= maxRestRequests || restRemaining - cost < restReserve) return false;
+        restRequests++;
+        if (Number.isFinite(restRemaining)) restRemaining -= cost;
+        return true;
+      }
+      if (resource !== "graphql" || graphqlRequests >= maxGraphqlRequests || graphqlPoints + cost > maxGraphqlPoints || graphqlRemaining - cost < graphqlReserve) return false;
+      graphqlRequests++;
+      graphqlPoints += cost;
+      if (Number.isFinite(graphqlRemaining)) graphqlRemaining -= cost;
+      return true;
+    },
+    observe: (resource, remaining) => {
+      if (!finiteNonnegative(remaining)) return;
+      if (resource === "rest") restRemaining = Math.min(restRemaining, remaining);
+      else if (resource === "graphql") graphqlRemaining = Math.min(graphqlRemaining, remaining);
+    },
+    snapshot: () => ({ restRequests, graphqlRequests, graphqlPoints, restRemaining, graphqlRemaining })
+  };
+}
+
 // src/github-rest-snapshot.ts
 var API = "https://api.github.com";
 var GRAPHQL = `${API}/graphql`;
 var API_VERSION = "2026-03-10";
 var RELATIONSHIP_QUERY = `query YukhRelationshipSnapshot($ids:[ID!]!){nodes(ids:$ids){... on Issue{id number repository{id} parent{number repository{id}} subIssues(first:100){nodes{number repository{id}}pageInfo{hasNextPage}} blockedBy(first:100){nodes{number repository{id}}pageInfo{hasNextPage}} blocking(first:100){nodes{number repository{id}}pageInfo{hasNextPage}}}} rateLimit{cost remaining resetAt}}`;
+var RELATIONSHIP_QUERY_ESTIMATED_COST = 100;
 function rec(v) {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
@@ -7463,7 +7497,7 @@ var RestSnapshotClient = class {
     this.request = options.fetch ?? globalThis.fetch;
     this.now = options.now ?? Date.now;
     this.ttl = options.cacheTtlMs ?? 3e5;
-    this.graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY;
+    this.ledger = options.rateLedger ?? createGitHubRateLedger({ graphqlRemaining: options.graphqlRemaining, restReserve: options.restReserve, graphqlReserve: options.graphqlReserve, maxRestRequests: options.maxRestRequests, maxGraphqlRequests: options.maxGraphqlRequests });
   }
   options;
   request;
@@ -7471,8 +7505,7 @@ var RestSnapshotClient = class {
   ttl;
   cache = /* @__PURE__ */ new Map();
   flights = /* @__PURE__ */ new Map();
-  restRemaining = Number.POSITIVE_INFINITY;
-  graphqlRemaining;
+  ledger;
   bytes = 0;
   evidence = { restRequests: 0, graphqlRequests: 0, restCacheHits: 0, conditionalRequests: 0, coalescedRequests: 0 };
   headers(etag) {
@@ -7485,9 +7518,9 @@ var RestSnapshotClient = class {
     if ([502, 503, 504].includes(response.status)) throw new GitHubTransportError("YKP-GH-READ-004");
     throw new GitHubTransportError("YKP-REST-001");
   }
-  updateRate(headers) {
+  updateRate(resource, headers) {
     const value2 = headers.get("x-ratelimit-remaining");
-    if (value2 !== null && /^\d+$/u.test(value2)) this.restRemaining = Number(value2);
+    if (value2 !== null && /^\d+$/u.test(value2)) this.ledger.observe(resource, Number(value2));
   }
   async get(path) {
     if (!/^\/(repos|users|orgs)\/[A-Za-z0-9_.\/-]+(?:\?[A-Za-z0-9_.,=&-]+)?$/u.test(path)) throw new GitHubTransportError("YKP-CAPABILITY-001");
@@ -7502,9 +7535,7 @@ var RestSnapshotClient = class {
       return existing;
     }
     const task = (async () => {
-      const reserve = this.options.restReserve ?? 500;
-      if (this.restRemaining <= reserve) throw new GitHubTransportError("YKP-RATE-001");
-      if (this.evidence.restRequests >= (this.options.maxRestRequests ?? 64)) throw new GitHubTransportError("YKP-RATE-001");
+      if (!this.ledger.reserve("rest")) throw new GitHubTransportError("YKP-RATE-001");
       this.evidence.restRequests++;
       if (cached?.etag) this.evidence.conditionalRequests++;
       let response;
@@ -7513,7 +7544,7 @@ var RestSnapshotClient = class {
       } catch {
         throw new GitHubTransportError("YKP-GH-READ-004");
       }
-      this.updateRate(response.headers);
+      this.updateRate("rest", response.headers);
       if (response.status === 304 && cached) {
         const refreshed = { ...cached, expires: current + this.ttl };
         this.cache.set(key, refreshed);
@@ -7557,10 +7588,8 @@ var RestSnapshotClient = class {
     const result = /* @__PURE__ */ new Map();
     if (ids.length === 0) return result;
     if (ids.length > 100) throw new GitHubTransportError("YKP-GH-READ-005");
-    if (this.graphqlRemaining <= 0) return result;
-    const reserve = this.options.graphqlReserve ?? 500;
-    if (this.graphqlRemaining <= reserve) throw new GitHubTransportError("YKP-RATE-001");
-    if (this.evidence.graphqlRequests >= (this.options.maxGraphqlRequests ?? 2)) throw new GitHubTransportError("YKP-RATE-001");
+    if (this.options.graphqlRemaining === 0 && !this.options.rateLedger) return result;
+    if (!this.ledger.reserve("graphql", RELATIONSHIP_QUERY_ESTIMATED_COST)) throw new GitHubTransportError("YKP-RATE-001");
     this.evidence.graphqlRequests++;
     let response;
     try {
@@ -7568,6 +7597,7 @@ var RestSnapshotClient = class {
     } catch {
       throw new GitHubTransportError("YKP-GH-READ-004");
     }
+    this.updateRate("graphql", response.headers);
     if (!response.ok) this.classify(response);
     let payload;
     try {
@@ -7576,7 +7606,7 @@ var RestSnapshotClient = class {
       throw new GitHubTransportError("YKP-REST-001");
     }
     if (!rec(payload) || Array.isArray(payload.errors) || !rec(payload.data) || !Array.isArray(payload.data.nodes) || !rec(payload.data.rateLimit)) throw new GitHubTransportError("YKP-REST-001");
-    this.graphqlRemaining = Number(payload.data.rateLimit.remaining);
+    this.ledger.observe("graphql", Number(payload.data.rateLimit.remaining));
     for (const node of payload.data.nodes) {
       if (!rec(node)) throw new GitHubTransportError("YKP-REST-001");
       const connections = ["subIssues", "blockedBy", "blocking"].map((name) => {
