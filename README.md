@@ -8,6 +8,8 @@
 
 Declarative, secure, and consumer-neutral reconciliation for GitHub Projects.
 
+[Documentation](https://nomed.github.io/yukh-projects/) · [First dry-run](https://nomed.github.io/yukh-projects/tutorials/first-dry-run/)
+
 > [!IMPORTANT]
 > Yukh Projects is in foundation bootstrap. It is not yet ready for production use.
 
@@ -26,18 +28,15 @@ Yukh Projects turns reviewed configuration into predictable GitHub Projects stat
 
 This repository currently contains the public project foundation. Functional code enters through a clean-room migration: each capability must pass neutrality, security, provenance, and continued-relevance gates before implementation.
 
-## Architecture and migration
+## Architecture and contracts
 
 - [Threat model](docs/security/threat-model.md)
 - [Repository hardening baseline](docs/security/repository-hardening.md)
-- [Clean-room migration plan](docs/migration/clean-room-plan.md)
-- [Candidate capability inventory](docs/migration/module-inventory.md)
 - [Accepted issue contract v1](docs/contracts/issue-contract-v1.md)
 - [Accepted repository policy and effective schema v1](docs/contracts/repository-policy-v1.md)
 - [Accepted reconciliation plan and report v1](docs/contracts/reconciliation-plan-v1.md)
 - [Accepted GitHub read-only adapter v1](docs/contracts/github-read-only-adapter-v1.md)
 - [Accepted REST-first Project snapshot v2](docs/contracts/rest-project-snapshot-v2.md)
-- [Legacy yukh v0.8 shadow migration](docs/migration/legacy-v0.8-shadow.md)
 - [Accepted GitHub issue-contract source v1](docs/contracts/github-issue-contract-source-v1.md)
 - [Accepted controlled mutations v1](docs/contracts/controlled-mutations-v1.md)
 - [Accepted controlled apply entrypoint v1](docs/contracts/controlled-apply-entrypoint-v1.md)
@@ -45,7 +44,6 @@ This repository currently contains the public project foundation. Functional cod
 - [Accepted Action, CLI, and protected release v1](docs/contracts/action-cli-release-v1.md)
 - [Proposed aggregate manifest migration planner v1](docs/contracts/aggregate-manifest-migration-v1.md)
 - [Release operations](docs/release-operations.md)
-- [Provenance ledger](docs/migration/provenance-ledger.yml)
 
 ## Project policies
 

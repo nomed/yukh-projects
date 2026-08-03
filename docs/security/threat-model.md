@@ -17,18 +17,7 @@ Yukh Projects reads untrusted issue content and repository policy, discovers Git
 
 ## Trust boundaries
 
-~~~mermaid
-flowchart TB
-    U["Untrusted issue and policy"] --> V["Bounded validation"]
-    V --> P["Deterministic plan"]
-    H["GitHub API responses"] --> B["Read-only scope binding"]
-    B --> P
-    P --> G{"Explicit mode gate"}
-    G -->|dry-run| R["Redacted report"]
-    G -->|apply| Q["Verified approval and fresh preflight"]
-    Q --> A["Allowlisted mutation adapter"]
-    A --> Z["Fresh convergence verification"]
-~~~
+![Yukh Projects trust boundaries from untrusted policy, issue content, and GitHub observations through planning, dry-run, approval, apply, and verification.](../assets/reconciliation-flow.svg)
 
 The issue body, labels, event payload, repository policy, API responses, and workflow inputs are untrusted. The planner is trusted only after validation. The credential and GitHub API boundary are privileged.
 
