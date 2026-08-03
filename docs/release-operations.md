@@ -13,8 +13,9 @@ disabled policy state fails closed without retry.
 
 The policy reads use the protected `IMMUTABLE_RELEASES_READ_TOKEN`, scoped to
 repository Administration read and stored only in the `release` environment.
-The automatic workflow token remains the publication and attestation identity;
-the publisher never falls back to it for an administrative policy read.
+The protected token is also the publication identity because GitHub's automatic
+workflow token cannot create a Release whose target commit changes workflow
+files. Attestations continue to use the job's short-lived OIDC identity.
 
 The publisher creates a draft Release bound to the exact candidate commit,
 uploads and verifies the complete allowlisted asset set, then publishes the
