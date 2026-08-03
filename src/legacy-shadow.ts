@@ -1,5 +1,6 @@
 import { parseAllDocuments } from "yaml";
-import type { RestProjectSnapshot } from "./github-rest-snapshot.js";
+import { readRestProjectSnapshot, type RestProjectSnapshot } from "./github-rest-snapshot.js";
+import { GitHubTransportError } from "./github-transport.js";
 
 type RecordValue=Record<string,unknown>;
 type CapabilityState="Supported"|"Changed"|"Missing";
@@ -23,6 +24,7 @@ interface LegacyPolicy{fields:Record<string,LegacyField>;milestones:Record<strin
 interface LegacyContract{kind:string;area:string;priority:string;size?:string;estimate?:number;milestone?:string;parent?:number;dependsOn:number[];blocks:number[];extensions:Record<string,string>}
 export interface LegacyShadowIssueReport{issueNumber:number;status:"converged"|"drift"|"error"|"deferred";operationCounts:Readonly<Record<string,number>>;diagnostics:readonly {code:string;message:string}[]}
 export interface LegacyShadowReport{schema:1;status:"success"|"error"|"deferred";failureClass?:"authentication"|"authorization"|"provider"|"invariant"|"deferred";diagnostics:readonly {code:string;message:string}[];issues:readonly LegacyShadowIssueReport[];totals:Readonly<Record<string,number>>;capabilities:readonly CompatibilityEntry[];evidence:{restRequests:number;graphqlRequests:number;restCacheHits:number;conditionalRequests:number;coalescedRequests:number}}
+export interface LegacyShadowRunInput{ownerLogin:string;repositoryName:string;projectNumber:number;issueNumbers:readonly number[];policySource:string;token:string}
 
 function rec(value:unknown):value is RecordValue{return typeof value==="object"&&value!==null&&!Array.isArray(value);}
 function string(value:unknown):string|undefined{return typeof value==="string"&&value.trim()&&[...value.trim()].length<=256&&!/[\u0000-\u001f\u007f]/u.test(value)?value.trim():undefined;}
@@ -52,4 +54,10 @@ export function runLegacyShadowAudit(policySource:string,snapshot:RestProjectSna
   for(const [key,value] of Object.entries(counts))totals[key]=(totals[key]??0)+value;const operations=Object.values(counts).reduce((a,b)=>a+b,0),status=diagnostics.some(d=>d.code!=="YKP-RATE-001")?"error":diagnostics.length?"deferred":operations?"drift":"converged";if(status==="error")failed=true;reports.push({issueNumber,status,operationCounts:counts,diagnostics});
  }
  return{schema:1,status:failed?"error":deferred?"deferred":"success",...(failed?{failureClass:"invariant" as const}:deferred?{failureClass:"deferred" as const}:{}),diagnostics:[],issues:reports,totals,capabilities:LEGACY_COMPATIBILITY_MATRIX,evidence:snapshot.evidence};
+}
+
+const EMPTY_EVIDENCE={restRequests:0,graphqlRequests:0,restCacheHits:0,conditionalRequests:0,coalescedRequests:0} as const;
+export async function runLegacyShadow(input:LegacyShadowRunInput,reader:typeof readRestProjectSnapshot=readRestProjectSnapshot):Promise<LegacyShadowReport>{
+ try{parseLegacyPolicy(input.policySource);}catch{return{schema:1,status:"error",failureClass:"invariant",diagnostics:[{code:"YKP-LEGACY-001",message:"legacy policy is invalid"}],issues:[],totals:{},capabilities:LEGACY_COMPATIBILITY_MATRIX,evidence:EMPTY_EVIDENCE};}
+ try{const snapshot=await reader({ownerLogin:input.ownerLogin,repositoryName:input.repositoryName,projectNumber:input.projectNumber,issueNumbers:input.issueNumbers},{token:input.token,graphqlRemaining:0});return runLegacyShadowAudit(input.policySource,snapshot);}catch(error){const code=error instanceof GitHubTransportError?error.code:"YKP-GH-READ-004",failureClass=code==="YKP-GH-READ-002"?"authentication":code==="YKP-GH-READ-003"?"authorization":code==="YKP-RATE-001"?"deferred":code==="YKP-REST-001"||code==="YKP-SNAPSHOT-001"||code==="YKP-CACHE-001"?"invariant":"provider";return{schema:1,status:failureClass==="deferred"?"deferred":"error",failureClass,diagnostics:[{code,message:"snapshot acquisition failed"}],issues:[],totals:{},capabilities:LEGACY_COMPATIBILITY_MATRIX,evidence:EMPTY_EVIDENCE};}
 }

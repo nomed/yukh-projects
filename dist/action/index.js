@@ -2316,7 +2316,7 @@ var require_string = __commonJS({
   "node_modules/yaml/dist/schema/common/string.js"(exports) {
     "use strict";
     var stringifyString = require_stringifyString();
-    var string = {
+    var string2 = {
       identify: (value2) => typeof value2 === "string",
       default: true,
       tag: "tag:yaml.org,2002:str",
@@ -2326,7 +2326,7 @@ var require_string = __commonJS({
         return stringifyString.stringifyString(item, ctx, onComment, onChompKeep);
       }
     };
-    exports.string = string;
+    exports.string = string2;
   }
 });
 
@@ -2497,14 +2497,14 @@ var require_schema = __commonJS({
     var map = require_map();
     var _null = require_null();
     var seq = require_seq();
-    var string = require_string();
+    var string2 = require_string();
     var bool = require_bool();
     var float = require_float();
     var int = require_int();
     var schema = [
       map.map,
       seq.seq,
-      string.string,
+      string2.string,
       _null.nullTag,
       bool.boolTag,
       int.intOct,
@@ -3151,7 +3151,7 @@ var require_schema3 = __commonJS({
     var map = require_map();
     var _null = require_null();
     var seq = require_seq();
-    var string = require_string();
+    var string2 = require_string();
     var binary = require_binary();
     var bool = require_bool2();
     var float = require_float2();
@@ -3164,7 +3164,7 @@ var require_schema3 = __commonJS({
     var schema = [
       map.map,
       seq.seq,
-      string.string,
+      string2.string,
       _null.nullTag,
       bool.trueTag,
       bool.falseTag,
@@ -3195,7 +3195,7 @@ var require_tags = __commonJS({
     var map = require_map();
     var _null = require_null();
     var seq = require_seq();
-    var string = require_string();
+    var string2 = require_string();
     var bool = require_bool();
     var float = require_float();
     var int = require_int();
@@ -3210,7 +3210,7 @@ var require_tags = __commonJS({
     var timestamp = require_timestamp();
     var schemas = /* @__PURE__ */ new Map([
       ["core", schema.schema],
-      ["failsafe", [map.map, seq.seq, string.string]],
+      ["failsafe", [map.map, seq.seq, string2.string]],
       ["json", schema$1.schema],
       ["yaml11", schema$2.schema],
       ["yaml-1.1", schema$2.schema]
@@ -3289,7 +3289,7 @@ var require_Schema = __commonJS({
     var identity = require_identity();
     var map = require_map();
     var seq = require_seq();
-    var string = require_string();
+    var string2 = require_string();
     var tags = require_tags();
     var sortMapEntriesByKey = (a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
     var Schema = class _Schema {
@@ -3300,7 +3300,7 @@ var require_Schema = __commonJS({
         this.tags = tags.getTags(customTags, this.name, merge);
         this.toStringOptions = toStringDefaults ?? null;
         Object.defineProperty(this, identity.MAP, { value: map.map });
-        Object.defineProperty(this, identity.SCALAR, { value: string.string });
+        Object.defineProperty(this, identity.SCALAR, { value: string2.string });
         Object.defineProperty(this, identity.SEQ, { value: seq.seq });
         this.sortMapEntries = typeof sortMapEntries === "function" ? sortMapEntries : sortMapEntries === true ? sortMapEntriesByKey : null;
       }
@@ -6347,15 +6347,15 @@ var require_parser = __commonJS({
     var node_process = __require("process");
     var cst = require_cst();
     var lexer = require_lexer();
-    function includesToken(list, type) {
-      for (let i = 0; i < list.length; ++i)
-        if (list[i].type === type)
+    function includesToken(list2, type) {
+      for (let i = 0; i < list2.length; ++i)
+        if (list2[i].type === type)
           return true;
       return false;
     }
-    function findNonEmptyIndex(list) {
-      for (let i = 0; i < list.length; ++i) {
-        switch (list[i].type) {
+    function findNonEmptyIndex(list2) {
+      for (let i = 0; i < list2.length; ++i) {
+        switch (list2[i].type) {
           case "space":
           case "comment":
           case "newline":
@@ -7230,7 +7230,7 @@ var require_public_api = __commonJS({
       const lineCounter$1 = options.lineCounter || prettyErrors && new lineCounter.LineCounter() || null;
       return { lineCounter: lineCounter$1, prettyErrors };
     }
-    function parseAllDocuments3(source, options = {}) {
+    function parseAllDocuments4(source, options = {}) {
       const { lineCounter: lineCounter2, prettyErrors } = parseOptions(options);
       const parser$1 = new parser.Parser(lineCounter2?.addNewLine);
       const composer$1 = new composer.Composer(options);
@@ -7305,7 +7305,7 @@ var require_public_api = __commonJS({
       return new Document.Document(value2, _replacer, options).toString(options);
     }
     exports.parse = parse;
-    exports.parseAllDocuments = parseAllDocuments3;
+    exports.parseAllDocuments = parseAllDocuments4;
     exports.parseDocument = parseDocument;
     exports.stringify = stringify;
   }
@@ -7366,6 +7366,7 @@ var require_dist = __commonJS({
 // src/action.ts
 import { appendFile, open as open2 } from "node:fs/promises";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 // src/github-rest-snapshot.ts
 import { createHash } from "node:crypto";
@@ -7709,6 +7710,9 @@ async function readWithClient(input2, options, client) {
 function createRestProjectSnapshotReader(options) {
   const client = new RestSnapshotClient(options);
   return { read: (input2) => readWithClient(input2, options, client), invalidate: (input2, effect) => client.invalidate(input2, effect) };
+}
+async function readRestProjectSnapshot(input2, options) {
+  return createRestProjectSnapshotReader(options).read(input2);
 }
 function createGitHubRestSnapshotReadTransportFromReader(reader) {
   let snapshotPromise;
@@ -8346,9 +8350,9 @@ async function readGitHubObservation(scope, transport) {
         if (nodes.size > 512) throw new ReadFailure("YKP-GH-READ-005", "read_issue_relationships");
       }
       for (const [key, target, limit] of [["parent", parents, 511], ["blocks", blocks, 4096]]) {
-        const list = p[key];
-        if (!Array.isArray(list)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
-        for (const e of list) {
+        const list2 = p[key];
+        if (!Array.isArray(list2)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
+        for (const e of list2) {
           if (!rec2(e) || !Number.isSafeInteger(e.from) || !Number.isSafeInteger(e.to)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
           const id = `${key}:${e.from}->${e.to}`;
           if (edges.has(id)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
@@ -8656,6 +8660,164 @@ async function runDryRun(input2) {
   return prepared.status === "success" ? { status: "success", report: renderPublicReport(prepared.plan) } : prepared;
 }
 
+// src/legacy-shadow.ts
+var import_yaml3 = __toESM(require_dist(), 1);
+var LEGACY_COMPATIBILITY_MATRIX = Object.freeze([
+  { capability: "version-1 repository policy", state: "Supported", note: "parsed as a bounded compatibility input" },
+  { capability: "hidden yukh issue contract", state: "Supported", note: "accepted for shadow planning without backlog rewrite" },
+  { capability: "issue type and managed labels", state: "Supported", note: "observed through versioned REST and compared locally" },
+  { capability: "milestone", state: "Supported", note: "observed through versioned REST and compared locally" },
+  { capability: "Project fields", state: "Supported", note: "schema is read once and values are planned locally" },
+  { capability: "Project-owned Status", state: "Supported", note: "preserved when absent from repository policy" },
+  { capability: "native parent", state: "Supported", note: "read from REST Project item content" },
+  { capability: "native dependencies", state: "Changed", note: "one fixed bounded GraphQL batch; GraphQL-zero requires complete cached state or returns deferred" },
+  { capability: "single issue shadow dry-run", state: "Supported", note: "REST-first immutable snapshot" },
+  { capability: "complete backlog shadow audit", state: "Supported", note: "bounded scopes of at most 100 issues reuse one snapshot reader" },
+  { capability: "full apply and zero-operation second apply", state: "Missing", note: "blocked until controlled apply issues are complete" }
+]);
+function rec3(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function string(value2) {
+  return typeof value2 === "string" && value2.trim() && [...value2.trim()].length <= 256 && !/[\u0000-\u001f\u007f]/u.test(value2) ? value2.trim() : void 0;
+}
+function stringMap(value2) {
+  const out = {};
+  if (!rec3(value2)) return out;
+  for (const key of Object.keys(value2).sort()) {
+    const parsed = string(value2[key]);
+    if (parsed) out[key] = parsed;
+  }
+  return out;
+}
+function list(value2) {
+  if (value2 === void 0) return [];
+  if (!Array.isArray(value2) || value2.length > 100 || value2.some((v) => !Number.isSafeInteger(v) || v < 1)) throw new TypeError("invalid legacy relationship");
+  return [...new Set(value2)].sort((a, b) => a - b);
+}
+function parseYaml(source, maxBytes) {
+  if (Buffer.byteLength(source, "utf8") > maxBytes) throw new TypeError("legacy input exceeds bound");
+  const documents = (0, import_yaml3.parseAllDocuments)(source, { schema: "core", strict: true, uniqueKeys: true, prettyErrors: false });
+  if (documents.length !== 1 || documents[0].errors.length) throw new TypeError("legacy YAML is invalid");
+  const value2 = documents[0].toJS({ maxAliasCount: 0, mapAsMap: false });
+  if (!rec3(value2)) throw new TypeError("legacy YAML root is invalid");
+  return value2;
+}
+function parseLegacyPolicy(source) {
+  const root = parseYaml(source, 64 * 1024);
+  if (root.version !== 1 || !rec3(root.fields)) throw new TypeError("legacy policy is invalid");
+  const fields = {};
+  for (const key of Object.keys(root.fields).sort()) {
+    const raw = root.fields[key];
+    if (!rec3(raw) || !string(raw.project_field)) throw new TypeError("legacy policy field is invalid");
+    const target = raw.target === void 0 || raw.target === "project_field" ? "project_field" : raw.target === "issue_type" ? "issue_type" : raw.target === "issue_field" ? "issue_field" : void 0;
+    if (!target) throw new TypeError("legacy target is invalid");
+    const type = raw.type === void 0 || raw.type === "string" ? "string" : raw.type === "number" ? "number" : raw.type === "date" ? "date" : void 0;
+    if (!type) throw new TypeError("legacy field type is invalid");
+    fields[key] = { projectField: string(raw.project_field), target, required: raw.required === true, type, values: stringMap(raw.values), labels: stringMap(raw.labels) };
+  }
+  return { fields, milestones: stringMap(root.milestones) };
+}
+function parseLegacyContract(body) {
+  if (Buffer.byteLength(body, "utf8") > 256 * 1024) throw new TypeError("legacy issue body exceeds bound");
+  const marker = "<!-- yukh", start = body.indexOf(marker);
+  if (start < 0 || body.indexOf(marker, start + marker.length) >= 0) throw new TypeError("legacy issue contract is missing or duplicated");
+  const end = body.indexOf("-->", start + marker.length);
+  if (end < 0) throw new TypeError("legacy issue contract is unterminated");
+  const raw = parseYaml(body.slice(start + marker.length, end), 16 * 1024);
+  if (raw.schema !== 1) throw new TypeError("legacy schema is unsupported");
+  const kind2 = string(raw.kind), area = string(raw.area), priority = string(raw.priority);
+  if (!kind2 || !area || !priority) throw new TypeError("legacy required field is missing");
+  const extensions = stringMap(raw.extensions), size = string(raw.size), milestone = string(raw.milestone), estimate = raw.estimate === void 0 ? void 0 : Number(raw.estimate), parent = raw.parent === void 0 ? void 0 : Number(raw.parent);
+  if (estimate !== void 0 && (!Number.isFinite(estimate) || estimate < 0) || parent !== void 0 && (!Number.isSafeInteger(parent) || parent < 1)) throw new TypeError("legacy numeric field is invalid");
+  return { kind: kind2, area, priority, ...size ? { size } : {}, ...estimate !== void 0 ? { estimate } : {}, ...milestone ? { milestone } : {}, ...parent !== void 0 ? { parent } : {}, dependsOn: list(raw.depends_on), blocks: list(raw.blocks), extensions };
+}
+function same(a, b) {
+  return typeof a === "string" && typeof b === "string" ? a === b : a === b;
+}
+function bump(target, kind2) {
+  target[kind2] = (target[kind2] ?? 0) + 1;
+}
+function runLegacyShadowAudit(policySource, snapshot) {
+  let policy;
+  try {
+    policy = parseLegacyPolicy(policySource);
+  } catch {
+    return { schema: 1, status: "error", failureClass: "invariant", diagnostics: [{ code: "YKP-LEGACY-001", message: "legacy policy is invalid" }], issues: [], totals: {}, capabilities: LEGACY_COMPATIBILITY_MATRIX, evidence: snapshot.evidence };
+  }
+  const reports = [], totals = {};
+  let deferred = false, failed = false;
+  for (const [issueNumber2, observed] of [...snapshot.issues.entries()].sort(([a], [b]) => a - b)) {
+    const counts = {}, diagnostics2 = [];
+    let contract;
+    try {
+      contract = parseLegacyContract(observed.body);
+    } catch {
+      reports.push({ issueNumber: issueNumber2, status: "error", operationCounts: {}, diagnostics: [{ code: "YKP-LEGACY-001", message: "legacy contract is invalid" }] });
+      failed = true;
+      continue;
+    }
+    const core = { kind: contract.kind, area: contract.area, priority: contract.priority, size: contract.size, estimate: contract.estimate };
+    const desiredLabels = /* @__PURE__ */ new Set();
+    for (const key of Object.keys(policy.fields).sort()) {
+      const field = policy.fields[key], logical = core[key] ?? contract.extensions[key];
+      if (logical === void 0) {
+        if (field.required) diagnostics2.push({ code: "YKP-LEGACY-002", message: "required governed value is missing" });
+        continue;
+      }
+      const mapped = typeof logical === "string" && Object.keys(field.values).length ? field.values[logical] : logical;
+      if (mapped === void 0) {
+        diagnostics2.push({ code: "YKP-LEGACY-003", message: "governed value is unsupported" });
+        continue;
+      }
+      if (typeof logical === "string" && field.labels[logical]) desiredLabels.add(field.labels[logical]);
+      if (field.target === "issue_type") {
+        if (!same(observed.issueType, mapped)) bump(counts, "set_issue_type");
+      } else if (field.target === "issue_field") {
+        if (!same(observed.issueFields[field.projectField], mapped)) bump(counts, "set_issue_field");
+      } else if (!same(observed.values[field.projectField], mapped)) bump(counts, "set_project_field");
+    }
+    const managedLabels = new Set(Object.values(policy.fields).flatMap((field) => Object.values(field.labels))), observedManaged = new Set(observed.labels.filter((label) => managedLabels.has(label)));
+    for (const label of desiredLabels) if (!observedManaged.has(label)) bump(counts, "add_label");
+    for (const label of observedManaged) if (!desiredLabels.has(label)) bump(counts, "remove_label");
+    const desiredMilestone = contract.milestone ? policy.milestones[contract.milestone] : void 0;
+    if (contract.milestone && !desiredMilestone) diagnostics2.push({ code: "YKP-LEGACY-004", message: "milestone mapping is unavailable" });
+    else if (desiredMilestone !== observed.milestone) bump(counts, "set_milestone");
+    if (contract.parent !== observed.parent) bump(counts, "set_parent");
+    if (!observed.relationshipsComplete && (contract.dependsOn.length > 0 || contract.blocks.length > 0)) {
+      diagnostics2.push({ code: "YKP-RATE-001", message: "relationship snapshot requires the bounded fallback or a complete cache" });
+      deferred = true;
+    } else {
+      const wanted = new Set(contract.dependsOn), current = new Set(observed.blockedBy);
+      for (const n of wanted) if (!current.has(n)) bump(counts, "add_dependency");
+      for (const n of current) if (!wanted.has(n)) bump(counts, "remove_dependency");
+      const wantedBlocks = new Set(contract.blocks), currentBlocks = new Set(observed.blocking);
+      for (const n of wantedBlocks) if (!currentBlocks.has(n)) bump(counts, "add_blocking");
+      for (const n of currentBlocks) if (!wantedBlocks.has(n)) bump(counts, "remove_blocking");
+    }
+    for (const [key, value2] of Object.entries(counts)) totals[key] = (totals[key] ?? 0) + value2;
+    const operations = Object.values(counts).reduce((a, b) => a + b, 0), status = diagnostics2.some((d) => d.code !== "YKP-RATE-001") ? "error" : diagnostics2.length ? "deferred" : operations ? "drift" : "converged";
+    if (status === "error") failed = true;
+    reports.push({ issueNumber: issueNumber2, status, operationCounts: counts, diagnostics: diagnostics2 });
+  }
+  return { schema: 1, status: failed ? "error" : deferred ? "deferred" : "success", ...failed ? { failureClass: "invariant" } : deferred ? { failureClass: "deferred" } : {}, diagnostics: [], issues: reports, totals, capabilities: LEGACY_COMPATIBILITY_MATRIX, evidence: snapshot.evidence };
+}
+var EMPTY_EVIDENCE = { restRequests: 0, graphqlRequests: 0, restCacheHits: 0, conditionalRequests: 0, coalescedRequests: 0 };
+async function runLegacyShadow(input2, reader = readRestProjectSnapshot) {
+  try {
+    parseLegacyPolicy(input2.policySource);
+  } catch {
+    return { schema: 1, status: "error", failureClass: "invariant", diagnostics: [{ code: "YKP-LEGACY-001", message: "legacy policy is invalid" }], issues: [], totals: {}, capabilities: LEGACY_COMPATIBILITY_MATRIX, evidence: EMPTY_EVIDENCE };
+  }
+  try {
+    const snapshot = await reader({ ownerLogin: input2.ownerLogin, repositoryName: input2.repositoryName, projectNumber: input2.projectNumber, issueNumbers: input2.issueNumbers }, { token: input2.token, graphqlRemaining: 0 });
+    return runLegacyShadowAudit(input2.policySource, snapshot);
+  } catch (error) {
+    const code = error instanceof GitHubTransportError ? error.code : "YKP-GH-READ-004", failureClass = code === "YKP-GH-READ-002" ? "authentication" : code === "YKP-GH-READ-003" ? "authorization" : code === "YKP-RATE-001" ? "deferred" : code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" || code === "YKP-CACHE-001" ? "invariant" : "provider";
+    return { schema: 1, status: failureClass === "deferred" ? "deferred" : "error", failureClass, diagnostics: [{ code, message: "snapshot acquisition failed" }], issues: [], totals: {}, capabilities: LEGACY_COMPATIBILITY_MATRIX, evidence: EMPTY_EVIDENCE };
+  }
+}
+
 // src/runtime-input.ts
 import { lstat, open, readFile, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
@@ -8692,16 +8854,24 @@ async function output(name, value2) {
   await appendFile(path, `${name}=${value2}
 `, { encoding: "utf8" });
 }
+function parseActionMode(value2) {
+  if (value2 === void 0 || value2 === "" || value2 === "native") return "native";
+  if (value2 === "legacy-shadow") return value2;
+  throw new TypeError("invalid action mode");
+}
+function legacyOperationCount(result) {
+  return Object.values(result.totals).reduce((total, count) => total + count, 0);
+}
 async function actionMain() {
   try {
-    const token = input("GITHUB-TOKEN");
+    const mode = parseActionMode(process.env.INPUT_MODE), token = input("GITHUB-TOKEN");
     process.stdout.write(`::add-mask::${token}
 `);
     const workspace = process.env.GITHUB_WORKSPACE, temporary = process.env.RUNNER_TEMP;
     if (!workspace || !temporary) throw new TypeError("invalid action environment");
     const scope = parseRuntimeScope({ owner: input("OWNER"), repository: input("REPOSITORY"), projectNumber: input("PROJECT-NUMBER"), issueNumber: input("ISSUE-NUMBER") });
     const policySource = await loadWorkspacePolicy(workspace, process.env["INPUT_POLICY-PATH"] || ".yukh/project.yaml");
-    const result = await runDryRun({ scope, policySource, transport: createGitHubRestSnapshotReadTransport({ token }) });
+    const result = mode === "legacy-shadow" ? await runLegacyShadow({ ...scope, issueNumbers: [scope.issueNumber], policySource, token }) : await runDryRun({ scope, policySource, transport: createGitHubRestSnapshotReadTransport({ token }) });
     const reportPath = join(temporary, `yukh-projects-${process.pid}.json`);
     const file = await open2(reportPath, "wx", 384);
     try {
@@ -8710,10 +8880,11 @@ async function actionMain() {
     } finally {
       await file.close();
     }
+    const native = mode === "native", success = result.status === "success";
     await output("status", result.status);
-    await output("executable", result.status === "success" ? String(result.report.executable) : "false");
-    await output("plan-id", result.status === "success" ? result.report.planId : "");
-    await output("operation-count", result.status === "success" ? String(result.report.counts.operations) : "0");
+    await output("executable", String(success));
+    await output("plan-id", native && success && "report" in result ? result.report.planId : "");
+    await output("operation-count", String(success ? native && "report" in result ? result.report.counts.operations : legacyOperationCount(result) : 0));
     await output("report-path", reportPath);
     if (result.status === "error") {
       process.stderr.write(`::error title=Yukh Projects dry-run::${result.diagnostics[0]?.code ?? "YKP-RUNTIME-003"}
@@ -8725,7 +8896,8 @@ async function actionMain() {
     process.exitCode = 1;
   }
 }
-void actionMain();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) void actionMain();
 export {
-  actionMain
+  actionMain,
+  parseActionMode
 };

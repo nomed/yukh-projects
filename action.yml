@@ -20,6 +20,10 @@ inputs:
     description: Workspace-relative policy path
     required: false
     default: .yukh/project.yaml
+  mode:
+    description: Native policy dry-run or bounded version-1 legacy shadow adapter
+    required: false
+    default: native
 outputs:
   status:
     description: success or error
