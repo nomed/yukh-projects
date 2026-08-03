@@ -21,12 +21,18 @@ Yukh Projects reads untrusted issue content and repository policy, discovers Git
 flowchart TB
     U["Untrusted issue and policy"] --> V["Bounded validation"]
     V --> P["Deterministic plan"]
+    H["GitHub API responses"] --> B["Read-only scope binding"]
+    B --> P
     P --> G{"Explicit mode gate"}
     G -->|dry-run| R["Redacted report"]
-    G -->|apply| A["Least-privilege API adapter"]
+    G -->|apply| Q["Verified approval and fresh preflight"]
+    Q --> A["Allowlisted mutation adapter"]
+    A --> Z["Fresh convergence verification"]
 ~~~
 
 The issue body, labels, event payload, repository policy, API responses, and workflow inputs are untrusted. The planner is trusted only after validation. The credential and GitHub API boundary are privileged.
+
+The read-only GitHub adapter is the first network boundary. Its injected transport owns authentication and HTTP. The adapter owns fixed named queries, resource limits, scope verification, response validation, and redaction. Provider success is not evidence that the requested subject or resources were authorized or correctly bound.
 
 ## Assets
 
@@ -50,6 +56,43 @@ Controls:
 - reject redirects and configurable API hosts unless an explicit enterprise mode validates them;
 - verify that discovered nodes belong to the bound scope;
 - never accept arbitrary GraphQL documents or mutation names from configuration.
+
+These controls also apply before any read is admitted as planning evidence. Every page remains anchored to the resolved repository, Project, issue, item, and authenticated subject. Cross-repository relationships and duplicate Project items fail closed.
+
+### Malicious or compromised API responses
+
+A proxy, provider defect, compromised transport, or schema change returns malformed, duplicated, cross-scope, reordered, or adversarial data that becomes trusted observed state.
+
+Controls:
+
+- use fixed named query documents and a transport that cannot accept caller-provided GraphQL or endpoints;
+- reject redirects, response-shape drift, unknown required variants, duplicate nodes, inconsistent anchors, and ambiguous mappings;
+- validate every page before canonicalization and return observations atomically;
+- retain provider IDs only inside the adapter boundary and derive a canonical observation fingerprint;
+- treat unsupported relationship capability as unavailable, not as an empty graph.
+
+### Pagination and rate exhaustion
+
+Unbounded or non-advancing connections consume memory, API quota, or runtime, while truncation masquerades as complete state.
+
+Controls:
+
+- use forward pagination with fixed page size and explicit page, byte, node, edge, and error limits;
+- require advancing cursors and unique nodes;
+- fail the complete read on truncation or limit exhaustion;
+- perform no silent retry, sleep, or partial-page continuation after failure;
+- expose only a bounded retry classification and require a fresh complete read.
+
+### Provider-error disclosure
+
+Raw GraphQL errors, headers, variables, URLs, IDs, stack traces, or transport messages reveal credentials or consumer identity.
+
+Controls:
+
+- construct stable diagnostics from allowlisted classifications before logging or serialization;
+- never retain or return raw bodies, headers, provider messages, query variables, cursors, or correlation IDs;
+- collapse unclassifiable errors to a static redaction failure;
+- keep public evidence synthetic and consumer-neutral.
 
 ### Workflow and expression injection
 
@@ -88,6 +131,67 @@ Controls:
 - define idempotency keys, retry classes, partial-failure output, and convergence checks;
 - reject destructive operations until separately specified and approved.
 
+### Approval replay and substitution
+
+An attacker reuses an approval, replaces its plan or scope, authorizes a subset, or resumes a partially completed run.
+
+Controls:
+
+- authenticate approval artifacts through an injected verifier;
+- bind claims to the complete plan ID, operation-set digest, subject, repository, Project, issue, and `apply` environment;
+- enforce a maximum 15-minute lifetime and atomically consume a strong nonce before mutation;
+- reject subset, superset, reordering, scope substitution, replay, continuation, and partial-plan authorization;
+- require a fresh plan and approval after any interruption or failure.
+
+### Stale plan and time-of-check/time-of-use
+
+State changes after planning or between operations make approved intent unsafe.
+
+Controls:
+
+- hold a fail-closed repository–Project–issue lease for the complete apply;
+- reproduce the approved plan ID from a fresh complete read before mutation;
+- reread the affected resource and check exact preconditions before every operation;
+- treat exact convergence as no-mutation success and any other mismatch as failure;
+- stop when the lease is lost and never assume the lease replaces state checks.
+
+### Partial failure and false success
+
+Some mutations succeed before a provider, network, or verification failure, or a successful response does not produce intended state.
+
+Controls:
+
+- execute in deterministic dependency order and stop on the first failure;
+- perform exactly one request per attempt with no automatic retry;
+- reread and verify each affected resource after mutation;
+- report verified, already-converged, failed, and not-attempted outcomes separately;
+- never automatically compensate additive writes with destructive rollback;
+- require a fresh final read whose reconciliation has zero remaining operations.
+
+### Mutation document or variable substitution
+
+A caller smuggles an additional mutation, changes the endpoint or selection, overrides `clientMutationId`, or injects unrelated provider IDs.
+
+Controls:
+
+- compile exactly five immutable named single-field mutation documents;
+- validate document ASTs against exact operation, input, and receipt allowlists;
+- accept typed bounded variables only and reject unknown keys before HTTP;
+- derive `clientMutationId` inside the executor and prevent per-call credentials, documents, URLs, methods, or headers;
+- resolve every provider ID from fresh scope-bound state.
+
+### Overprivileged write credential and false provider success
+
+A broad credential expands blast radius, or a successful provider response is treated as convergence despite a wrong or partial payload.
+
+Controls:
+
+- compute operation-specific permission requirements and keep read and write credentials separate;
+- deny attestable excess permissions unless the exact delta is independently approved;
+- require bounded JSON, no GraphQL errors, matching client mutation ID, and exact receipt IDs;
+- classify a valid receipt only as provider acceptance;
+- require independent fresh post-operation and final convergence reads.
+
 ### Credential disclosure or misuse
 
 Tokens leak through errors, summaries, process arguments, artifacts, caches, or malicious input.
@@ -112,6 +216,30 @@ Controls:
 - build releases in a protected workflow with provenance, checksums, and a software bill of materials;
 - review dependency changes and minimize production dependencies.
 
+### Preview entrypoint privilege escalation
+
+An attacker supplies hidden mode switches, paths, workflow context, credentials, or crafted input that makes a nominal dry-run load mutation code, escape the workspace, or disclose provider data.
+
+Controls:
+
+- ship Action and CLI entrypoints whose dependency graphs exclude the executor and mutation transport;
+- expose no apply input, flag, environment switch, dynamic import, interactive prompt, or caller-selected endpoint;
+- require explicit bounded scope, workspace-confined non-symlink paths, and a standard-input-only CLI credential;
+- emit only fixed, bounded, redacted outputs and stable exit classes;
+- run the first public workflow only by manual dispatch with read permissions and immutable action pins.
+
+### Release automation privilege confusion
+
+A compromised dependency, untrusted event, stale commit, mutable tag, or overprivileged release bot publishes code that did not pass review.
+
+Controls:
+
+- limit Release Please to version, changelog, and release-PR maintenance with no tag or publication authority;
+- place publication in a separate manually dispatched protected environment with exact version and commit binding;
+- acquire contents, identity-token, and attestation write permissions only in the final publication job;
+- rebuild from a clean checkout, verify the committed bundle byte-for-byte, and publish checksums, an SBOM, and attestations;
+- publish immutable semantic-version tags only, recommend full commit pins, and correct releases with a new version rather than moving published state.
+
 ### Privacy and neutrality failure
 
 Fixtures, logs, documentation, telemetry, issue content, or release notes identify an adopter or private environment.
@@ -130,11 +258,23 @@ Controls:
 - path traversal and symbolic-link escape rejection;
 - shell and workflow metacharacters preserved as inert data;
 - repository, owner, Project, and installation binding failures;
+- fixed-query allowlisting and structural rejection of arbitrary documents, endpoints, redirects, and mutations;
+- cursor progression, duplicate-node, page, byte, collection, and GraphQL-error limits;
+- malicious and cross-scope API response rejection with atomic zero-output failure;
+- zero automatic retry and full-read restart after retryable classification;
 - dry-run with a write-capable token still performs zero mutations;
 - apply without both gates fails closed;
-- retry and concurrent-run convergence;
+- approval plan/scope mismatch, expiry, nonce replay, subset, superset, and interrupted-run rejection;
+- fresh-plan mismatch, precondition drift, lease contention, and lease-loss rejection;
+- stop-on-first-failure, accurate partial outcomes, zero retry, and concurrent-run convergence;
+- post-operation verification and final zero-operation reconciliation;
+- mutation AST and exact single-field allowlist validation;
+- unknown-variable, provider-ID substitution, client-mutation override, and receipt-mismatch rejection;
+- write-permission delta denial and separate read/write credential construction;
 - redaction of tokens, URLs, identifiers, and API error bodies;
 - tampered bundle, lockfile, and action-pin detection.
+- preview entrypoint mutation-import, hidden-apply, path-escape, and output-redaction rejection;
+- Release Please privilege separation and publisher commit, version, tag, bundle, SBOM, and attestation mismatch rejection.
 
 ## Release gate
 
