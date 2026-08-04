@@ -5,6 +5,8 @@ export * from "./github-readonly.js";
 export * from "./github-rest-snapshot.js";
 export * from "./github-rate-ledger.js";
 export * from "./legacy-shadow.js";
+export * from "./legacy-plan.js";
+export * from "./controlled-legacy-apply-host.js";
 export * from "./github-transport.js";
 export * from "./executor.js";
 export * from "./apply-coordination.js";

@@ -7704,7 +7704,8 @@ async function readWithClient(input, options, client) {
     }).sort() : [], milestone = rec(content.milestone) && typeof content.milestone.title === "string" ? text(content.milestone.title, 128) : void 0, issueType = rec(content.type) && typeof content.type.name === "string" ? text(content.type.name, 128) : void 0, summary = relationshipSummary(content), relationshipsComplete = Boolean(relation) || summary.blockedBy === 0 && summary.blocking === 0;
     issues.set(n, { issueRef: text(content.node_id), issueDatabaseId: integer(content.id), body: typeof content.body === "string" ? content.body : "", itemRef: text(item.node_id), fingerprint: text(item.node_id), values: itemValues(item), ...issueType ? { issueType } : {}, labels, ...milestone ? { milestone } : {}, issueFields: nativeIssueFields(content), ...parent ? { parent } : {}, blockedBy: relation?.blockedBy ?? [], blocking: relation?.blocking ?? [], relationshipsComplete });
   }
-  return { subjectRef: subject(options.token), ownerLogin: input.ownerLogin, repositoryName: input.repositoryName, projectNumber: input.projectNumber, repositoryRef: text(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), issues, evidence: { ...client.evidence } };
+  const issueTypes = options.includeIssueTypes ? (await client.list(`/repos/${input.ownerLogin}/${input.repositoryName}/issue-types?per_page=100`)).nodes.map((value2) => ({ id: text(value2.node_id), name: text(value2.name, 128) })).sort((a, b) => a.id.localeCompare(b.id)) : void 0;
+  return { subjectRef: subject(options.token), ownerLogin: input.ownerLogin, repositoryName: input.repositoryName, projectNumber: input.projectNumber, repositoryRef: text(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), ...issueTypes ? { issueTypes } : {}, issues, evidence: { ...client.evidence } };
 }
 function createRestProjectSnapshotReader(options) {
   const client = new RestSnapshotClient(options);
@@ -8223,7 +8224,7 @@ function planReconciliation(input) {
   if (hasCycle(input.relationships.nodes, proposedBlocks)) add2(internal, "YKP-GRAPH-005", "$.contract.relationships.blocks");
   return finishPlan(internal, operations, observations);
 }
-var PHASE = { create_field: 0, add_option: 1, set_field_value: 2, set_parent: 3, add_dependency: 4 };
+var PHASE = { create_field: 0, add_option: 1, set_field_value: 2, set_issue_type: 2, set_parent: 3, add_dependency: 4 };
 function finishPlan(internal, operations, observations) {
   operations.sort((a, b) => PHASE[a.type] - PHASE[b.type] || compareText(a.resource.logicalKey, b.resource.logicalKey) || compareText(a.operationKey, b.operationKey));
   observations.sort((a, b) => compareText(a.type, b.type) || compareText(a.logicalKey, b.logicalKey));
