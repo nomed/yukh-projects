@@ -1,8 +1,7 @@
 # Yukh Projects 1.3.5 <!-- x-release-please-version -->
 
-The next Release Please candidate adds the post-v1.3.4 changes without
-repeating content already published in v1.3.4. Release Please owns the version
-in this heading and will advance it only in the regenerated release PR.
+This release adds the post-v1.3.4 changes without repeating content already
+published in v1.3.4.
 
 ## REST-first field creation
 
@@ -21,19 +20,23 @@ in this heading and will advance it only in the regenerated release PR.
 - Authentication, authorization, provider, budget, and invariant failures
   remain distinguishable without exposing credentials or provider bodies.
 
-## Additional compatibility
+## Compatibility
 
 - Issue Type mutation support is included in the post-v1.3.4 delta.
 - Project-owned `Status` remains preserved unless explicitly governed.
 - These release notes do not authorize deployment, live apply, or consumer
   migration.
 
-## Integrity, qualification, and rollback
+## Integrity and qualification
 
 Publication remains separately gated by deterministic qualification of the
-generated bundle, checksums, SBOM, provenance attestations, and immutable
-release workflow. The exact rollback pin is `v1.3.4` at commit
+generated bundle, checksums, SBOM, provenance attestations, and the immutable
+release workflow.
+
+## Rollback
+
+The exact rollback pin is `v1.3.4` at commit
 `21731941c96525802ee1e31c6df9e888ceab07e7`.
 
-Do not merge or publish the regenerated release PR until its changelog contains
-exactly the post-v1.3.4 delta and all release artifacts have been requalified.
+Rollback does not authorize deployment, live apply, consumer migration, or
+movement of an existing immutable tag.
