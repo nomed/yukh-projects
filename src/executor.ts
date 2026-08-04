@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { canonicalJson, type BoundScope, type PlannedOperation, type ReconciliationPlan } from "./planner.js";
 
-export type MutationKind="create_project_field"|"update_project_field_options"|"update_project_item_field_value"|"add_sub_issue"|"add_blocked_by";
+export type MutationKind="create_project_field"|"update_project_field_options"|"update_project_item_field_value"|"set_issue_type"|"add_sub_issue"|"add_blocked_by";
 export type ApplyFailureClass="authentication"|"authorization"|"deferred_rate_budget"|"provider"|"invariant";
 export class ApplyPortError extends Error{constructor(readonly failureClass:ApplyFailureClass){super("apply port failed");this.name="ApplyPortError";}}
 export type ApplyCode=`YKP-APPLY-${"001"|"002"|"003"|"004"|"005"|"006"|"007"|"008"|"009"|"010"|"011"|"012"|"013"|"014"|"015"|"016"|"017"}`;
