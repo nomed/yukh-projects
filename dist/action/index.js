@@ -7705,7 +7705,7 @@ async function readWithClient(input2, options, client) {
     }).sort() : [], milestone = rec(content.milestone) && typeof content.milestone.title === "string" ? text(content.milestone.title, 128) : void 0, issueType = rec(content.type) && typeof content.type.name === "string" ? text(content.type.name, 128) : void 0, summary = relationshipSummary(content), relationshipsComplete = Boolean(relation) || summary.blockedBy === 0 && summary.blocking === 0;
     issues.set(n, { issueRef: text(content.node_id), issueDatabaseId: integer(content.id), body: typeof content.body === "string" ? content.body : "", itemRef: text(item.node_id), fingerprint: text(item.node_id), values: itemValues(item), ...issueType ? { issueType } : {}, labels, ...milestone ? { milestone } : {}, issueFields: nativeIssueFields(content), ...parent ? { parent } : {}, blockedBy: relation?.blockedBy ?? [], blocking: relation?.blocking ?? [], relationshipsComplete });
   }
-  return { subjectRef: subject(options.token), ownerLogin: input2.ownerLogin, repositoryName: input2.repositoryName, projectNumber: input2.projectNumber, repositoryRef: text(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), issues, evidence: { ...client.evidence } };
+  return { subjectRef: subject(options.token), ownerKind, ownerLogin: input2.ownerLogin, repositoryName: input2.repositoryName, projectNumber: input2.projectNumber, repositoryRef: text(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), issues, evidence: { ...client.evidence } };
 }
 function createRestProjectSnapshotReader(options) {
   const client = new RestSnapshotClient(options);

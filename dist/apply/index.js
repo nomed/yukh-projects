@@ -4759,9 +4759,9 @@ var require_resolve_flow_scalar = __commonJS({
             res += parseCharCode(source, i + 1, length, onError);
             i += length;
           } else {
-            const raw = source.substr(i - 1, 2);
-            onError(i - 1, "BAD_DQ_ESCAPE", `Invalid escape sequence ${raw}`);
-            res += raw;
+            const raw2 = source.substr(i - 1, 2);
+            onError(i - 1, "BAD_DQ_ESCAPE", `Invalid escape sequence ${raw2}`);
+            res += raw2;
           }
         } else if (ch === " " || ch === "	") {
           const wsStart = i;
@@ -4833,9 +4833,9 @@ var require_resolve_flow_scalar = __commonJS({
       try {
         return String.fromCodePoint(code);
       } catch {
-        const raw = source.substr(offset - 2, length + 2);
-        onError(offset - 2, "BAD_DQ_ESCAPE", `Invalid escape sequence ${raw}`);
-        return raw;
+        const raw2 = source.substr(offset - 2, length + 2);
+        onError(offset - 2, "BAD_DQ_ESCAPE", `Invalid escape sequence ${raw2}`);
+        return raw2;
       }
     }
     exports.resolveFlowScalar = resolveFlowScalar;
@@ -7611,8 +7611,8 @@ function planReconciliation(input3) {
   if (internal.length > 0) return finishPlan(internal, operations, observations);
   input3.schema.operations.map((operation) => operationFromSchema(operation, scope)).filter((operation) => operation !== null).forEach((operation) => operations.push(operation));
   for (const mapping of FIELD_MAP) {
-    const raw = mapping.source(input3.contract);
-    if (raw === void 0) continue;
+    const raw2 = mapping.source(input3.contract);
+    if (raw2 === void 0) continue;
     const declaration = input3.policy.fields[mapping.fieldKey];
     if (!declaration) {
       add(internal, "YKP-PLAN-003", `$.policy.fields.${mapping.fieldKey}`);
@@ -7625,18 +7625,18 @@ function planReconciliation(input3) {
     let desired;
     let optionKey;
     if (mapping.kind === "single_select") {
-      if (typeof raw !== "string" || !declaration.options?.[raw]) {
+      if (typeof raw2 !== "string" || !declaration.options?.[raw2]) {
         add(internal, "YKP-PLAN-005", mapping.path);
         continue;
       }
-      optionKey = raw;
-      desired = declaration.options[raw];
+      optionKey = raw2;
+      desired = declaration.options[raw2];
     } else {
-      if (!(typeof raw === "number" && Number.isFinite(raw) || safeString(raw))) {
+      if (!(typeof raw2 === "number" && Number.isFinite(raw2) || safeString(raw2))) {
         add(internal, "YKP-PLAN-006", mapping.path);
         continue;
       }
-      desired = raw;
+      desired = raw2;
     }
     const previous = input3.observedItem.values[mapping.fieldKey] ?? null;
     if (previous === desired) {
@@ -8115,8 +8115,8 @@ function createApplyCoordinationHttpStore(options) {
   if (base.protocol !== "https:" || base.username || base.password || base.search || base.hash || base.pathname !== "/" || options.baseUri.endsWith("/") || !Number.isSafeInteger(options.epoch) || options.epoch < 1 || !Number.isSafeInteger(options.deadlineMs) || options.deadlineMs < 1 || options.deadlineMs > 5e3 || typeof options.authenticate !== "function") throw new TypeError("invalid coordination configuration");
   const fetcher = options.fetch ?? globalThis.fetch;
   async function call(path, body) {
-    const target = `${options.baseUri}${path}`, raw = canonical(body);
-    if (Buffer.byteLength(raw) > MAX_BODY) throw new ApplyCoordinationError("YKP-COORD-001");
+    const target = `${options.baseUri}${path}`, raw2 = canonical(body);
+    if (Buffer.byteLength(raw2) > MAX_BODY) throw new ApplyCoordinationError("YKP-COORD-001");
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), options.deadlineMs);
     try {
       let auth;
@@ -8128,7 +8128,7 @@ function createApplyCoordinationHttpStore(options) {
       if (typeof auth?.credential !== "string" || auth.credential.length < 1 || auth.credential.length > 8192 || typeof auth.proof !== "string" || auth.proof.length < 1 || auth.proof.length > 16384) throw new ApplyCoordinationError("YKP-COORD-001");
       let response;
       try {
-        response = await fetcher(target, { method: "POST", redirect: "manual", signal: controller.signal, headers: { authorization: `DPoP ${auth.credential}`, dpop: auth.proof, "content-type": MEDIA }, body: raw });
+        response = await fetcher(target, { method: "POST", redirect: "manual", signal: controller.signal, headers: { authorization: `DPoP ${auth.credential}`, dpop: auth.proof, "content-type": MEDIA }, body: raw2 });
       } catch {
         throw new ApplyCoordinationError("YKP-COORD-002");
       }
@@ -8673,29 +8673,29 @@ function parseRepositoryPolicy(source) {
   const document = documents[0];
   inspectYaml(document.contents, 0, "$", internal, { scalars: 0 });
   if (internal.length > 0) return { policy: null, diagnostics: finalize(internal) };
-  let raw;
+  let raw2;
   try {
-    raw = document.toJS({ maxAliasCount: 0, mapAsMap: false });
+    raw2 = document.toJS({ maxAliasCount: 0, mapAsMap: false });
   } catch {
     add3(internal, "YKP-POLICY-002", "$", 0);
     return { policy: null, diagnostics: finalize(internal) };
   }
-  if (!isRecord2(raw)) {
+  if (!isRecord2(raw2)) {
     add3(internal, "YKP-POLICY-005", "$");
     return { policy: null, diagnostics: finalize(internal) };
   }
-  unknownFields2(raw, ROOT_FIELDS2, "$", internal);
-  for (const required of ["schema", "fields"]) if (!(required in raw)) add3(internal, "YKP-POLICY-001", `$.${required}`);
-  if ("schema" in raw && raw.schema !== 1) add3(internal, typeof raw.schema === "number" ? "YKP-POLICY-006" : "YKP-POLICY-005", "$.schema");
+  unknownFields2(raw2, ROOT_FIELDS2, "$", internal);
+  for (const required of ["schema", "fields"]) if (!(required in raw2)) add3(internal, "YKP-POLICY-001", `$.${required}`);
+  if ("schema" in raw2 && raw2.schema !== 1) add3(internal, typeof raw2.schema === "number" ? "YKP-POLICY-006" : "YKP-POLICY-005", "$.schema");
   const fields = {};
   const names = /* @__PURE__ */ new Map();
-  if ("fields" in raw) {
-    if (!isRecord2(raw.fields)) add3(internal, "YKP-POLICY-005", "$.fields");
-    else if (Object.keys(raw.fields).length < 1 || Object.keys(raw.fields).length > 64) add3(internal, "YKP-POLICY-003", "$.fields");
-    else for (const key of Object.keys(raw.fields).sort()) {
+  if ("fields" in raw2) {
+    if (!isRecord2(raw2.fields)) add3(internal, "YKP-POLICY-005", "$.fields");
+    else if (Object.keys(raw2.fields).length < 1 || Object.keys(raw2.fields).length > 64) add3(internal, "YKP-POLICY-003", "$.fields");
+    else for (const key of Object.keys(raw2.fields).sort()) {
       const path = `$.fields.${key}`;
       if (!LOGICAL_KEY.test(key)) add3(internal, "YKP-POLICY-006", path);
-      const declaration = raw.fields[key];
+      const declaration = raw2.fields[key];
       if (!isRecord2(declaration)) {
         add3(internal, "YKP-POLICY-005", path);
         continue;
@@ -8856,15 +8856,16 @@ async function prepareReconciliation(input3) {
 }
 
 // src/github-mutation-transport.ts
-var ENDPOINT = "https://api.github.com/graphql";
+var API = "https://api.github.com";
+var ENDPOINT = `${API}/graphql`;
+var REST_VERSION = "2026-03-10";
 var GITHUB_MUTATION_DOCUMENTS = Object.freeze({
-  create_project_field: `mutation YukhCreateProjectField($input:CreateProjectV2FieldInput!){createProjectV2Field(input:$input){clientMutationId projectV2Field{id}}}`,
   update_project_field_options: `mutation YukhUpdateProjectFieldOptions($input:UpdateProjectV2FieldInput!){updateProjectV2Field(input:$input){clientMutationId projectV2Field{id}}}`,
   update_project_item_field_value: `mutation YukhUpdateProjectItemFieldValue($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){clientMutationId projectV2Item{id}}}`,
   add_sub_issue: `mutation YukhAddSubIssue($input:AddSubIssueInput!){addSubIssue(input:$input){clientMutationId issue{id} subIssue{id}}}`,
   add_blocked_by: `mutation YukhAddBlockedBy($input:AddBlockedByInput!){addBlockedBy(input:$input){clientMutationId issue{id} blockingIssue{id}}}`
 });
-var GITHUB_MUTATION_ESTIMATED_COSTS = Object.freeze({ create_project_field: 100, update_project_field_options: 100, update_project_item_field_value: 100, add_sub_issue: 100, add_blocked_by: 100 });
+var GITHUB_MUTATION_ESTIMATED_COSTS = Object.freeze({ update_project_field_options: 100, update_project_item_field_value: 100, add_sub_issue: 100, add_blocked_by: 100 });
 var GitHubMutationTransportError = class extends Error {
   constructor(code) {
     super("GitHub mutation transport failed");
@@ -8885,10 +8886,21 @@ function keys(v, expected) {
 function id(v) {
   return text2(v, 256);
 }
+function positive(v) {
+  return Number.isSafeInteger(v) && v > 0;
+}
+function owner(v) {
+  return typeof v === "string" && /^[A-Za-z0-9-]{1,39}$/u.test(v);
+}
 function option(v, withId) {
   if (!rec2(v)) return false;
   const expected = withId ? ["id", "name", "color", "description"] : ["name", "color", "description"];
   return keys(v, expected) && (!withId || id(v.id)) && text2(v.name, 128) && ["GRAY", "BLUE", "GREEN", "YELLOW", "ORANGE", "RED", "PINK", "PURPLE"].includes(String(v.color)) && typeof v.description === "string" && [...v.description].length <= 256 && !/[\u0000-\u001f\u007f]/u.test(v.description);
+}
+function raw(v, max = 128) {
+  if (typeof v === "string" && [...v].length <= max && !/[\u0000-\u001f\u007f]/u.test(v)) return v;
+  if (rec2(v) && typeof v.raw === "string" && [...v.raw].length <= max && !/[\u0000-\u001f\u007f]/u.test(v.raw)) return v.raw;
+  return void 0;
 }
 function permissionsExact(kind2, p, approvedKinds) {
   const allowed = /* @__PURE__ */ new Set(["create_project_field", "update_project_field_options", "update_project_item_field_value", "add_sub_issue", "add_blocked_by"]), kinds = new Set(approvedKinds);
@@ -8899,8 +8911,8 @@ function permissionsExact(kind2, p, approvedKinds) {
 function input2(kind2, v, clientMutationId) {
   if (!rec2(v) || v.kind !== kind2 || !/^[a-f0-9]{64}$/u.test(clientMutationId)) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
   if (kind2 === "create_project_field" && v.kind === kind2) {
-    if (!keys(v, ["kind", "projectId", "dataType", "name", ...v.options === void 0 ? [] : ["options"]]) || !id(v.projectId) || !text2(v.name, 128) || !["TEXT", "SINGLE_SELECT", "NUMBER", "DATE"].includes(v.dataType) || v.dataType === "SINGLE_SELECT" !== Array.isArray(v.options) || v.options?.length === 0 || v.options && (!v.options.every((x) => option(x, false)) || v.options.length > 256)) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
-    return { input: { projectId: v.projectId, dataType: v.dataType, name: v.name, ...v.options ? { singleSelectOptions: v.options } : {}, clientMutationId }, expected: {} };
+    if (!keys(v, ["kind", "ownerKind", "ownerLogin", "projectNumber", "dataType", "name", ...v.options === void 0 ? [] : ["options"]]) || !["orgs", "users"].includes(v.ownerKind) || !owner(v.ownerLogin) || !positive(v.projectNumber) || !text2(v.name, 128) || !["TEXT", "SINGLE_SELECT", "NUMBER", "DATE"].includes(v.dataType) || v.dataType === "SINGLE_SELECT" !== Array.isArray(v.options) || v.options?.length === 0 || v.options && (!v.options.every((x) => option(x, false)) || v.options.length > 256)) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
+    return { input: { ownerKind: v.ownerKind, ownerLogin: v.ownerLogin, projectNumber: v.projectNumber, dataType: v.dataType, name: v.name, ...v.options ? { options: v.options } : {} }, expected: {} };
   }
   if (kind2 === "update_project_field_options" && v.kind === kind2) {
     if (!keys(v, ["kind", "fieldId", "observedOptions", "newOption"]) || !id(v.fieldId) || !Array.isArray(v.observedOptions) || v.observedOptions.length >= 256 || !v.observedOptions.every((x) => option(x, true)) || new Set(v.observedOptions.map((x) => x.id)).size !== v.observedOptions.length || !option(v.newOption, false) || v.newOption.color !== "GRAY" || v.newOption.description !== "" || v.observedOptions.some((x) => x.name === v.newOption.name)) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
@@ -8927,38 +8939,55 @@ function createGitHubMutationTransport(options) {
   const fetcher = options.fetch ?? globalThis.fetch;
   return { execute: async (kind2, variables2, clientMutationId) => {
     if (!permissionsExact(kind2, options.permissions, options.approvedKinds)) throw new GitHubMutationTransportError("YKP-GH-WRITE-003");
-    const mapped = input2(kind2, variables2, clientMutationId), query = GITHUB_MUTATION_DOCUMENTS[kind2];
-    if (options.rateLedger && !options.rateLedger.reserve("graphql", GITHUB_MUTATION_ESTIMATED_COSTS[kind2])) throw new GitHubMutationTransportError("YKP-GH-WRITE-008");
+    const mapped = input2(kind2, variables2, clientMutationId), rest = kind2 === "create_project_field", graphqlKind = kind2;
+    if (options.rateLedger && !options.rateLedger.reserve(rest ? "rest" : "graphql", rest ? 1 : GITHUB_MUTATION_ESTIMATED_COSTS[graphqlKind])) throw new GitHubMutationTransportError("YKP-GH-WRITE-008");
     let response;
     try {
-      response = await fetcher(ENDPOINT, { method: "POST", redirect: "manual", headers: { accept: "application/vnd.github+json", "content-type": "application/json", authorization: `Bearer ${options.token}`, "x-github-api-version": "2022-11-28" }, body: JSON.stringify({ query, variables: { input: mapped.input } }) });
+      if (rest) {
+        const value2 = mapped.input;
+        response = await fetcher(`${API}/${value2.ownerKind}/${value2.ownerLogin}/projectsV2/${value2.projectNumber}/fields`, { method: "POST", redirect: "manual", headers: { accept: "application/vnd.github+json", "content-type": "application/json", authorization: `Bearer ${options.token}`, "x-github-api-version": REST_VERSION }, body: JSON.stringify({ name: value2.name, data_type: String(value2.dataType).toLowerCase(), ...Array.isArray(value2.options) ? { single_select_options: value2.options } : {} }) });
+      } else {
+        response = await fetcher(ENDPOINT, { method: "POST", redirect: "manual", headers: { accept: "application/vnd.github+json", "content-type": "application/json", authorization: `Bearer ${options.token}`, "x-github-api-version": "2022-11-28" }, body: JSON.stringify({ query: GITHUB_MUTATION_DOCUMENTS[graphqlKind], variables: { input: mapped.input } }) });
+      }
     } catch {
       throw new GitHubMutationTransportError("YKP-GH-WRITE-004");
     }
     const remaining = response.headers.get("x-ratelimit-remaining");
-    if (options.rateLedger && remaining !== null && /^\d+$/u.test(remaining)) options.rateLedger.observe("graphql", Number(remaining));
+    if (options.rateLedger && remaining !== null && /^\d+$/u.test(remaining)) options.rateLedger.observe(rest ? "rest" : "graphql", Number(remaining));
     if (response.status >= 300 && response.status < 400) throw new GitHubMutationTransportError("YKP-GH-WRITE-005");
     if (response.status === 401) throw new GitHubMutationTransportError("YKP-GH-WRITE-006");
     if (response.status === 403) throw new GitHubMutationTransportError(response.headers.get("x-ratelimit-remaining") === "0" ? "YKP-GH-WRITE-008" : "YKP-GH-WRITE-007");
     if (response.status === 429) throw new GitHubMutationTransportError("YKP-GH-WRITE-008");
     if ([502, 503, 504].includes(response.status)) throw new GitHubMutationTransportError("YKP-GH-WRITE-004");
-    if (!response.ok || !response.headers.get("content-type")?.toLowerCase().includes("application/json")) throw new GitHubMutationTransportError("YKP-GH-WRITE-009");
-    const raw = new Uint8Array(await response.arrayBuffer());
-    if (raw.length > 2 * 1024 * 1024) throw new GitHubMutationTransportError("YKP-GH-WRITE-010");
+    if (!response.ok || rest && response.status !== 201 || !response.headers.get("content-type")?.toLowerCase().includes("application/json")) throw new GitHubMutationTransportError(response.status === 422 ? "YKP-GH-WRITE-011" : "YKP-GH-WRITE-009");
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.length > 2 * 1024 * 1024) throw new GitHubMutationTransportError("YKP-GH-WRITE-010");
     let body;
     try {
-      body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw));
+      body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
     } catch {
       throw new GitHubMutationTransportError("YKP-GH-WRITE-009");
     }
+    if (rest) {
+      const value2 = mapped.input;
+      if (!rec2(body) || !id(body.node_id) || body.name !== value2.name || body.data_type !== String(value2.dataType).toLowerCase()) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
+      if (Array.isArray(value2.options)) {
+        if (!Array.isArray(body.options) || body.options.length !== value2.options.length) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
+        for (let index = 0; index < value2.options.length; index++) {
+          const expected = value2.options[index], observed = body.options[index];
+          if (!rec2(expected) || !rec2(observed) || raw(observed.name) !== expected.name || observed.color !== expected.color || raw(observed.description, 256) !== expected.description) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
+        }
+      }
+      return { kind: kind2, clientMutationId, providerAccepted: true };
+    }
     if (!rec2(body) || Array.isArray(body.errors) || !rec2(body.data)) throw new GitHubMutationTransportError("YKP-GH-WRITE-011");
-    const field2 = { create_project_field: "createProjectV2Field", update_project_field_options: "updateProjectV2Field", update_project_item_field_value: "updateProjectV2ItemFieldValue", add_sub_issue: "addSubIssue", add_blocked_by: "addBlockedBy" }[kind2], payload = body.data[field2];
+    const field2 = { update_project_field_options: "updateProjectV2Field", update_project_item_field_value: "updateProjectV2ItemFieldValue", add_sub_issue: "addSubIssue", add_blocked_by: "addBlockedBy" }[graphqlKind];
+    const payload = body.data[field2];
     if (!rec2(payload) || payload.clientMutationId !== clientMutationId) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
     for (const [name, expected] of Object.entries(mapped.expected)) {
       const node = payload[name];
       if (!rec2(node) || node.id !== expected) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
     }
-    if (kind2 === "create_project_field" && (!rec2(payload.projectV2Field) || !id(payload.projectV2Field.id))) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
     return { kind: kind2, clientMutationId, providerAccepted: true };
   } };
 }
@@ -8987,7 +9016,7 @@ function normalizeGitHubApplyFailure(error) {
     if (error.code === "YKP-GH-WRITE-006") return new ApplyPortError("authentication");
     if (error.code === "YKP-GH-WRITE-007" || error.code === "YKP-GH-WRITE-003") return new ApplyPortError("authorization");
     if (error.code === "YKP-GH-WRITE-008") return new ApplyPortError("deferred_rate_budget");
-    if (error.code === "YKP-GH-WRITE-004") return new ApplyPortError("provider");
+    if (["YKP-GH-WRITE-004", "YKP-GH-WRITE-005", "YKP-GH-WRITE-009", "YKP-GH-WRITE-010", "YKP-GH-WRITE-011"].includes(error.code)) return new ApplyPortError("provider");
     return new ApplyPortError("invariant");
   }
   if (error instanceof GitHubTransportError) {
@@ -9035,8 +9064,8 @@ function createGitHubRateLedger(options = {}) {
 
 // src/github-rest-snapshot.ts
 import { createHash as createHash6 } from "node:crypto";
-var API = "https://api.github.com";
-var GRAPHQL = `${API}/graphql`;
+var API2 = "https://api.github.com";
+var GRAPHQL = `${API2}/graphql`;
 var API_VERSION = "2026-03-10";
 var RELATIONSHIP_QUERY = `query YukhRelationshipSnapshot($ids:[ID!]!){nodes(ids:$ids){... on Issue{id number repository{id} parent{number repository{id}} subIssues(first:100){nodes{number repository{id}}pageInfo{hasNextPage}} blockedBy(first:100){nodes{number repository{id}}pageInfo{hasNextPage}} blocking(first:100){nodes{number repository{id}}pageInfo{hasNextPage}}}} rateLimit{cost remaining resetAt}}`;
 var RELATIONSHIP_QUERY_ESTIMATED_COST = 100;
@@ -9092,7 +9121,7 @@ function normalizedPath(value2) {
   } catch {
     throw new GitHubTransportError("YKP-CAPABILITY-001");
   }
-  if (parsed.origin !== API || parsed.username || parsed.password || parsed.hash) throw new GitHubTransportError("YKP-CAPABILITY-001");
+  if (parsed.origin !== API2 || parsed.username || parsed.password || parsed.hash) throw new GitHubTransportError("YKP-CAPABILITY-001");
   return `${parsed.pathname}${parsed.search}`;
 }
 function issueNumberFromUrl(v) {
@@ -9166,7 +9195,7 @@ var RestSnapshotClient = class {
       if (cached?.etag) this.evidence.conditionalRequests++;
       let response;
       try {
-        response = await this.request(`${API}${path}`, { method: "GET", redirect: "manual", headers: this.headers(cached?.etag) });
+        response = await this.request(`${API2}${path}`, { method: "GET", redirect: "manual", headers: this.headers(cached?.etag) });
       } catch {
         throw new GitHubTransportError("YKP-GH-READ-004");
       }
@@ -9178,17 +9207,17 @@ var RestSnapshotClient = class {
       }
       if (response.status >= 300 && response.status < 400 || !response.ok) this.classify(response);
       if (!response.headers.get("content-type")?.toLowerCase().includes("json")) throw new GitHubTransportError("YKP-REST-001");
-      const raw = new Uint8Array(await response.arrayBuffer());
-      this.bytes += raw.byteLength;
-      if (raw.byteLength > 8 * 1024 * 1024 || this.bytes > 64 * 1024 * 1024) throw new GitHubTransportError("YKP-GH-READ-005");
+      const raw2 = new Uint8Array(await response.arrayBuffer());
+      this.bytes += raw2.byteLength;
+      if (raw2.byteLength > 8 * 1024 * 1024 || this.bytes > 64 * 1024 * 1024) throw new GitHubTransportError("YKP-GH-READ-005");
       let body;
       try {
-        body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw));
+        body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw2));
       } catch {
         throw new GitHubTransportError("YKP-REST-001");
       }
-      if ((this.generations.get(key) ?? 0) === generation) this.cache.set(key, { body, bytes: raw.byteLength, etag: response.headers.get("etag") ?? void 0, link: response.headers.get("link") ?? void 0, expires: current + this.ttl });
-      return { body, bytes: raw.byteLength, headers: response.headers };
+      if ((this.generations.get(key) ?? 0) === generation) this.cache.set(key, { body, bytes: raw2.byteLength, etag: response.headers.get("etag") ?? void 0, link: response.headers.get("link") ?? void 0, expires: current + this.ttl });
+      return { body, bytes: raw2.byteLength, headers: response.headers };
     })();
     this.flights.set(key, task);
     try {
@@ -9321,7 +9350,7 @@ async function readWithClient(input3, options, client) {
     }).sort() : [], milestone = rec3(content.milestone) && typeof content.milestone.title === "string" ? text3(content.milestone.title, 128) : void 0, issueType = rec3(content.type) && typeof content.type.name === "string" ? text3(content.type.name, 128) : void 0, summary = relationshipSummary(content), relationshipsComplete = Boolean(relation) || summary.blockedBy === 0 && summary.blocking === 0;
     issues.set(n, { issueRef: text3(content.node_id), issueDatabaseId: integer(content.id), body: typeof content.body === "string" ? content.body : "", itemRef: text3(item.node_id), fingerprint: text3(item.node_id), values: itemValues(item), ...issueType ? { issueType } : {}, labels, ...milestone ? { milestone } : {}, issueFields: nativeIssueFields(content), ...parent ? { parent } : {}, blockedBy: relation?.blockedBy ?? [], blocking: relation?.blocking ?? [], relationshipsComplete });
   }
-  return { subjectRef: subject(options.token), ownerLogin: input3.ownerLogin, repositoryName: input3.repositoryName, projectNumber: input3.projectNumber, repositoryRef: text3(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), issues, evidence: { ...client.evidence } };
+  return { subjectRef: subject(options.token), ownerKind, ownerLogin: input3.ownerLogin, repositoryName: input3.repositoryName, projectNumber: input3.projectNumber, repositoryRef: text3(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), issues, evidence: { ...client.evidence } };
 }
 function createRestProjectSnapshotReader(options) {
   const client = new RestSnapshotClient(options);
@@ -9373,7 +9402,7 @@ async function variables(operation, prepared, reader, input3) {
     const declaration = prepared.policy.fields[operation.resource.logicalKey];
     if (!declaration || declaration.kind === "iteration") throw new ApplyPortError("invariant");
     const dataType = { text: "TEXT", number: "NUMBER", date: "DATE", single_select: "SINGLE_SELECT" };
-    return { kind: "create_project_field", projectId: snapshot.projectRef, dataType: dataType[declaration.kind], name: declaration.name, ...declaration.kind === "single_select" ? { options: Object.values(declaration.options ?? {}).map((name) => ({ name, color: "GRAY", description: "" })) } : {} };
+    return { kind: "create_project_field", ownerKind: snapshot.ownerKind, ownerLogin: snapshot.ownerLogin, projectNumber: snapshot.projectNumber, dataType: dataType[declaration.kind], name: declaration.name, ...declaration.kind === "single_select" ? { options: Object.values(declaration.options ?? {}).map((name) => ({ name, color: "GRAY", description: "" })) } : {} };
   }
   if (operation.type === "add_option") {
     const key = operation.resource.logicalKey.split(".")[0], { declaration, found } = field(snapshot, prepared, key), name = String(operation.desired ?? declaration.options?.[operation.resource.logicalKey.split(".")[1] ?? ""]);

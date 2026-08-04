@@ -279,6 +279,29 @@ Controls:
 - sanitize by construction rather than post-processing production data;
 - treat accidental disclosure as a security incident.
 
+### REST-first Project field creation — 2026-08-04
+
+- Governing issue: #102
+- Accepted contract: GitHub mutation transport v2
+- New live trust boundary: none; implementation and qualification are synthetic
+
+The previous controlled path sent an ordinary Project field creation through
+GraphQL despite a supported REST endpoint. The v2 route binds the exact owner
+kind, owner login, and Project number from a fresh REST snapshot and sends one
+fixed API-versioned POST. Callers cannot select an endpoint or trigger a
+GraphQL fallback.
+
+| Threat | Control | Residual risk / dependency |
+| --- | --- | --- |
+| shared GraphQL budget exhaustion | create-field reserves one REST request and structurally contains no GraphQL document | other mutation kinds remain GraphQL until separately reviewed |
+| cross-owner or cross-Project mutation | bounded snapshot-derived owner kind, login, and Project number form the fixed path | write credential authority remains deployment-specific |
+| provider accepts a different field | exact `201` receipt validation for name, type, and ordered option metadata; fresh schema verification remains mandatory | a lost or invalid receipt leaves an ambiguous additive outcome |
+| validation body discloses consumer or credential data | stable static error codes; body, message, IDs, URL, headers, and request metadata are discarded before errors | operators need a separately governed private diagnostic channel for provider support cases |
+| unsupported credential profile silently falls back | no fallback; user-owned and organization-owned token compatibility is documented separately | user-owned Projects cannot use the recommended installation-token profile |
+
+This review authorizes deterministic implementation and review only. It grants
+no live request, mutation, release, deployment, apply, or consumer migration.
+
 ## Required security tests
 
 - contract size, depth, alias, duplicate-block, and malformed-type limits;
