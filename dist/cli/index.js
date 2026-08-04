@@ -7705,7 +7705,7 @@ async function readWithClient(input, options, client) {
     issues.set(n, { issueRef: text(content.node_id), issueDatabaseId: integer(content.id), body: typeof content.body === "string" ? content.body : "", itemRef: text(item.node_id), fingerprint: text(item.node_id), values: itemValues(item), ...issueType ? { issueType } : {}, labels, ...milestone ? { milestone } : {}, issueFields: nativeIssueFields(content), ...parent ? { parent } : {}, blockedBy: relation?.blockedBy ?? [], blocking: relation?.blocking ?? [], relationshipsComplete });
   }
   const issueTypes = options.includeIssueTypes ? (await client.list(`/repos/${input.ownerLogin}/${input.repositoryName}/issue-types?per_page=100`)).nodes.map((value2) => ({ id: text(value2.node_id), name: text(value2.name, 128) })).sort((a, b) => a.id.localeCompare(b.id)) : void 0;
-  return { subjectRef: subject(options.token), ownerLogin: input.ownerLogin, repositoryName: input.repositoryName, projectNumber: input.projectNumber, repositoryRef: text(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), ...issueTypes ? { issueTypes } : {}, issues, evidence: { ...client.evidence } };
+  return { subjectRef: subject(options.token), ownerKind, ownerLogin: input.ownerLogin, repositoryName: input.repositoryName, projectNumber: input.projectNumber, repositoryRef: text(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), ...issueTypes ? { issueTypes } : {}, issues, evidence: { ...client.evidence } };
 }
 function createRestProjectSnapshotReader(options) {
   const client = new RestSnapshotClient(options);
