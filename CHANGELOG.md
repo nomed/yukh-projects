@@ -3,9 +3,20 @@
 ## [1.3.5](https://github.com/nomed/yukh-projects/compare/v1.3.4...v1.3.5) (2026-08-04)
 
 
+### Features
+
+* allow controlled Issue Type mutations ([#103](https://github.com/nomed/yukh-projects/issues/103)) ([de964d9](https://github.com/nomed/yukh-projects/commit/de964d9bf1294d32a2d0f2e0714736efd2d33310))
+* route Project field creation through REST ([#104](https://github.com/nomed/yukh-projects/issues/104)) ([e9b564c](https://github.com/nomed/yukh-projects/commit/e9b564c767e89e406047f6c99ad4739d01e61ca5))
+
+
 ### Bug Fixes
 
 * align Release Please with v1.3.4 baseline ([#106](https://github.com/nomed/yukh-projects/issues/106)) ([eaeec63](https://github.com/nomed/yukh-projects/commit/eaeec63504c4dd5d42c85d951b17dff430e0a7c5))
+
+
+### Documentation
+
+* align documentation header and canonical logo ([#100](https://github.com/nomed/yukh-projects/issues/100)) ([04a6019](https://github.com/nomed/yukh-projects/commit/04a6019e40633fa60cb218548579f02f2e26e880))
 
 ## [1.3.4](https://github.com/nomed/yukh-projects/compare/v1.3.3...v1.3.4) (2026-08-03)
 
