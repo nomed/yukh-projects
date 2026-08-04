@@ -12,6 +12,7 @@ limits, diagnostics, and compatibility rules.
 | REST-first snapshot | [REST Project snapshot v2](../contracts/rest-project-snapshot-v2.md) |
 | Dry-run Action and CLI | [Action and CLI release v1](../contracts/action-cli-release-v1.md) |
 | Controlled mutation semantics | [Controlled mutations v1](../contracts/controlled-mutations-v1.md) |
+| GitHub mutation transport | [REST-first field creation v2](../contracts/github-mutation-transport-v2.md) |
 | Apply entrypoint | [Controlled apply entrypoint v1](../contracts/controlled-apply-entrypoint-v1.md) |
 
 Unknown versions and fields fail closed. A plan or credential alone never
