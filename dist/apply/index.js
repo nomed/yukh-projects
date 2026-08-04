@@ -8861,10 +8861,11 @@ var GITHUB_MUTATION_DOCUMENTS = Object.freeze({
   create_project_field: `mutation YukhCreateProjectField($input:CreateProjectV2FieldInput!){createProjectV2Field(input:$input){clientMutationId projectV2Field{id}}}`,
   update_project_field_options: `mutation YukhUpdateProjectFieldOptions($input:UpdateProjectV2FieldInput!){updateProjectV2Field(input:$input){clientMutationId projectV2Field{id}}}`,
   update_project_item_field_value: `mutation YukhUpdateProjectItemFieldValue($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){clientMutationId projectV2Item{id}}}`,
+  set_issue_type: `mutation YukhSetIssueType($input:UpdateIssueIssueTypeInput!){updateIssueIssueType(input:$input){clientMutationId issue{id issueType{id}}}}`,
   add_sub_issue: `mutation YukhAddSubIssue($input:AddSubIssueInput!){addSubIssue(input:$input){clientMutationId issue{id} subIssue{id}}}`,
   add_blocked_by: `mutation YukhAddBlockedBy($input:AddBlockedByInput!){addBlockedBy(input:$input){clientMutationId issue{id} blockingIssue{id}}}`
 });
-var GITHUB_MUTATION_ESTIMATED_COSTS = Object.freeze({ create_project_field: 100, update_project_field_options: 100, update_project_item_field_value: 100, add_sub_issue: 100, add_blocked_by: 100 });
+var GITHUB_MUTATION_ESTIMATED_COSTS = Object.freeze({ create_project_field: 100, update_project_field_options: 100, update_project_item_field_value: 100, set_issue_type: 100, add_sub_issue: 100, add_blocked_by: 100 });
 var GitHubMutationTransportError = class extends Error {
   constructor(code) {
     super("GitHub mutation transport failed");
@@ -8891,9 +8892,9 @@ function option(v, withId) {
   return keys(v, expected) && (!withId || id(v.id)) && text2(v.name, 128) && ["GRAY", "BLUE", "GREEN", "YELLOW", "ORANGE", "RED", "PINK", "PURPLE"].includes(String(v.color)) && typeof v.description === "string" && [...v.description].length <= 256 && !/[\u0000-\u001f\u007f]/u.test(v.description);
 }
 function permissionsExact(kind2, p, approvedKinds) {
-  const allowed = /* @__PURE__ */ new Set(["create_project_field", "update_project_field_options", "update_project_item_field_value", "add_sub_issue", "add_blocked_by"]), kinds = new Set(approvedKinds);
+  const allowed = /* @__PURE__ */ new Set(["create_project_field", "update_project_field_options", "update_project_item_field_value", "set_issue_type", "add_sub_issue", "add_blocked_by"]), kinds = new Set(approvedKinds);
   if (kinds.size !== approvedKinds.length || kinds.size < 1 || [...kinds].some((value2) => !allowed.has(value2)) || !kinds.has(kind2)) return false;
-  const needsProjects = [...kinds].some((value2) => value2 === "create_project_field" || value2 === "update_project_field_options" || value2 === "update_project_item_field_value"), needsIssues = [...kinds].some((value2) => value2 === "add_sub_issue" || value2 === "add_blocked_by"), approved = new Set(p.approvedExtraPermissions ?? []);
+  const needsProjects = [...kinds].some((value2) => value2 === "create_project_field" || value2 === "update_project_field_options" || value2 === "update_project_item_field_value"), needsIssues = [...kinds].some((value2) => value2 === "set_issue_type" || value2 === "add_sub_issue" || value2 === "add_blocked_by"), approved = new Set(p.approvedExtraPermissions ?? []);
   return p.projects === (needsProjects ? "write" : "none") && p.issues === (needsIssues ? "write" : "none") && p.extraPermissions.length === approved.size && p.extraPermissions.every((value2) => approved.has(value2));
 }
 function input2(kind2, v, clientMutationId) {
@@ -8911,6 +8912,10 @@ function input2(kind2, v, clientMutationId) {
     const valueRecord = v.value, [k] = Object.keys(valueRecord), x = valueRecord[k];
     if (!(["text", "date", "singleSelectOptionId", "iterationId"].includes(k) && text2(x, 512) || k === "number" && typeof x === "number" && Number.isFinite(x))) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
     return { input: { projectId: v.projectId, itemId: v.itemId, fieldId: v.fieldId, value: v.value, clientMutationId }, expected: { projectV2Item: v.itemId } };
+  }
+  if (kind2 === "set_issue_type" && v.kind === kind2) {
+    if (!keys(v, ["kind", "issueId", "issueTypeId"]) || !id(v.issueId) || !id(v.issueTypeId)) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
+    return { input: { issueId: v.issueId, issueTypeId: v.issueTypeId, clientMutationId }, expected: { issue: v.issueId } };
   }
   if (kind2 === "add_sub_issue" && v.kind === kind2) {
     if (!keys(v, ["kind", "parentIssueId", "subIssueId"]) || !id(v.parentIssueId) || !id(v.subIssueId) || v.parentIssueId === v.subIssueId) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
@@ -8952,11 +8957,15 @@ function createGitHubMutationTransport(options) {
       throw new GitHubMutationTransportError("YKP-GH-WRITE-009");
     }
     if (!rec2(body) || Array.isArray(body.errors) || !rec2(body.data)) throw new GitHubMutationTransportError("YKP-GH-WRITE-011");
-    const field2 = { create_project_field: "createProjectV2Field", update_project_field_options: "updateProjectV2Field", update_project_item_field_value: "updateProjectV2ItemFieldValue", add_sub_issue: "addSubIssue", add_blocked_by: "addBlockedBy" }[kind2], payload = body.data[field2];
+    const field2 = { create_project_field: "createProjectV2Field", update_project_field_options: "updateProjectV2Field", update_project_item_field_value: "updateProjectV2ItemFieldValue", set_issue_type: "updateIssueIssueType", add_sub_issue: "addSubIssue", add_blocked_by: "addBlockedBy" }[kind2], payload = body.data[field2];
     if (!rec2(payload) || payload.clientMutationId !== clientMutationId) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
     for (const [name, expected] of Object.entries(mapped.expected)) {
       const node = payload[name];
       if (!rec2(node) || node.id !== expected) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
+    }
+    if (kind2 === "set_issue_type") {
+      const issue = payload.issue;
+      if (!rec2(issue) || !rec2(issue.issueType) || variables2.kind !== kind2 || issue.issueType.id !== variables2.issueTypeId) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
     }
     if (kind2 === "create_project_field" && (!rec2(payload.projectV2Field) || !id(payload.projectV2Field.id))) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
     return { kind: kind2, clientMutationId, providerAccepted: true };
