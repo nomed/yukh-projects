@@ -1,4 +1,4 @@
-# Yukh Projects 1.3.5 <!-- x-release-please-version -->
+# Yukh Projects 1.4.0 <!-- x-release-please-version -->
 
 This release adds the post-v1.3.4 changes without repeating content already
 published in v1.3.4.
