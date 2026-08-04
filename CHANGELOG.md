@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.5](https://github.com/nomed/yukh-projects/compare/v1.3.4...v1.3.5) (2026-08-04)
+
+
+### Bug Fixes
+
+* align Release Please with v1.3.4 baseline ([#106](https://github.com/nomed/yukh-projects/issues/106)) ([eaeec63](https://github.com/nomed/yukh-projects/commit/eaeec63504c4dd5d42c85d951b17dff430e0a7c5))
+
 ## [1.3.4](https://github.com/nomed/yukh-projects/compare/v1.3.3...v1.3.4) (2026-08-03)
 
 
