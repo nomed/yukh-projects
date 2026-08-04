@@ -2316,7 +2316,7 @@ var require_string = __commonJS({
   "node_modules/yaml/dist/schema/common/string.js"(exports) {
     "use strict";
     var stringifyString = require_stringifyString();
-    var string = {
+    var string2 = {
       identify: (value2) => typeof value2 === "string",
       default: true,
       tag: "tag:yaml.org,2002:str",
@@ -2326,7 +2326,7 @@ var require_string = __commonJS({
         return stringifyString.stringifyString(item, ctx, onComment, onChompKeep);
       }
     };
-    exports.string = string;
+    exports.string = string2;
   }
 });
 
@@ -2497,14 +2497,14 @@ var require_schema = __commonJS({
     var map = require_map();
     var _null = require_null();
     var seq = require_seq();
-    var string = require_string();
+    var string2 = require_string();
     var bool = require_bool();
     var float = require_float();
     var int = require_int();
     var schema = [
       map.map,
       seq.seq,
-      string.string,
+      string2.string,
       _null.nullTag,
       bool.boolTag,
       int.intOct,
@@ -3151,7 +3151,7 @@ var require_schema3 = __commonJS({
     var map = require_map();
     var _null = require_null();
     var seq = require_seq();
-    var string = require_string();
+    var string2 = require_string();
     var binary = require_binary();
     var bool = require_bool2();
     var float = require_float2();
@@ -3164,7 +3164,7 @@ var require_schema3 = __commonJS({
     var schema = [
       map.map,
       seq.seq,
-      string.string,
+      string2.string,
       _null.nullTag,
       bool.trueTag,
       bool.falseTag,
@@ -3195,7 +3195,7 @@ var require_tags = __commonJS({
     var map = require_map();
     var _null = require_null();
     var seq = require_seq();
-    var string = require_string();
+    var string2 = require_string();
     var bool = require_bool();
     var float = require_float();
     var int = require_int();
@@ -3210,7 +3210,7 @@ var require_tags = __commonJS({
     var timestamp = require_timestamp();
     var schemas = /* @__PURE__ */ new Map([
       ["core", schema.schema],
-      ["failsafe", [map.map, seq.seq, string.string]],
+      ["failsafe", [map.map, seq.seq, string2.string]],
       ["json", schema$1.schema],
       ["yaml11", schema$2.schema],
       ["yaml-1.1", schema$2.schema]
@@ -3289,7 +3289,7 @@ var require_Schema = __commonJS({
     var identity = require_identity();
     var map = require_map();
     var seq = require_seq();
-    var string = require_string();
+    var string2 = require_string();
     var tags = require_tags();
     var sortMapEntriesByKey = (a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
     var Schema = class _Schema {
@@ -3300,7 +3300,7 @@ var require_Schema = __commonJS({
         this.tags = tags.getTags(customTags, this.name, merge);
         this.toStringOptions = toStringDefaults ?? null;
         Object.defineProperty(this, identity.MAP, { value: map.map });
-        Object.defineProperty(this, identity.SCALAR, { value: string.string });
+        Object.defineProperty(this, identity.SCALAR, { value: string2.string });
         Object.defineProperty(this, identity.SEQ, { value: seq.seq });
         this.sortMapEntries = typeof sortMapEntries === "function" ? sortMapEntries : sortMapEntries === true ? sortMapEntriesByKey : null;
       }
@@ -6347,15 +6347,15 @@ var require_parser = __commonJS({
     var node_process = __require("process");
     var cst = require_cst();
     var lexer = require_lexer();
-    function includesToken(list, type) {
-      for (let i = 0; i < list.length; ++i)
-        if (list[i].type === type)
+    function includesToken(list2, type) {
+      for (let i = 0; i < list2.length; ++i)
+        if (list2[i].type === type)
           return true;
       return false;
     }
-    function findNonEmptyIndex(list) {
-      for (let i = 0; i < list.length; ++i) {
-        switch (list[i].type) {
+    function findNonEmptyIndex(list2) {
+      for (let i = 0; i < list2.length; ++i) {
+        switch (list2[i].type) {
           case "space":
           case "comment":
           case "newline":
@@ -7230,7 +7230,7 @@ var require_public_api = __commonJS({
       const lineCounter$1 = options.lineCounter || prettyErrors && new lineCounter.LineCounter() || null;
       return { lineCounter: lineCounter$1, prettyErrors };
     }
-    function parseAllDocuments3(source, options = {}) {
+    function parseAllDocuments4(source, options = {}) {
       const { lineCounter: lineCounter2, prettyErrors } = parseOptions(options);
       const parser$1 = new parser.Parser(lineCounter2?.addNewLine);
       const composer$1 = new composer.Composer(options);
@@ -7305,7 +7305,7 @@ var require_public_api = __commonJS({
       return new Document.Document(value2, _replacer, options).toString(options);
     }
     exports.parse = parse;
-    exports.parseAllDocuments = parseAllDocuments3;
+    exports.parseAllDocuments = parseAllDocuments4;
     exports.parseDocument = parseDocument;
     exports.stringify = stringify;
   }
@@ -7698,7 +7698,7 @@ function planReconciliation(input3) {
   if (hasCycle(input3.relationships.nodes, proposedBlocks)) add(internal, "YKP-GRAPH-005", "$.contract.relationships.blocks");
   return finishPlan(internal, operations, observations);
 }
-var PHASE = { create_field: 0, add_option: 1, set_field_value: 2, set_parent: 3, add_dependency: 4 };
+var PHASE = { create_field: 0, add_option: 1, set_field_value: 2, set_issue_type: 2, set_parent: 3, add_dependency: 4 };
 function finishPlan(internal, operations, observations) {
   operations.sort((a, b) => PHASE[a.type] - PHASE[b.type] || compareText(a.resource.logicalKey, b.resource.logicalKey) || compareText(a.operationKey, b.operationKey));
   observations.sort((a, b) => compareText(a.type, b.type) || compareText(a.logicalKey, b.logicalKey));
@@ -7766,7 +7766,7 @@ var ApplyPortError = class extends Error {
   failureClass;
 };
 var MESSAGE = { "YKP-APPLY-001": "apply request is invalid", "YKP-APPLY-002": "apply is not explicitly enabled", "YKP-APPLY-003": "approval is invalid or does not match", "YKP-APPLY-004": "approval is expired or has invalid lifetime", "YKP-APPLY-005": "operation is unsupported", "YKP-APPLY-006": "scope lease is unavailable or lost", "YKP-APPLY-007": "fresh preflight does not match approved plan", "YKP-APPLY-008": "approval nonce is already consumed", "YKP-APPLY-009": "operation precondition does not match", "YKP-APPLY-010": "mutation attempt failed", "YKP-APPLY-011": "operation verification failed", "YKP-APPLY-012": "final convergence verification failed", "YKP-APPLY-013": "provider authentication failed", "YKP-APPLY-014": "provider authorization failed", "YKP-APPLY-015": "provider budget is reserved", "YKP-APPLY-016": "provider is unavailable", "YKP-APPLY-017": "provider invariant is invalid" };
-var MAP = { create_field: "create_project_field", add_option: "update_project_field_options", set_field_value: "update_project_item_field_value", set_parent: "add_sub_issue", add_dependency: "add_blocked_by" };
+var MAP = { create_field: "create_project_field", add_option: "update_project_field_options", set_field_value: "update_project_item_field_value", set_issue_type: "set_issue_type", set_parent: "add_sub_issue", add_dependency: "add_blocked_by" };
 function hash(v) {
   return createHash3("sha256").update(canonicalJson(v)).digest("hex");
 }
@@ -8549,9 +8549,9 @@ async function readGitHubObservation(scope, transport) {
         if (nodes.size > 512) throw new ReadFailure("YKP-GH-READ-005", "read_issue_relationships");
       }
       for (const [key, target, limit] of [["parent", parents, 511], ["blocks", blocks, 4096]]) {
-        const list = p[key];
-        if (!Array.isArray(list)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
-        for (const e of list) {
+        const list2 = p[key];
+        if (!Array.isArray(list2)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
+        for (const e of list2) {
           if (!rec(e) || !Number.isSafeInteger(e.from) || !Number.isSafeInteger(e.to)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
           const id2 = `${key}:${e.from}->${e.to}`;
           if (edges.has(id2)) throw new ReadFailure("YKP-GH-READ-008", "read_issue_relationships");
@@ -8796,16 +8796,16 @@ function calculateEffectiveSchema(policy, observed) {
   for (const fieldKey of Object.keys(policy.fields).sort()) {
     const desired = policy.fields[fieldKey];
     managedNames.add(desired.name);
-    const exact3 = observed.fields.filter((field2) => field2.name === desired.name);
+    const exact4 = observed.fields.filter((field2) => field2.name === desired.name);
     const folded = observed.fields.filter((field2) => comparisonFold(field2.name) === comparisonFold(desired.name));
     const path = `$.fields.${fieldKey}`;
-    if (exact3.length === 0) {
+    if (exact4.length === 0) {
       if (folded.length > 0) add3(internal, "YKP-SCHEMA-005", `${path}.name`);
       else if (desired.mode === "observed") add3(internal, "YKP-SCHEMA-003", path);
       else operations.push({ type: "create_field", fieldKey, name: desired.name, kind: desired.kind, options: Object.entries(desired.options ?? {}).sort(([a], [b]) => a.localeCompare(b)).map(([optionKey, name]) => ({ optionKey, name })) });
       continue;
     }
-    const current = exact3[0];
+    const current = exact4[0];
     if (current.kind !== desired.kind) {
       add3(internal, "YKP-SCHEMA-004", `${path}.kind`);
       continue;
@@ -8862,10 +8862,11 @@ var REST_VERSION = "2026-03-10";
 var GITHUB_MUTATION_DOCUMENTS = Object.freeze({
   update_project_field_options: `mutation YukhUpdateProjectFieldOptions($input:UpdateProjectV2FieldInput!){updateProjectV2Field(input:$input){clientMutationId projectV2Field{id}}}`,
   update_project_item_field_value: `mutation YukhUpdateProjectItemFieldValue($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){clientMutationId projectV2Item{id}}}`,
+  set_issue_type: `mutation YukhSetIssueType($input:UpdateIssueIssueTypeInput!){updateIssueIssueType(input:$input){clientMutationId issue{id issueType{id}}}}`,
   add_sub_issue: `mutation YukhAddSubIssue($input:AddSubIssueInput!){addSubIssue(input:$input){clientMutationId issue{id} subIssue{id}}}`,
   add_blocked_by: `mutation YukhAddBlockedBy($input:AddBlockedByInput!){addBlockedBy(input:$input){clientMutationId issue{id} blockingIssue{id}}}`
 });
-var GITHUB_MUTATION_ESTIMATED_COSTS = Object.freeze({ update_project_field_options: 100, update_project_item_field_value: 100, add_sub_issue: 100, add_blocked_by: 100 });
+var GITHUB_MUTATION_ESTIMATED_COSTS = Object.freeze({ update_project_field_options: 100, update_project_item_field_value: 100, set_issue_type: 100, add_sub_issue: 100, add_blocked_by: 100 });
 var GitHubMutationTransportError = class extends Error {
   constructor(code) {
     super("GitHub mutation transport failed");
@@ -8903,9 +8904,9 @@ function raw(v, max = 128) {
   return void 0;
 }
 function permissionsExact(kind2, p, approvedKinds) {
-  const allowed = /* @__PURE__ */ new Set(["create_project_field", "update_project_field_options", "update_project_item_field_value", "add_sub_issue", "add_blocked_by"]), kinds = new Set(approvedKinds);
+  const allowed = /* @__PURE__ */ new Set(["create_project_field", "update_project_field_options", "update_project_item_field_value", "set_issue_type", "add_sub_issue", "add_blocked_by"]), kinds = new Set(approvedKinds);
   if (kinds.size !== approvedKinds.length || kinds.size < 1 || [...kinds].some((value2) => !allowed.has(value2)) || !kinds.has(kind2)) return false;
-  const needsProjects = [...kinds].some((value2) => value2 === "create_project_field" || value2 === "update_project_field_options" || value2 === "update_project_item_field_value"), needsIssues = [...kinds].some((value2) => value2 === "add_sub_issue" || value2 === "add_blocked_by"), approved = new Set(p.approvedExtraPermissions ?? []);
+  const needsProjects = [...kinds].some((value2) => value2 === "create_project_field" || value2 === "update_project_field_options" || value2 === "update_project_item_field_value"), needsIssues = [...kinds].some((value2) => value2 === "set_issue_type" || value2 === "add_sub_issue" || value2 === "add_blocked_by"), approved = new Set(p.approvedExtraPermissions ?? []);
   return p.projects === (needsProjects ? "write" : "none") && p.issues === (needsIssues ? "write" : "none") && p.extraPermissions.length === approved.size && p.extraPermissions.every((value2) => approved.has(value2));
 }
 function input2(kind2, v, clientMutationId) {
@@ -8923,6 +8924,10 @@ function input2(kind2, v, clientMutationId) {
     const valueRecord = v.value, [k] = Object.keys(valueRecord), x = valueRecord[k];
     if (!(["text", "date", "singleSelectOptionId", "iterationId"].includes(k) && text2(x, 512) || k === "number" && typeof x === "number" && Number.isFinite(x))) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
     return { input: { projectId: v.projectId, itemId: v.itemId, fieldId: v.fieldId, value: v.value, clientMutationId }, expected: { projectV2Item: v.itemId } };
+  }
+  if (kind2 === "set_issue_type" && v.kind === kind2) {
+    if (!keys(v, ["kind", "issueId", "issueTypeId"]) || !id(v.issueId) || !id(v.issueTypeId)) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
+    return { input: { issueId: v.issueId, issueTypeId: v.issueTypeId, clientMutationId }, expected: { issue: v.issueId } };
   }
   if (kind2 === "add_sub_issue" && v.kind === kind2) {
     if (!keys(v, ["kind", "parentIssueId", "subIssueId"]) || !id(v.parentIssueId) || !id(v.subIssueId) || v.parentIssueId === v.subIssueId) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
@@ -8981,12 +8986,16 @@ function createGitHubMutationTransport(options) {
       return { kind: kind2, clientMutationId, providerAccepted: true };
     }
     if (!rec2(body) || Array.isArray(body.errors) || !rec2(body.data)) throw new GitHubMutationTransportError("YKP-GH-WRITE-011");
-    const field2 = { update_project_field_options: "updateProjectV2Field", update_project_item_field_value: "updateProjectV2ItemFieldValue", add_sub_issue: "addSubIssue", add_blocked_by: "addBlockedBy" }[graphqlKind];
+    const field2 = { update_project_field_options: "updateProjectV2Field", update_project_item_field_value: "updateProjectV2ItemFieldValue", set_issue_type: "updateIssueIssueType", add_sub_issue: "addSubIssue", add_blocked_by: "addBlockedBy" }[graphqlKind];
     const payload = body.data[field2];
     if (!rec2(payload) || payload.clientMutationId !== clientMutationId) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
     for (const [name, expected] of Object.entries(mapped.expected)) {
       const node = payload[name];
       if (!rec2(node) || node.id !== expected) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
+    }
+    if (kind2 === "set_issue_type") {
+      const issue = payload.issue;
+      if (!rec2(issue) || !rec2(issue.issueType) || variables2.kind !== kind2 || issue.issueType.id !== variables2.issueTypeId) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
     }
     return { kind: kind2, clientMutationId, providerAccepted: true };
   } };
@@ -9350,7 +9359,8 @@ async function readWithClient(input3, options, client) {
     }).sort() : [], milestone = rec3(content.milestone) && typeof content.milestone.title === "string" ? text3(content.milestone.title, 128) : void 0, issueType = rec3(content.type) && typeof content.type.name === "string" ? text3(content.type.name, 128) : void 0, summary = relationshipSummary(content), relationshipsComplete = Boolean(relation) || summary.blockedBy === 0 && summary.blocking === 0;
     issues.set(n, { issueRef: text3(content.node_id), issueDatabaseId: integer(content.id), body: typeof content.body === "string" ? content.body : "", itemRef: text3(item.node_id), fingerprint: text3(item.node_id), values: itemValues(item), ...issueType ? { issueType } : {}, labels, ...milestone ? { milestone } : {}, issueFields: nativeIssueFields(content), ...parent ? { parent } : {}, blockedBy: relation?.blockedBy ?? [], blocking: relation?.blocking ?? [], relationshipsComplete });
   }
-  return { subjectRef: subject(options.token), ownerKind, ownerLogin: input3.ownerLogin, repositoryName: input3.repositoryName, projectNumber: input3.projectNumber, repositoryRef: text3(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), issues, evidence: { ...client.evidence } };
+  const issueTypes = options.includeIssueTypes ? (await client.list(`/repos/${input3.ownerLogin}/${input3.repositoryName}/issue-types?per_page=100`)).nodes.map((value2) => ({ id: text3(value2.node_id), name: text3(value2.name, 128) })).sort((a, b) => a.id.localeCompare(b.id)) : void 0;
+  return { subjectRef: subject(options.token), ownerKind, ownerLogin: input3.ownerLogin, repositoryName: input3.repositoryName, projectNumber: input3.projectNumber, repositoryRef: text3(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), ...issueTypes ? { issueTypes } : {}, issues, evidence: { ...client.evidence } };
 }
 function createRestProjectSnapshotReader(options) {
   const client = new RestSnapshotClient(options);
@@ -9379,15 +9389,196 @@ function createGitHubRestSnapshotReadTransportFromReader(reader) {
   } };
 }
 
-// src/controlled-apply-host.ts
-var KIND = { create_field: "create_project_field", add_option: "update_project_field_options", set_field_value: "update_project_item_field_value", set_parent: "add_sub_issue", add_dependency: "add_blocked_by" };
-function failure4(value2) {
-  throw new ApplyPortError(value2.failureClass === "authentication" ? "authentication" : value2.failureClass === "authorization" ? "authorization" : value2.failureClass === "deferred" ? "deferred_rate_budget" : value2.failureClass === "provider" ? "provider" : "invariant");
+// src/legacy-plan.ts
+import { createHash as createHash7 } from "node:crypto";
+
+// src/legacy-shadow.ts
+var import_yaml3 = __toESM(require_dist(), 1);
+var LEGACY_COMPATIBILITY_MATRIX = Object.freeze([
+  { capability: "version-1 repository policy", state: "Supported", note: "parsed as a bounded compatibility input" },
+  { capability: "hidden yukh issue contract", state: "Supported", note: "accepted for shadow planning without backlog rewrite" },
+  { capability: "issue type and managed labels", state: "Supported", note: "observed through versioned REST and compared locally" },
+  { capability: "milestone", state: "Supported", note: "observed through versioned REST and compared locally" },
+  { capability: "Project fields", state: "Supported", note: "schema is read once and values are planned locally" },
+  { capability: "Project-owned Status", state: "Supported", note: "preserved when absent from repository policy" },
+  { capability: "native parent", state: "Supported", note: "read from REST Project item content" },
+  { capability: "native dependencies", state: "Changed", note: "one fixed bounded GraphQL batch; GraphQL-zero requires complete cached state or returns deferred" },
+  { capability: "single issue shadow dry-run", state: "Supported", note: "REST-first immutable snapshot" },
+  { capability: "complete backlog shadow audit", state: "Supported", note: "bounded scopes of at most 100 issues reuse one snapshot reader" },
+  { capability: "full apply and zero-operation second apply", state: "Missing", note: "blocked until controlled apply issues are complete" }
+]);
+function rec4(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
 }
+function string(value2) {
+  return typeof value2 === "string" && value2.trim() && [...value2.trim()].length <= 256 && !/[\u0000-\u001f\u007f]/u.test(value2) ? value2.trim() : void 0;
+}
+function stringMap(value2) {
+  const out = {};
+  if (!rec4(value2)) return out;
+  for (const key of Object.keys(value2).sort()) {
+    const parsed = string(value2[key]);
+    if (parsed) out[key] = parsed;
+  }
+  return out;
+}
+function list(value2) {
+  if (value2 === void 0) return [];
+  if (!Array.isArray(value2) || value2.length > 100 || value2.some((v) => !Number.isSafeInteger(v) || v < 1)) throw new TypeError("invalid legacy relationship");
+  return [...new Set(value2)].sort((a, b) => a - b);
+}
+function parseYaml(source, maxBytes) {
+  if (Buffer.byteLength(source, "utf8") > maxBytes) throw new TypeError("legacy input exceeds bound");
+  const documents = (0, import_yaml3.parseAllDocuments)(source, { schema: "core", strict: true, uniqueKeys: true, prettyErrors: false });
+  if (documents.length !== 1 || documents[0].errors.length) throw new TypeError("legacy YAML is invalid");
+  const value2 = documents[0].toJS({ maxAliasCount: 0, mapAsMap: false });
+  if (!rec4(value2)) throw new TypeError("legacy YAML root is invalid");
+  return value2;
+}
+function parseLegacyPolicy(source) {
+  const root = parseYaml(source, 64 * 1024);
+  if (root.version !== 1 || !rec4(root.fields)) throw new TypeError("legacy policy is invalid");
+  const fields = {};
+  for (const key of Object.keys(root.fields).sort()) {
+    const raw2 = root.fields[key];
+    if (!rec4(raw2) || !string(raw2.project_field)) throw new TypeError("legacy policy field is invalid");
+    const target = raw2.target === void 0 || raw2.target === "project_field" ? "project_field" : raw2.target === "issue_type" ? "issue_type" : raw2.target === "issue_field" ? "issue_field" : void 0;
+    if (!target) throw new TypeError("legacy target is invalid");
+    const type = raw2.type === void 0 || raw2.type === "string" ? "string" : raw2.type === "number" ? "number" : raw2.type === "date" ? "date" : void 0;
+    if (!type) throw new TypeError("legacy field type is invalid");
+    fields[key] = { projectField: string(raw2.project_field), target, required: raw2.required === true, type, values: stringMap(raw2.values), labels: stringMap(raw2.labels) };
+  }
+  return { fields, milestones: stringMap(root.milestones) };
+}
+function parseLegacyContract(body) {
+  if (Buffer.byteLength(body, "utf8") > 256 * 1024) throw new TypeError("legacy issue body exceeds bound");
+  const marker = "<!-- yukh", start = body.indexOf(marker);
+  if (start < 0 || body.indexOf(marker, start + marker.length) >= 0) throw new TypeError("legacy issue contract is missing or duplicated");
+  const end = body.indexOf("-->", start + marker.length);
+  if (end < 0) throw new TypeError("legacy issue contract is unterminated");
+  const raw2 = parseYaml(body.slice(start + marker.length, end), 16 * 1024);
+  if (raw2.schema !== 1) throw new TypeError("legacy schema is unsupported");
+  const kind2 = string(raw2.kind), area = string(raw2.area), priority = string(raw2.priority);
+  if (!kind2 || !area || !priority) throw new TypeError("legacy required field is missing");
+  const extensions = stringMap(raw2.extensions), size = string(raw2.size), milestone = string(raw2.milestone), estimate = raw2.estimate === void 0 ? void 0 : Number(raw2.estimate), parent = raw2.parent === void 0 ? void 0 : Number(raw2.parent);
+  if (estimate !== void 0 && (!Number.isFinite(estimate) || estimate < 0) || parent !== void 0 && (!Number.isSafeInteger(parent) || parent < 1)) throw new TypeError("legacy numeric field is invalid");
+  return { kind: kind2, area, priority, ...size ? { size } : {}, ...estimate !== void 0 ? { estimate } : {}, ...milestone ? { milestone } : {}, ...parent !== void 0 ? { parent } : {}, dependsOn: list(raw2.depends_on), blocks: list(raw2.blocks), extensions };
+}
+
+// src/legacy-plan.ts
+function digest2(value2) {
+  return createHash7("sha256").update(canonicalJson(value2)).digest("hex");
+}
+function operationKey(...parts) {
+  return parts.join(".");
+}
+function finish2(operations) {
+  const base = { schema: 1, executable: true, diagnostics: [], observations: [], operations };
+  return { ...base, planId: digest2(base) };
+}
+function planLegacyReconciliation(policySource, snapshot, issueNumber2) {
+  const policy = parseLegacyPolicy(policySource), observed = snapshot.issues.get(issueNumber2);
+  if (!observed) throw new TypeError("legacy issue is unavailable");
+  const contract = parseLegacyContract(observed.body), scope = { subjectRef: snapshot.subjectRef, repositoryRef: snapshot.repositoryRef, projectRef: snapshot.projectRef, issueRef: observed.issueRef, issueNumber: issueNumber2 }, core = { kind: contract.kind, area: contract.area, priority: contract.priority, size: contract.size, estimate: contract.estimate }, operations = [];
+  for (const key of Object.keys(policy.fields).sort()) {
+    const declaration = policy.fields[key], logical = core[key] ?? contract.extensions[key];
+    if (logical === void 0) continue;
+    const desired = typeof logical === "string" && Object.keys(declaration.values).length ? declaration.values[logical] : logical;
+    if (desired === void 0) throw new TypeError("legacy value is unsupported");
+    if (declaration.target === "issue_field") throw new TypeError("legacy issue fields are not apply-compatible");
+    if (declaration.target === "issue_type") {
+      if (observed.issueType === desired) continue;
+      const binding = snapshot.issueTypes?.find((value2) => value2.name === desired);
+      if (!binding) throw new TypeError("legacy issue type binding is unavailable");
+      operations.push({ operationKey: operationKey("issue", "type", "set"), type: "set_issue_type", subject: { ref: scope.subjectRef }, resource: { kind: "issue_type", logicalKey: key, scopeRef: scope.repositoryRef, providerRef: binding.id }, action: "set", environment: "dry-run", reason: "legacy.issue_type.differs", preconditions: [{ kind: "old_value", logicalKey: key, expected: observed.issueType ?? null }], dependsOn: [], desired });
+      continue;
+    }
+    if (observed.values[declaration.projectField] === desired) continue;
+    const field2 = snapshot.fields.find((value2) => value2.name === declaration.projectField), createKey = operationKey("schema", "field", key, "create");
+    if (!field2) operations.push({ operationKey: createKey, type: "create_field", subject: { ref: scope.subjectRef }, resource: { kind: "project_field", logicalKey: key, scopeRef: scope.projectRef }, action: "create", environment: "dry-run", reason: "legacy.project_field.missing", preconditions: [{ kind: "field_absent", logicalKey: key, expected: true }], dependsOn: [], desired: declaration.projectField });
+    operations.push({ operationKey: operationKey("item", "field", key, "set"), type: "set_field_value", subject: { ref: scope.subjectRef }, resource: { kind: "project_item_field", logicalKey: key, scopeRef: scope.projectRef, ...field2 ? { providerRef: field2.id } : {} }, action: "set", environment: "dry-run", reason: "legacy.project_field.differs", preconditions: [{ kind: "item_fingerprint", logicalKey: "item", expected: observed.fingerprint }, { kind: "old_value", logicalKey: key, expected: observed.values[declaration.projectField] ?? null }], dependsOn: field2 ? [] : [createKey], desired });
+  }
+  if (contract.milestone || Object.values(policy.fields).some((field2) => Object.keys(field2.labels).length)) throw new TypeError("legacy labels or milestones are not apply-compatible");
+  if (contract.parent !== void 0 && contract.parent !== observed.parent) operations.push({ operationKey: operationKey("relationship", "parent", contract.parent, "set"), type: "set_parent", subject: { ref: scope.subjectRef }, resource: { kind: "issue_parent", logicalKey: "parent", scopeRef: scope.repositoryRef }, action: "set", environment: "dry-run", reason: "legacy.parent.missing", preconditions: [{ kind: "parent_absent", logicalKey: "parent", expected: true }], dependsOn: [], desired: contract.parent });
+  if (contract.dependsOn.length || contract.blocks.length) throw new TypeError("legacy dependency apply requires complete graph planning");
+  return finish2(operations);
+}
+
+// src/controlled-legacy-apply-host.ts
+var KIND = { create_field: "create_project_field", add_option: "update_project_field_options", set_field_value: "update_project_item_field_value", set_issue_type: "set_issue_type", set_parent: "add_sub_issue", add_dependency: "add_blocked_by" };
 function sameResource(a, b) {
   return a.resource.kind === b.resource.kind && a.resource.logicalKey === b.resource.logicalKey && a.resource.scopeRef === b.resource.scopeRef;
 }
 function exact(a, b) {
+  return canonicalJson(a) === canonicalJson(b);
+}
+function createControlledLegacyApplyHostFactory(options) {
+  if (!options || options.coordination.epoch !== options.coordinationEpoch || options.allowedIssuerRefs.length < 1 || new Set(options.allowedIssuerRefs).size !== options.allowedIssuerRefs.length) throw new TypeError("invalid controlled apply host configuration");
+  const coordinationStore = createApplyCoordinationHttpStore(options.coordination), clock = options.nowMs ?? Date.now;
+  return { create: async (input3) => {
+    if (input3.readToken === input3.writeToken) throw new TypeError("credential profiles must be distinct");
+    const policy = parseLegacyPolicy(input3.policySource), includeIssueTypes = Object.values(policy.fields).some((field2) => field2.target === "issue_type"), ledger = createGitHubRateLedger(options.rate), reader = createRestProjectSnapshotReader({ token: input3.readToken, fetch: options.readFetch, rateLedger: ledger, graphqlRemaining: options.rate.graphqlRemaining, includeIssueTypes }), snapshotInput = { ownerLogin: input3.requestedScope.ownerLogin, repositoryName: input3.requestedScope.repositoryName, projectNumber: input3.requestedScope.projectNumber, issueNumbers: [input3.requestedScope.issueNumber] }, mutation = createGitHubMutationTransport({ token: input3.writeToken, permissions: options.permissions, approvedKinds: options.approvedKinds, fetch: options.writeFetch, rateLedger: ledger });
+    const replan = async () => planLegacyReconciliation(input3.policySource, await reader.read(snapshotInput), input3.requestedScope.issueNumber), initial = await reader.read(snapshotInput), scope = { subjectRef: initial.subjectRef, repositoryRef: initial.repositoryRef, projectRef: initial.projectRef, issueRef: initial.issues.get(input3.requestedScope.issueNumber).issueRef, issueNumber: input3.requestedScope.issueNumber };
+    const variables2 = async (operation) => {
+      const snapshot = await reader.read(snapshotInput), issue = snapshot.issues.get(input3.requestedScope.issueNumber);
+      if (!issue) throw new ApplyPortError("invariant");
+      const declaration = policy.fields[operation.resource.logicalKey];
+      if (operation.type === "create_field") {
+        if (!declaration || declaration.target !== "project_field") throw new ApplyPortError("invariant");
+        const names = Object.values(declaration.values);
+        return { kind: "create_project_field", ownerKind: snapshot.ownerKind, ownerLogin: snapshot.ownerLogin, projectNumber: snapshot.projectNumber, dataType: names.length ? "SINGLE_SELECT" : declaration.type === "number" ? "NUMBER" : declaration.type === "date" ? "DATE" : "TEXT", name: declaration.projectField, ...names.length ? { options: [...new Set(names)].sort().map((name) => ({ name, color: "GRAY", description: "" })) } : {} };
+      }
+      if (operation.type === "set_field_value") {
+        if (!declaration) throw new ApplyPortError("invariant");
+        const field2 = snapshot.fields.find((value3) => value3.name === declaration.projectField);
+        if (!field2) throw new ApplyPortError("invariant");
+        const desired = operation.desired;
+        const value2 = field2.kind === "number" ? { number: Number(desired) } : field2.kind === "date" ? { date: String(desired) } : field2.kind === "text" ? { text: String(desired) } : (() => {
+          const option2 = field2.options.find((value3) => value3.name === String(desired));
+          if (!option2) throw new ApplyPortError("invariant");
+          return { singleSelectOptionId: option2.id };
+        })();
+        return { kind: "update_project_item_field_value", projectId: snapshot.projectRef, itemId: issue.itemRef, fieldId: field2.id, value: value2 };
+      }
+      if (operation.type === "set_issue_type") {
+        if (!operation.resource.providerRef) throw new ApplyPortError("invariant");
+        return { kind: "set_issue_type", issueId: issue.issueRef, issueTypeId: operation.resource.providerRef };
+      }
+      if (operation.type === "set_parent") {
+        const parent = Number(operation.desired), related = await reader.read({ ...snapshotInput, issueNumbers: [input3.requestedScope.issueNumber, parent] }), parentIssue = related.issues.get(parent);
+        if (!parentIssue) throw new ApplyPortError("invariant");
+        return { kind: "add_sub_issue", parentIssueId: parentIssue.issueRef, subIssueId: issue.issueRef };
+      }
+      throw new ApplyPortError("invariant");
+    };
+    return { scope, host: { enablement: options.enablement, allowedIssuerRefs: options.allowedIssuerRefs, holderDigest: options.holderDigest, coordinationEpoch: options.coordinationEpoch, coordinationStore, ports: { nowMs: clock, replan, inspect: async (operation) => {
+      const plan = await replan(), found = plan.operations.find((candidate) => candidate.operationKey === operation.operationKey);
+      if (found) return exact(found, operation) ? "ready" : "mismatch";
+      return plan.operations.some((candidate) => sameResource(candidate, operation)) ? "mismatch" : "already_converged";
+    }, mutate: async (kind2, operation, clientMutationId) => {
+      if (KIND[operation.type] !== kind2) throw new ApplyPortError("invariant");
+      try {
+        await mutation.execute(kind2, await variables2(operation), clientMutationId);
+      } catch (error) {
+        throw normalizeGitHubApplyFailure(error);
+      }
+    }, invalidateAfterMutation: async (kind2) => reader.invalidate(snapshotInput, snapshotInvalidationForMutation(kind2)), verify: async (operation) => {
+      const plan = await replan();
+      return !plan.operations.some((candidate) => sameResource(candidate, operation));
+    }, audit: options.audit ?? (async () => {
+    }) } } };
+  } };
+}
+
+// src/controlled-apply-host.ts
+var KIND2 = { create_field: "create_project_field", add_option: "update_project_field_options", set_field_value: "update_project_item_field_value", set_issue_type: "set_issue_type", set_parent: "add_sub_issue", add_dependency: "add_blocked_by" };
+function failure4(value2) {
+  throw new ApplyPortError(value2.failureClass === "authentication" ? "authentication" : value2.failureClass === "authorization" ? "authorization" : value2.failureClass === "deferred" ? "deferred_rate_budget" : value2.failureClass === "provider" ? "provider" : "invariant");
+}
+function sameResource2(a, b) {
+  return a.resource.kind === b.resource.kind && a.resource.logicalKey === b.resource.logicalKey && a.resource.scopeRef === b.resource.scopeRef;
+}
+function exact2(a, b) {
   return canonicalJson(a) === canonicalJson(b);
 }
 function field(snapshot, prepared, key) {
@@ -9422,6 +9613,10 @@ async function variables(operation, prepared, reader, input3) {
     }
     return { kind: "update_project_item_field_value", projectId: snapshot.projectRef, itemId: issue.itemRef, fieldId: found.id, value: value2 };
   }
+  if (operation.type === "set_issue_type") {
+    if (!operation.resource.providerRef) throw new ApplyPortError("invariant");
+    return { kind: "set_issue_type", issueId: issue.issueRef, issueTypeId: operation.resource.providerRef };
+  }
   if (operation.type === "set_parent") {
     const parent = Number(operation.desired), related2 = await reader.read({ ...input3, issueNumbers: [input3.issueNumbers[0], parent] });
     const parentIssue = related2.issues.get(parent), child = related2.issues.get(input3.issueNumbers[0]);
@@ -9434,7 +9629,7 @@ async function variables(operation, prepared, reader, input3) {
   if (!blocking || !blocked) throw new ApplyPortError("invariant");
   return { kind: "add_blocked_by", blockedIssueId: blocked.issueRef, blockingIssueId: blocking.issueRef };
 }
-function createControlledApplyHostFactory(options) {
+function createNativeControlledApplyHostFactory(options) {
   if (!options || options.coordination.epoch !== options.coordinationEpoch || options.allowedIssuerRefs.length < 1 || new Set(options.allowedIssuerRefs).size !== options.allowedIssuerRefs.length) throw new TypeError("invalid controlled apply host configuration");
   const coordinationStore = createApplyCoordinationHttpStore(options.coordination), clock = options.nowMs ?? Date.now;
   return { create: async (input3) => {
@@ -9450,10 +9645,10 @@ function createControlledApplyHostFactory(options) {
     await replan();
     return { scope: latest.observation.scope, host: { enablement: options.enablement, allowedIssuerRefs: options.allowedIssuerRefs, holderDigest: options.holderDigest, coordinationEpoch: options.coordinationEpoch, coordinationStore, ports: { nowMs: clock, replan, inspect: async (operation) => {
       const plan = await replan(), found = plan.operations.find((candidate) => candidate.operationKey === operation.operationKey);
-      if (found) return exact(found, operation) ? "ready" : "mismatch";
-      return plan.operations.some((candidate) => sameResource(candidate, operation)) ? "mismatch" : "already_converged";
+      if (found) return exact2(found, operation) ? "ready" : "mismatch";
+      return plan.operations.some((candidate) => sameResource2(candidate, operation)) ? "mismatch" : "already_converged";
     }, mutate: async (kind2, operation, clientMutationId) => {
-      if (KIND[operation.type] !== kind2) throw new ApplyPortError("invariant");
+      if (KIND2[operation.type] !== kind2) throw new ApplyPortError("invariant");
       try {
         await mutation.execute(kind2, await variables(operation, latest, reader, snapshotInput), clientMutationId);
       } catch (error) {
@@ -9461,20 +9656,24 @@ function createControlledApplyHostFactory(options) {
       }
     }, invalidateAfterMutation: async (kind2) => reader.invalidate(snapshotInput, snapshotInvalidationForMutation(kind2)), verify: async (operation) => {
       const plan = await replan();
-      return !plan.operations.some((candidate) => sameResource(candidate, operation));
+      return !plan.operations.some((candidate) => sameResource2(candidate, operation));
     }, audit: options.audit ?? (async () => {
     }) } } };
   } };
 }
+function createControlledApplyHostFactory(options) {
+  const native = createNativeControlledApplyHostFactory(options), legacy = createControlledLegacyApplyHostFactory(options);
+  return { create: (input3) => /^\s*version:\s*1\s*$/mu.test(input3.policySource) ? legacy.create(input3) : native.create(input3) };
+}
 
 // src/protected-host-capsule.ts
-import { createHash as createHash7, createPrivateKey, randomUUID, sign } from "node:crypto";
+import { createHash as createHash8, createPrivateKey, randomUUID, sign } from "node:crypto";
 var DIGEST5 = /^[a-f0-9]{64}$/u;
 var KINDS2 = ["create_project_field", "update_project_field_options", "update_project_item_field_value", "add_sub_issue", "add_blocked_by"];
-function rec4(v) {
+function rec5(v) {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
-function exact2(v, keys2) {
+function exact3(v, keys2) {
   if (Object.keys(v).sort().join("\0") !== [...keys2].sort().join("\0")) throw new TypeError("invalid host capsule");
 }
 function text4(v, max = 256) {
@@ -9495,7 +9694,7 @@ function canonical2(value2) {
     return String(value2);
   }
   if (Array.isArray(value2)) return `[${value2.map(canonical2).join(",")}]`;
-  if (!rec4(value2)) throw new TypeError("invalid host capsule");
+  if (!rec5(value2)) throw new TypeError("invalid host capsule");
   return `{${Object.keys(value2).sort().map((key) => `${JSON.stringify(key)}:${canonical2(value2[key])}`).join(",")}}`;
 }
 function proofFactory(credential, jwk, nowMs, jti) {
@@ -9508,7 +9707,7 @@ function proofFactory(credential, jwk, nowMs, jti) {
   if (key.asymmetricKeyType !== "ec" || key.asymmetricKeyDetails?.namedCurve !== "prime256v1" || typeof jwk.x !== "string" || typeof jwk.y !== "string" || jwk.kty !== "EC" || jwk.crv !== "P-256" || typeof jwk.d !== "string") throw new TypeError("invalid host capsule");
   const publicJwk = { crv: "P-256", kty: "EC", x: jwk.x, y: jwk.y };
   return async (request) => {
-    const header = b64(canonical2({ alg: "ES256", jwk: publicJwk, typ: "dpop+jwt" })), payload = b64(canonical2({ ath: b64(createHash7("sha256").update(credential).digest()), htm: request.method, htu: request.targetUri, iat: Math.floor(nowMs() / 1e3), jti: text4(jti(), 128) })), input3 = `${header}.${payload}`, signature = sign("sha256", Buffer.from(input3), { key, dsaEncoding: "ieee-p1363" });
+    const header = b64(canonical2({ alg: "ES256", jwk: publicJwk, typ: "dpop+jwt" })), payload = b64(canonical2({ ath: b64(createHash8("sha256").update(credential).digest()), htm: request.method, htu: request.targetUri, iat: Math.floor(nowMs() / 1e3), jti: text4(jti(), 128) })), input3 = `${header}.${payload}`, signature = sign("sha256", Buffer.from(input3), { key, dsaEncoding: "ieee-p1363" });
     return { credential, proof: `${input3}.${b64(signature)}` };
   };
 }
@@ -9519,27 +9718,27 @@ function parseProtectedHostCapsule(source, binding, runtime = {}) {
   } catch {
     throw new TypeError("invalid host capsule");
   }
-  if (!rec4(value2) || canonical2(value2) !== source) throw new TypeError("invalid host capsule");
-  exact2(value2, ["schema", "version", "issued_at_ms", "expires_at_ms", "scope", "enablement", "allowed_issuer_refs", "holder_digest", "coordination", "permissions", "approved_kinds", "rate"]);
+  if (!rec5(value2) || canonical2(value2) !== source) throw new TypeError("invalid host capsule");
+  exact3(value2, ["schema", "version", "issued_at_ms", "expires_at_ms", "scope", "enablement", "allowed_issuer_refs", "holder_digest", "coordination", "permissions", "approved_kinds", "rate"]);
   if (value2.schema !== 1 || value2.version !== "protected-host-capsule-v1" || value2.enablement !== "apply-explicitly-enabled" || !DIGEST5.test(String(value2.holder_digest))) throw new TypeError("invalid host capsule");
   const now = runtime.nowMs ?? Date.now, issued = integer2(value2.issued_at_ms), expires = integer2(value2.expires_at_ms);
   if (issued > now() || expires < now() || expires - issued > 15 * 60 * 1e3) throw new TypeError("invalid host capsule");
-  if (!rec4(value2.scope)) throw new TypeError("invalid host capsule");
-  exact2(value2.scope, ["owner", "repository", "project_number", "issue_number", "environment"]);
+  if (!rec5(value2.scope)) throw new TypeError("invalid host capsule");
+  exact3(value2.scope, ["owner", "repository", "project_number", "issue_number", "environment"]);
   if (value2.scope.owner !== binding.scope.ownerLogin || value2.scope.repository !== binding.scope.repositoryName || value2.scope.project_number !== binding.scope.projectNumber || value2.scope.issue_number !== binding.scope.issueNumber || value2.scope.environment !== binding.environment) throw new TypeError("invalid host capsule");
   if (!Array.isArray(value2.allowed_issuer_refs) || value2.allowed_issuer_refs.length < 1 || value2.allowed_issuer_refs.length > 16) throw new TypeError("invalid host capsule");
   const issuers = value2.allowed_issuer_refs.map((v) => text4(v));
   if (new Set(issuers).size !== issuers.length) throw new TypeError("invalid host capsule");
-  if (!rec4(value2.coordination)) throw new TypeError("invalid host capsule");
-  exact2(value2.coordination, ["base_uri", "epoch", "credential", "dpop_private_jwk"]);
+  if (!rec5(value2.coordination)) throw new TypeError("invalid host capsule");
+  exact3(value2.coordination, ["base_uri", "epoch", "credential", "dpop_private_jwk"]);
   const baseUri = text4(value2.coordination.base_uri, 1024), epoch = integer2(value2.coordination.epoch, 1), credential = text4(value2.coordination.credential, 8192);
-  if (!rec4(value2.coordination.dpop_private_jwk)) throw new TypeError("invalid host capsule");
-  if (!rec4(value2.permissions)) throw new TypeError("invalid host capsule");
-  exact2(value2.permissions, ["projects", "issues", "extra_permissions"]);
+  if (!rec5(value2.coordination.dpop_private_jwk)) throw new TypeError("invalid host capsule");
+  if (!rec5(value2.permissions)) throw new TypeError("invalid host capsule");
+  exact3(value2.permissions, ["projects", "issues", "extra_permissions"]);
   if (!["none", "read", "write"].includes(String(value2.permissions.projects)) || !["none", "read", "write"].includes(String(value2.permissions.issues)) || !Array.isArray(value2.permissions.extra_permissions) || value2.permissions.extra_permissions.length !== 0) throw new TypeError("invalid host capsule");
   if (!Array.isArray(value2.approved_kinds) || value2.approved_kinds.length < 1 || value2.approved_kinds.some((v) => !KINDS2.includes(v)) || new Set(value2.approved_kinds).size !== value2.approved_kinds.length) throw new TypeError("invalid host capsule");
-  if (!rec4(value2.rate)) throw new TypeError("invalid host capsule");
-  exact2(value2.rate, ["rest_remaining", "graphql_remaining", "rest_reserve", "graphql_reserve", "max_rest_requests", "max_graphql_requests", "max_graphql_points"]);
+  if (!rec5(value2.rate)) throw new TypeError("invalid host capsule");
+  exact3(value2.rate, ["rest_remaining", "graphql_remaining", "rest_reserve", "graphql_reserve", "max_rest_requests", "max_graphql_requests", "max_graphql_points"]);
   const rate = { restRemaining: integer2(value2.rate.rest_remaining), graphqlRemaining: integer2(value2.rate.graphql_remaining), restReserve: integer2(value2.rate.rest_reserve, 500), graphqlReserve: integer2(value2.rate.graphql_reserve, 500), maxRestRequests: integer2(value2.rate.max_rest_requests, 1), maxGraphqlRequests: integer2(value2.rate.max_graphql_requests), maxGraphqlPoints: integer2(value2.rate.max_graphql_points) };
   const authenticate = proofFactory(credential, value2.coordination.dpop_private_jwk, now, runtime.jti ?? randomUUID);
   return { options: { enablement: "apply-explicitly-enabled", allowedIssuerRefs: issuers, holderDigest: String(value2.holder_digest), coordinationEpoch: epoch, coordination: { baseUri, epoch, deadlineMs: 5e3, authenticate }, permissions: { projects: value2.permissions.projects, issues: value2.permissions.issues, extraPermissions: [] }, approvedKinds: value2.approved_kinds, rate, nowMs: now } };

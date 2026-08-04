@@ -19,9 +19,9 @@ export const LEGACY_COMPATIBILITY_MATRIX:readonly CompatibilityEntry[]=Object.fr
  {capability:"full apply and zero-operation second apply",state:"Missing",note:"blocked until controlled apply issues are complete"},
 ]);
 
-interface LegacyField{projectField:string;target:"project_field"|"issue_type"|"issue_field";required:boolean;type:"string"|"number"|"date";values:Record<string,string>;labels:Record<string,string>}
-interface LegacyPolicy{fields:Record<string,LegacyField>;milestones:Record<string,string>}
-interface LegacyContract{kind:string;area:string;priority:string;size?:string;estimate?:number;milestone?:string;parent?:number;dependsOn:number[];blocks:number[];extensions:Record<string,string>}
+export interface LegacyField{projectField:string;target:"project_field"|"issue_type"|"issue_field";required:boolean;type:"string"|"number"|"date";values:Record<string,string>;labels:Record<string,string>}
+export interface LegacyPolicy{fields:Record<string,LegacyField>;milestones:Record<string,string>}
+export interface LegacyContract{kind:string;area:string;priority:string;size?:string;estimate?:number;milestone?:string;parent?:number;dependsOn:number[];blocks:number[];extensions:Record<string,string>}
 export interface LegacyShadowIssueReport{issueNumber:number;status:"converged"|"drift"|"error"|"deferred";operationCounts:Readonly<Record<string,number>>;diagnostics:readonly {code:string;message:string}[]}
 export interface LegacyShadowReport{schema:1;status:"success"|"error"|"deferred";failureClass?:"authentication"|"authorization"|"provider"|"invariant"|"deferred";diagnostics:readonly {code:string;message:string}[];issues:readonly LegacyShadowIssueReport[];totals:Readonly<Record<string,number>>;capabilities:readonly CompatibilityEntry[];evidence:{restRequests:number;graphqlRequests:number;restCacheHits:number;conditionalRequests:number;coalescedRequests:number}}
 export interface LegacyShadowRunInput{ownerLogin:string;repositoryName:string;projectNumber:number;issueNumbers:readonly number[];policySource:string;token:string}

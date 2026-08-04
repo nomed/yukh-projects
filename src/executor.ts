@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { canonicalJson, type BoundScope, type PlannedOperation, type ReconciliationPlan } from "./planner.js";
 
-export type MutationKind="create_project_field"|"update_project_field_options"|"update_project_item_field_value"|"add_sub_issue"|"add_blocked_by";
+export type MutationKind="create_project_field"|"update_project_field_options"|"update_project_item_field_value"|"set_issue_type"|"add_sub_issue"|"add_blocked_by";
 export type ApplyFailureClass="authentication"|"authorization"|"deferred_rate_budget"|"provider"|"invariant";
 export class ApplyPortError extends Error{constructor(readonly failureClass:ApplyFailureClass){super("apply port failed");this.name="ApplyPortError";}}
 export type ApplyCode=`YKP-APPLY-${"001"|"002"|"003"|"004"|"005"|"006"|"007"|"008"|"009"|"010"|"011"|"012"|"013"|"014"|"015"|"016"|"017"}`;
@@ -26,7 +26,7 @@ export interface ApplyResult{schema:1;status:"success"|"error"|"deferred";planId
 export interface PublicApplyReport{schema:1;status:"success"|"error"|"deferred";planId:string;counts:Record<OperationOutcome,number>;remaining:number;diagnostics:readonly ApplyDiagnostic[]}
 
 const MESSAGE:Record<ApplyCode,string>={"YKP-APPLY-001":"apply request is invalid","YKP-APPLY-002":"apply is not explicitly enabled","YKP-APPLY-003":"approval is invalid or does not match","YKP-APPLY-004":"approval is expired or has invalid lifetime","YKP-APPLY-005":"operation is unsupported","YKP-APPLY-006":"scope lease is unavailable or lost","YKP-APPLY-007":"fresh preflight does not match approved plan","YKP-APPLY-008":"approval nonce is already consumed","YKP-APPLY-009":"operation precondition does not match","YKP-APPLY-010":"mutation attempt failed","YKP-APPLY-011":"operation verification failed","YKP-APPLY-012":"final convergence verification failed","YKP-APPLY-013":"provider authentication failed","YKP-APPLY-014":"provider authorization failed","YKP-APPLY-015":"provider budget is reserved","YKP-APPLY-016":"provider is unavailable","YKP-APPLY-017":"provider invariant is invalid"};
-const MAP:Record<PlannedOperation["type"],MutationKind>={create_field:"create_project_field",add_option:"update_project_field_options",set_field_value:"update_project_item_field_value",set_parent:"add_sub_issue",add_dependency:"add_blocked_by"};
+const MAP:Record<PlannedOperation["type"],MutationKind>={create_field:"create_project_field",add_option:"update_project_field_options",set_field_value:"update_project_item_field_value",set_issue_type:"set_issue_type",set_parent:"add_sub_issue",add_dependency:"add_blocked_by"};
 function hash(v:unknown):string{return createHash("sha256").update(canonicalJson(v)).digest("hex");}
 function integrity(plan:ReconciliationPlan):boolean{if(!plan||plan.schema!==1||!plan.executable||plan.diagnostics.length!==0||!Array.isArray(plan.operations)||!Array.isArray(plan.observations))return false;const {planId,...base}=plan;return /^[a-f0-9]{64}$/u.test(planId)&&hash(base)===planId;}
 function bounded(v:unknown):v is string{return typeof v==="string"&&[...v].length>0&&[...v].length<=256&&!/[\u0000-\u001f\u007f]/u.test(v);}

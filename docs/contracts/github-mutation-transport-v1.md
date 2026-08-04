@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Accepted:** 2026-08-02 by `@nomed`
+- **Issue Type extension accepted:** 2026-08-04 by `@nomed` in [#101](https://github.com/nomed/yukh-projects/issues/101)
 - **Governing issue:** [#28](https://github.com/nomed/yukh-projects/issues/28)
 - **Security boundary:** approved internal mutation discriminator to one bounded GitHub GraphQL mutation request
 
@@ -18,6 +19,7 @@ type GitHubMutationKind =
   | "create_project_field"
   | "update_project_field_options"
   | "update_project_item_field_value"
+  | "set_issue_type"
   | "add_sub_issue"
   | "add_blocked_by";
 
@@ -43,6 +45,7 @@ Each immutable document has one named `mutation`, one top-level allowlisted fiel
 | `create_project_field` | `YukhCreateProjectField` | `createProjectV2Field` | `CreateProjectV2FieldInput!` | `clientMutationId`, created field `id` |
 | `update_project_field_options` | `YukhUpdateProjectFieldOptions` | `updateProjectV2Field` | `UpdateProjectV2FieldInput!` | `clientMutationId`, updated field `id` |
 | `update_project_item_field_value` | `YukhUpdateProjectItemFieldValue` | `updateProjectV2ItemFieldValue` | `UpdateProjectV2ItemFieldValueInput!` | `clientMutationId`, item `id` |
+| `set_issue_type` | `YukhSetIssueType` | `updateIssueIssueType` | `UpdateIssueIssueTypeInput!` | `clientMutationId`, issue and Issue Type `id` |
 | `add_sub_issue` | `YukhAddSubIssue` | `addSubIssue` | `AddSubIssueInput!` | `clientMutationId`, parent and sub-issue `id` |
 | `add_blocked_by` | `YukhAddBlockedBy` | `addBlockedBy` | `AddBlockedByInput!` | `clientMutationId`, blocked and blocking issue `id` |
 
@@ -67,6 +70,10 @@ Until policy explicitly supports presentation metadata, the new option color is 
 ### Set item field value
 
 Input is exactly `projectId`, `itemId`, `fieldId`, `value`, and `clientMutationId`. `value` contains exactly one of `text`, `number`, `date`, `singleSelectOptionId`, or `iterationId`. `multiSelectOptionIds` and null/clear values are forbidden. Strings and numbers retain accepted core bounds; provider IDs come only from fresh bindings.
+
+### Set Issue Type
+
+Input is exactly `issueId`, `issueTypeId`, and `clientMutationId`. Both IDs come from the fresh bound snapshot. The receipt must return the same issue and Issue Type IDs. Clearing, creating, renaming, disabling, or deleting an Issue Type is forbidden.
 
 ### Set parent
 

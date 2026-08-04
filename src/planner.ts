@@ -51,7 +51,7 @@ export interface PlanningInput {
 export interface Precondition { kind: string; logicalKey: string; expected: unknown }
 export interface PlannedOperation {
   operationKey: string;
-  type: "create_field" | "add_option" | "set_field_value" | "set_parent" | "add_dependency";
+  type: "create_field" | "add_option" | "set_field_value" | "set_issue_type" | "set_parent" | "add_dependency";
   subject: { ref: string };
   resource: { kind: string; logicalKey: string; scopeRef: string; providerRef?: string };
   action: "create" | "add" | "set";
@@ -227,7 +227,7 @@ export function planReconciliation(input: PlanningInput): ReconciliationPlan {
   return finishPlan(internal, operations, observations);
 }
 
-const PHASE: Record<PlannedOperation["type"], number> = { create_field: 0, add_option: 1, set_field_value: 2, set_parent: 3, add_dependency: 4 };
+const PHASE: Record<PlannedOperation["type"], number> = { create_field: 0, add_option: 1, set_field_value: 2, set_issue_type: 2, set_parent: 3, add_dependency: 4 };
 function finishPlan(internal: InternalDiagnostic[], operations: PlannedOperation[], observations: PlanObservation[]): ReconciliationPlan {
   operations.sort((a, b) => PHASE[a.type] - PHASE[b.type] || compareText(a.resource.logicalKey, b.resource.logicalKey) || compareText(a.operationKey, b.operationKey));
   observations.sort((a, b) => compareText(a.type, b.type) || compareText(a.logicalKey, b.logicalKey));
