@@ -1,4 +1,4 @@
-# Yukh Projects 1.5.1 <!-- x-release-please-version -->
+# Yukh Projects 1.6.0 <!-- x-release-please-version -->
 
 This release adds an explicit, versioned controlled-apply entrypoint for
 legacy-compatible policies without weakening the native apply path.

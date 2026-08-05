@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/nomed/yukh-projects/compare/v1.5.1...v1.6.0) (2026-08-05)
+
+
+### Features
+
+* qualify explicit controlled legacy apply v1 ([007af7f](https://github.com/nomed/yukh-projects/commit/007af7fa48bd2d5b8dcd0c3f3c44d8fb82673488))
+
 ## [1.5.1](https://github.com/nomed/yukh-projects/compare/v1.5.0...v1.5.1) (2026-08-05)
 
 
