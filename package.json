@@ -1,6 +1,6 @@
 {
   "name": "@nomed/yukh-projects",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Declarative, secure, and consumer-neutral reconciliation for GitHub Projects",
   "main": "dist/src/index.js",
   "directories": {
