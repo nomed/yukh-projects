@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.1](https://github.com/nomed/yukh-projects/compare/v1.6.0...v1.6.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* describe budget-complete controlled apply ([#137](https://github.com/nomed/yukh-projects/issues/137)) ([22ddbe8](https://github.com/nomed/yukh-projects/commit/22ddbe8a7929b6326a63b8da16e33c7fea8c3258))
+* qualify whole-plan budget patch artifact ([#133](https://github.com/nomed/yukh-projects/issues/133)) ([a3cfb34](https://github.com/nomed/yukh-projects/commit/a3cfb34223f8f6d72591cec516f1ae7ec3a217f8))
+
 ## [1.6.0](https://github.com/nomed/yukh-projects/compare/v1.5.1...v1.6.0) (2026-08-05)
 
 

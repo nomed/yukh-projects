@@ -1,4 +1,4 @@
-# Yukh Projects 1.6.0 <!-- x-release-please-version -->
+# Yukh Projects 1.6.1 <!-- x-release-please-version -->
 
 This release makes controlled apply budget-complete for accepted
 multi-operation plans. The complete mutation budget is admitted before the
