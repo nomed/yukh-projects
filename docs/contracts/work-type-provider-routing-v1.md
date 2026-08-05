@@ -1,6 +1,7 @@
-# Work type provider routing v1 — proposed specification
+# Work type provider routing v1 — accepted specification
 
-- **Status:** Proposed; implementation blocked pending explicit acceptance
+- **Status:** Accepted for implementation
+- **Accepted:** 2026-08-05 by `@nomed` at PR #110 commit `16d6b77a2140aad81da2d8531db9b673826641a2`
 - **Governing issue:** [#109](https://github.com/nomed/yukh-projects/issues/109)
 - **Extends:** issue contract v1 and repository policy v1
 - **Compatibility:** preserves the logical `work_type` vocabulary
@@ -141,9 +142,7 @@ field values, or private consumer identity.
 
 ## Acceptance and implementation gates
 
-Implementation remains blocked until this exact contract is explicitly
-accepted. The implementation PR must use synthetic owner/repository fixtures
-and prove:
+The implementation PR must use synthetic owner/repository fixtures and prove:
 
 1. all four ownership combinations and mixed Projects;
 2. one provider per issue and zero dual writes;

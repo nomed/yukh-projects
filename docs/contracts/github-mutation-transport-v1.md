@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Accepted:** 2026-08-02 by `@nomed`
 - **Issue Type extension accepted:** 2026-08-04 by `@nomed` in [#101](https://github.com/nomed/yukh-projects/issues/101)
+- **Issue Type route superseded:** REST mutation transport v3 removes `set_issue_type` from this GraphQL surface
 - **Governing issue:** [#28](https://github.com/nomed/yukh-projects/issues/28)
 - **Security boundary:** approved internal mutation discriminator to one bounded GitHub GraphQL mutation request
 

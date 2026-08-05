@@ -55,7 +55,7 @@ The mutation transport accepts an internal operation discriminator and bounded v
 | `create_field` | `createProjectV2Field` | reviewed kind and exact initial options/configuration; Project binding unchanged |
 | `add_option` | `updateProjectV2Field` | submit exact observed options plus the one reviewed option; no rename, removal, reorder, color or description change |
 | `set_field_value` | `updateProjectV2ItemFieldValue` | existing bound item, field and option/iteration IDs resolved from fresh state |
-| `set_issue_type` | `updateIssueIssueType` | existing issue and enabled Issue Type IDs resolved from fresh state; clearing is forbidden |
+| `set_issue_type` | REST `PATCH /repos/{owner}/{repo}/issues/{number}` | organization-owned repository, exact enabled Issue Type name resolved from fresh state; clearing is forbidden |
 | `set_parent` | `addSubIssue` | parent is currently absent; `replaceParent` is exactly false |
 | `add_dependency` | `addBlockedBy` | normalized blocker and blocked issues are both in the bound repository |
 
