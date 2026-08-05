@@ -7394,18 +7394,25 @@ function finiteNonnegative(value2) {
 function createGitHubRateLedger(options = {}) {
   const restReserve = options.restReserve ?? 500, graphqlReserve = options.graphqlReserve ?? 500, maxRestRequests = options.maxRestRequests ?? 32, maxGraphqlRequests = options.maxGraphqlRequests ?? 1, maxGraphqlPoints = options.maxGraphqlPoints ?? 100;
   if (![restReserve, graphqlReserve, maxRestRequests, maxGraphqlRequests, maxGraphqlPoints].every(finiteNonnegative) || restReserve < 500 || graphqlReserve < 500 || maxRestRequests > 64 || maxGraphqlRequests > 2 || maxGraphqlPoints > 500) throw new TypeError("invalid rate ledger options");
-  let restRemaining = options.restRemaining ?? Number.POSITIVE_INFINITY, graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY, restRequests = 0, graphqlRequests = 0, graphqlPoints = 0;
+  let restRemaining = options.restRemaining ?? Number.POSITIVE_INFINITY, graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY, restRequests = 0, graphqlRequests = 0, graphqlPoints = 0, deferredResource = null;
   if (!(finiteNonnegative(restRemaining) || restRemaining === Number.POSITIVE_INFINITY) || !(finiteNonnegative(graphqlRemaining) || graphqlRemaining === Number.POSITIVE_INFINITY)) throw new TypeError("invalid provider rate state");
   return {
     reserve: (resource, cost = 1) => {
       if (!finiteNonnegative(cost) || cost < 1) return false;
       if (resource === "rest") {
-        if (restRequests >= maxRestRequests || restRemaining - cost < restReserve) return false;
+        if (restRequests >= maxRestRequests || restRemaining - cost < restReserve) {
+          deferredResource = "rest";
+          return false;
+        }
         restRequests++;
         if (Number.isFinite(restRemaining)) restRemaining -= cost;
         return true;
       }
-      if (resource !== "graphql" || graphqlRequests >= maxGraphqlRequests || graphqlPoints + cost > maxGraphqlPoints || graphqlRemaining - cost < graphqlReserve) return false;
+      if (resource !== "graphql") return false;
+      if (graphqlRequests >= maxGraphqlRequests || graphqlPoints + cost > maxGraphqlPoints || graphqlRemaining - cost < graphqlReserve) {
+        deferredResource = "graphql";
+        return false;
+      }
       graphqlRequests++;
       graphqlPoints += cost;
       if (Number.isFinite(graphqlRemaining)) graphqlRemaining -= cost;
@@ -7416,7 +7423,7 @@ function createGitHubRateLedger(options = {}) {
       if (resource === "rest") restRemaining = Math.min(restRemaining, remaining);
       else if (resource === "graphql") graphqlRemaining = Math.min(graphqlRemaining, remaining);
     },
-    snapshot: () => ({ restRequests, graphqlRequests, graphqlPoints, restRemaining, graphqlRemaining })
+    snapshot: () => ({ restRequests, graphqlRequests, graphqlPoints, restRemaining, graphqlRemaining, deferredResource })
   };
 }
 
@@ -8672,6 +8679,9 @@ async function runDryRun(input) {
   return prepared.status === "success" ? { status: "success", report: renderPublicReport(prepared.plan) } : prepared;
 }
 
+// src/legacy-plan.ts
+import { createHash as createHash4 } from "node:crypto";
+
 // src/legacy-shadow.ts
 var import_yaml3 = __toESM(require_dist(), 1);
 var LEGACY_COMPATIBILITY_MATRIX = Object.freeze([
@@ -8830,6 +8840,83 @@ async function runLegacyShadow(input, reader = readRestProjectSnapshot) {
   }
 }
 
+// src/work-type-provider.ts
+var WorkTypeProviderError = class extends Error {
+  constructor(code) {
+    super("work type provider failed");
+    this.code = code;
+    this.name = "WorkTypeProviderError";
+  }
+  code;
+};
+function safe(value2, max = 128) {
+  return typeof value2 === "string" && value2.length > 0 && [...value2].length <= max && !/[\u0000-\u001f\u007f]/u.test(value2);
+}
+function selectWorkTypeProvider(input) {
+  if (!input || !["users", "orgs"].includes(input.projectOwnerKind) || !["users", "orgs"].includes(input.repositoryOwnerKind) || !safe(input.desired) || !safe(input.fieldName) || !Array.isArray(input.fields)) throw new WorkTypeProviderError("YKP-WORKTYPE-001");
+  const projectValue = typeof input.projectValue === "string" ? input.projectValue : void 0;
+  if (input.nativeValue !== void 0 && projectValue !== void 0 && input.nativeValue !== projectValue) throw new WorkTypeProviderError("YKP-WORKTYPE-003");
+  if (input.repositoryOwnerKind === "orgs") {
+    const matches = (input.issueTypes ?? []).filter((value2) => value2.name === input.desired);
+    if (matches.length !== 1 || !safe(matches[0]?.id, 256)) throw new WorkTypeProviderError("YKP-WORKTYPE-002");
+    return { provider: "native_issue_type", desired: input.desired, issueTypeId: matches[0].id, converged: input.nativeValue === input.desired };
+  }
+  const fields = input.fields.filter((value2) => value2.name === input.fieldName);
+  if (fields.length > 1 || fields[0] && fields[0].kind !== "single_select") throw new WorkTypeProviderError("YKP-WORKTYPE-002");
+  const field = fields[0], options = field?.options.filter((value2) => value2.name === input.desired) ?? [];
+  if (field && options.length !== 1) throw new WorkTypeProviderError("YKP-WORKTYPE-002");
+  return { provider: "project_work_type", desired: input.desired, ...field ? { field, optionId: options[0].id } : {}, converged: projectValue === input.desired };
+}
+
+// src/legacy-plan.ts
+function digest(value2) {
+  return createHash4("sha256").update(canonicalJson(value2)).digest("hex");
+}
+function operationKey(...parts) {
+  return parts.join(".");
+}
+function finish2(operations) {
+  const base = { schema: 1, executable: true, diagnostics: [], observations: [], operations };
+  return { ...base, planId: digest(base) };
+}
+function planLegacyReconciliation(policySource, snapshot, issueNumber2) {
+  const policy = parseLegacyPolicy(policySource), observed = snapshot.issues.get(issueNumber2);
+  if (!observed) throw new TypeError("legacy issue is unavailable");
+  const contract = parseLegacyContract(observed.body), scope = { subjectRef: snapshot.subjectRef, repositoryRef: snapshot.repositoryRef, projectRef: snapshot.projectRef, issueRef: observed.issueRef, issueNumber: issueNumber2 }, core = { kind: contract.kind, area: contract.area, priority: contract.priority, size: contract.size, estimate: contract.estimate }, operations = [];
+  for (const key of Object.keys(policy.fields).sort()) {
+    const declaration = policy.fields[key], logical = core[key] ?? contract.extensions[key];
+    if (logical === void 0) continue;
+    const desired = typeof logical === "string" && Object.keys(declaration.values).length ? declaration.values[logical] : logical;
+    if (desired === void 0) throw new TypeError("legacy value is unsupported");
+    if (declaration.target === "issue_field") throw new TypeError("legacy issue fields are not apply-compatible");
+    if (declaration.target === "issue_type") {
+      const selection = selectWorkTypeProvider({ projectOwnerKind: snapshot.projectOwnerKind ?? snapshot.ownerKind, repositoryOwnerKind: snapshot.repositoryOwnerKind ?? snapshot.ownerKind, desired: String(desired), nativeValue: observed.issueType, projectValue: observed.values[declaration.projectField], issueTypes: snapshot.issueTypes, fields: snapshot.fields, fieldName: declaration.projectField });
+      if (selection.converged) continue;
+      if (selection.provider === "native_issue_type") {
+        operations.push({ operationKey: operationKey("issue", "type", "set"), type: "set_issue_type", subject: { ref: scope.subjectRef }, resource: { kind: "issue_type", logicalKey: key, scopeRef: scope.repositoryRef, providerRef: selection.issueTypeId }, action: "set", environment: "dry-run", reason: "legacy.issue_type.differs", preconditions: [{ kind: "old_value", logicalKey: key, expected: observed.issueType ?? null }], dependsOn: [], desired });
+        continue;
+      }
+    }
+    if (observed.values[declaration.projectField] === desired) continue;
+    const field = snapshot.fields.find((value2) => value2.name === declaration.projectField), createKey = operationKey("schema", "field", key, "create");
+    if (!field) operations.push({ operationKey: createKey, type: "create_field", subject: { ref: scope.subjectRef }, resource: { kind: "project_field", logicalKey: key, scopeRef: scope.projectRef }, action: "create", environment: "dry-run", reason: "legacy.project_field.missing", preconditions: [{ kind: "field_absent", logicalKey: key, expected: true }], dependsOn: [], desired: declaration.projectField });
+    operations.push({ operationKey: operationKey("item", "field", key, "set"), type: "set_field_value", subject: { ref: scope.subjectRef }, resource: { kind: "project_item_field", logicalKey: key, scopeRef: scope.projectRef, ...field ? { providerRef: field.id } : {} }, action: "set", environment: "dry-run", reason: "legacy.project_field.differs", preconditions: [{ kind: "item_fingerprint", logicalKey: "item", expected: observed.fingerprint }, { kind: "old_value", logicalKey: key, expected: observed.values[declaration.projectField] ?? null }], dependsOn: field ? [] : [createKey], desired });
+  }
+  if (contract.milestone || Object.values(policy.fields).some((field) => Object.keys(field.labels).length)) throw new TypeError("legacy labels or milestones are not apply-compatible");
+  if (contract.parent !== void 0 && contract.parent !== observed.parent) operations.push({ operationKey: operationKey("relationship", "parent", contract.parent, "set"), type: "set_parent", subject: { ref: scope.subjectRef }, resource: { kind: "issue_parent", logicalKey: "parent", scopeRef: scope.repositoryRef }, action: "set", environment: "dry-run", reason: "legacy.parent.missing", preconditions: [{ kind: "parent_absent", logicalKey: "parent", expected: true }], dependsOn: [], desired: contract.parent });
+  if (contract.dependsOn.length || contract.blocks.length) throw new TypeError("legacy dependency apply requires complete graph planning");
+  return finish2(operations);
+}
+async function runLegacyDryRun(input, reader = readRestProjectSnapshot) {
+  try {
+    const policy = parseLegacyPolicy(input.policySource), includeIssueTypes = Object.values(policy.fields).some((field) => field.target === "issue_type"), snapshot = await reader({ ownerLogin: input.ownerLogin, repositoryName: input.repositoryName, projectNumber: input.projectNumber, issueNumbers: [input.issueNumber] }, { token: input.token, graphqlRemaining: 0, includeIssueTypes }), plan = planLegacyReconciliation(input.policySource, snapshot, input.issueNumber);
+    return { status: "success", report: renderPublicReport(plan) };
+  } catch (error) {
+    const code = error instanceof WorkTypeProviderError ? error.code : "YKP-LEGACY-001", failureClass = code === "YKP-WORKTYPE-004" ? "authentication" : code === "YKP-WORKTYPE-005" ? "authorization" : code === "YKP-WORKTYPE-006" ? "provider" : code === "YKP-WORKTYPE-008" ? "deferred" : "invariant";
+    return { status: "error", failureClass, diagnostics: [{ code, message: "dry-run could not produce a complete report" }] };
+  }
+}
+
 // src/runtime-input.ts
 import { lstat, open, readFile, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
@@ -8926,7 +9013,7 @@ async function cliMain(argv, stdin, workspace, write) {
     return 2;
   }
   if (options.legacyShadow) {
-    const result2 = await runLegacyShadow({ ownerLogin: options.owner, repositoryName: options.repository, projectNumber: Number(options.projectNumber), issueNumbers: options.issueNumbers ?? [Number(options.issueNumber)], policySource, token });
+    const result2 = options.issueNumber ? await runLegacyDryRun({ ownerLogin: options.owner, repositoryName: options.repository, projectNumber: Number(options.projectNumber), issueNumber: Number(options.issueNumber), policySource, token }) : await runLegacyShadow({ ownerLogin: options.owner, repositoryName: options.repository, projectNumber: Number(options.projectNumber), issueNumbers: options.issueNumbers, policySource, token });
     const rendered2 = `${JSON.stringify(result2)}
 `;
     try {

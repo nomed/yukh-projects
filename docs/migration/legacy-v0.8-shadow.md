@@ -56,6 +56,9 @@ prove completeness, and `5` means an invariant or provider failure.
 
 - The default legacy-shadow CLI profile declares GraphQL remaining as zero and
   therefore never issues a GraphQL request.
+- A single-issue Action or CLI shadow uses the same owner-aware planner and
+  emits the same plan ID and ordered operation count as controlled apply. Batch
+  audit remains an aggregate compatibility report, not an approval artifact.
 - A cold, single-page 1/10/100-issue fixture uses four REST requests. Pagination
   is bounded to 20 pages, 10,000 items and 64 MiB; the run limit is 64 REST
   requests and the reserve is fail-closed.

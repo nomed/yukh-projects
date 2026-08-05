@@ -8,6 +8,8 @@ export { createApplyCoordinationHttpStore } from "./apply-coordination-http.js";
 export { createControlledApplyHostFactory } from "./controlled-apply-host.js";
 export { parseProtectedHostCapsule } from "./protected-host-capsule.js";
 export { createGitHubRateLedger } from "./github-rate-ledger.js";
+export { createResumableDeferralHost } from "./resumable-deferral-host.js";
+export { parseDeferredReceiptV1, createGovernedHandoffReceipt } from "./deferred-receipt.js";
 export { createRestProjectSnapshotReader, snapshotInvalidationForMutation } from "./github-rest-snapshot.js";
 export { createGitHubMutationTransport } from "./github-mutation-transport.js";
 export { normalizeGitHubApplyFailure } from "./github-apply-failure.js";

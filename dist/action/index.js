@@ -7395,18 +7395,25 @@ function finiteNonnegative(value2) {
 function createGitHubRateLedger(options = {}) {
   const restReserve = options.restReserve ?? 500, graphqlReserve = options.graphqlReserve ?? 500, maxRestRequests = options.maxRestRequests ?? 32, maxGraphqlRequests = options.maxGraphqlRequests ?? 1, maxGraphqlPoints = options.maxGraphqlPoints ?? 100;
   if (![restReserve, graphqlReserve, maxRestRequests, maxGraphqlRequests, maxGraphqlPoints].every(finiteNonnegative) || restReserve < 500 || graphqlReserve < 500 || maxRestRequests > 64 || maxGraphqlRequests > 2 || maxGraphqlPoints > 500) throw new TypeError("invalid rate ledger options");
-  let restRemaining = options.restRemaining ?? Number.POSITIVE_INFINITY, graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY, restRequests = 0, graphqlRequests = 0, graphqlPoints = 0;
+  let restRemaining = options.restRemaining ?? Number.POSITIVE_INFINITY, graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY, restRequests = 0, graphqlRequests = 0, graphqlPoints = 0, deferredResource = null;
   if (!(finiteNonnegative(restRemaining) || restRemaining === Number.POSITIVE_INFINITY) || !(finiteNonnegative(graphqlRemaining) || graphqlRemaining === Number.POSITIVE_INFINITY)) throw new TypeError("invalid provider rate state");
   return {
     reserve: (resource, cost = 1) => {
       if (!finiteNonnegative(cost) || cost < 1) return false;
       if (resource === "rest") {
-        if (restRequests >= maxRestRequests || restRemaining - cost < restReserve) return false;
+        if (restRequests >= maxRestRequests || restRemaining - cost < restReserve) {
+          deferredResource = "rest";
+          return false;
+        }
         restRequests++;
         if (Number.isFinite(restRemaining)) restRemaining -= cost;
         return true;
       }
-      if (resource !== "graphql" || graphqlRequests >= maxGraphqlRequests || graphqlPoints + cost > maxGraphqlPoints || graphqlRemaining - cost < graphqlReserve) return false;
+      if (resource !== "graphql") return false;
+      if (graphqlRequests >= maxGraphqlRequests || graphqlPoints + cost > maxGraphqlPoints || graphqlRemaining - cost < graphqlReserve) {
+        deferredResource = "graphql";
+        return false;
+      }
       graphqlRequests++;
       graphqlPoints += cost;
       if (Number.isFinite(graphqlRemaining)) graphqlRemaining -= cost;
@@ -7417,7 +7424,7 @@ function createGitHubRateLedger(options = {}) {
       if (resource === "rest") restRemaining = Math.min(restRemaining, remaining);
       else if (resource === "graphql") graphqlRemaining = Math.min(graphqlRemaining, remaining);
     },
-    snapshot: () => ({ restRequests, graphqlRequests, graphqlPoints, restRemaining, graphqlRemaining })
+    snapshot: () => ({ restRequests, graphqlRequests, graphqlPoints, restRemaining, graphqlRemaining, deferredResource })
   };
 }
 
@@ -8673,6 +8680,9 @@ async function runDryRun(input2) {
   return prepared.status === "success" ? { status: "success", report: renderPublicReport(prepared.plan) } : prepared;
 }
 
+// src/legacy-plan.ts
+import { createHash as createHash4 } from "node:crypto";
+
 // src/legacy-shadow.ts
 var import_yaml3 = __toESM(require_dist(), 1);
 var LEGACY_COMPATIBILITY_MATRIX = Object.freeze([
@@ -8745,89 +8755,81 @@ function parseLegacyContract(body) {
   if (estimate !== void 0 && (!Number.isFinite(estimate) || estimate < 0) || parent !== void 0 && (!Number.isSafeInteger(parent) || parent < 1)) throw new TypeError("legacy numeric field is invalid");
   return { kind: kind2, area, priority, ...size ? { size } : {}, ...estimate !== void 0 ? { estimate } : {}, ...milestone ? { milestone } : {}, ...parent !== void 0 ? { parent } : {}, dependsOn: list(raw.depends_on), blocks: list(raw.blocks), extensions };
 }
-function same(a, b) {
-  return typeof a === "string" && typeof b === "string" ? a === b : a === b;
-}
-function bump(target, kind2) {
-  target[kind2] = (target[kind2] ?? 0) + 1;
-}
-function runLegacyShadowAudit(policySource, snapshot) {
-  let policy;
-  try {
-    policy = parseLegacyPolicy(policySource);
-  } catch {
-    return { schema: 1, status: "error", failureClass: "invariant", diagnostics: [{ code: "YKP-LEGACY-001", message: "legacy policy is invalid" }], issues: [], totals: {}, capabilities: LEGACY_COMPATIBILITY_MATRIX, evidence: snapshot.evidence };
+
+// src/work-type-provider.ts
+var WorkTypeProviderError = class extends Error {
+  constructor(code) {
+    super("work type provider failed");
+    this.code = code;
+    this.name = "WorkTypeProviderError";
   }
-  const reports = [], totals = {};
-  let deferred = false, failed = false;
-  for (const [issueNumber2, observed] of [...snapshot.issues.entries()].sort(([a], [b]) => a - b)) {
-    const counts = {}, diagnostics2 = [];
-    let contract;
-    try {
-      contract = parseLegacyContract(observed.body);
-    } catch {
-      reports.push({ issueNumber: issueNumber2, status: "error", operationCounts: {}, diagnostics: [{ code: "YKP-LEGACY-001", message: "legacy contract is invalid" }] });
-      failed = true;
-      continue;
-    }
-    const core = { kind: contract.kind, area: contract.area, priority: contract.priority, size: contract.size, estimate: contract.estimate };
-    const desiredLabels = /* @__PURE__ */ new Set();
-    for (const key of Object.keys(policy.fields).sort()) {
-      const field = policy.fields[key], logical = core[key] ?? contract.extensions[key];
-      if (logical === void 0) {
-        if (field.required) diagnostics2.push({ code: "YKP-LEGACY-002", message: "required governed value is missing" });
+  code;
+};
+function safe(value2, max = 128) {
+  return typeof value2 === "string" && value2.length > 0 && [...value2].length <= max && !/[\u0000-\u001f\u007f]/u.test(value2);
+}
+function selectWorkTypeProvider(input2) {
+  if (!input2 || !["users", "orgs"].includes(input2.projectOwnerKind) || !["users", "orgs"].includes(input2.repositoryOwnerKind) || !safe(input2.desired) || !safe(input2.fieldName) || !Array.isArray(input2.fields)) throw new WorkTypeProviderError("YKP-WORKTYPE-001");
+  const projectValue = typeof input2.projectValue === "string" ? input2.projectValue : void 0;
+  if (input2.nativeValue !== void 0 && projectValue !== void 0 && input2.nativeValue !== projectValue) throw new WorkTypeProviderError("YKP-WORKTYPE-003");
+  if (input2.repositoryOwnerKind === "orgs") {
+    const matches = (input2.issueTypes ?? []).filter((value2) => value2.name === input2.desired);
+    if (matches.length !== 1 || !safe(matches[0]?.id, 256)) throw new WorkTypeProviderError("YKP-WORKTYPE-002");
+    return { provider: "native_issue_type", desired: input2.desired, issueTypeId: matches[0].id, converged: input2.nativeValue === input2.desired };
+  }
+  const fields = input2.fields.filter((value2) => value2.name === input2.fieldName);
+  if (fields.length > 1 || fields[0] && fields[0].kind !== "single_select") throw new WorkTypeProviderError("YKP-WORKTYPE-002");
+  const field = fields[0], options = field?.options.filter((value2) => value2.name === input2.desired) ?? [];
+  if (field && options.length !== 1) throw new WorkTypeProviderError("YKP-WORKTYPE-002");
+  return { provider: "project_work_type", desired: input2.desired, ...field ? { field, optionId: options[0].id } : {}, converged: projectValue === input2.desired };
+}
+
+// src/legacy-plan.ts
+function digest(value2) {
+  return createHash4("sha256").update(canonicalJson(value2)).digest("hex");
+}
+function operationKey(...parts) {
+  return parts.join(".");
+}
+function finish2(operations) {
+  const base = { schema: 1, executable: true, diagnostics: [], observations: [], operations };
+  return { ...base, planId: digest(base) };
+}
+function planLegacyReconciliation(policySource, snapshot, issueNumber2) {
+  const policy = parseLegacyPolicy(policySource), observed = snapshot.issues.get(issueNumber2);
+  if (!observed) throw new TypeError("legacy issue is unavailable");
+  const contract = parseLegacyContract(observed.body), scope = { subjectRef: snapshot.subjectRef, repositoryRef: snapshot.repositoryRef, projectRef: snapshot.projectRef, issueRef: observed.issueRef, issueNumber: issueNumber2 }, core = { kind: contract.kind, area: contract.area, priority: contract.priority, size: contract.size, estimate: contract.estimate }, operations = [];
+  for (const key of Object.keys(policy.fields).sort()) {
+    const declaration = policy.fields[key], logical = core[key] ?? contract.extensions[key];
+    if (logical === void 0) continue;
+    const desired = typeof logical === "string" && Object.keys(declaration.values).length ? declaration.values[logical] : logical;
+    if (desired === void 0) throw new TypeError("legacy value is unsupported");
+    if (declaration.target === "issue_field") throw new TypeError("legacy issue fields are not apply-compatible");
+    if (declaration.target === "issue_type") {
+      const selection = selectWorkTypeProvider({ projectOwnerKind: snapshot.projectOwnerKind ?? snapshot.ownerKind, repositoryOwnerKind: snapshot.repositoryOwnerKind ?? snapshot.ownerKind, desired: String(desired), nativeValue: observed.issueType, projectValue: observed.values[declaration.projectField], issueTypes: snapshot.issueTypes, fields: snapshot.fields, fieldName: declaration.projectField });
+      if (selection.converged) continue;
+      if (selection.provider === "native_issue_type") {
+        operations.push({ operationKey: operationKey("issue", "type", "set"), type: "set_issue_type", subject: { ref: scope.subjectRef }, resource: { kind: "issue_type", logicalKey: key, scopeRef: scope.repositoryRef, providerRef: selection.issueTypeId }, action: "set", environment: "dry-run", reason: "legacy.issue_type.differs", preconditions: [{ kind: "old_value", logicalKey: key, expected: observed.issueType ?? null }], dependsOn: [], desired });
         continue;
       }
-      const mapped = typeof logical === "string" && Object.keys(field.values).length ? field.values[logical] : logical;
-      if (mapped === void 0) {
-        diagnostics2.push({ code: "YKP-LEGACY-003", message: "governed value is unsupported" });
-        continue;
-      }
-      if (typeof logical === "string" && field.labels[logical]) desiredLabels.add(field.labels[logical]);
-      if (field.target === "issue_type") {
-        if (!same(observed.issueType, mapped)) bump(counts, "set_issue_type");
-      } else if (field.target === "issue_field") {
-        if (!same(observed.issueFields[field.projectField], mapped)) bump(counts, "set_issue_field");
-      } else if (!same(observed.values[field.projectField], mapped)) bump(counts, "set_project_field");
     }
-    const managedLabels = new Set(Object.values(policy.fields).flatMap((field) => Object.values(field.labels))), observedManaged = new Set(observed.labels.filter((label) => managedLabels.has(label)));
-    for (const label of desiredLabels) if (!observedManaged.has(label)) bump(counts, "add_label");
-    for (const label of observedManaged) if (!desiredLabels.has(label)) bump(counts, "remove_label");
-    const desiredMilestone = contract.milestone ? policy.milestones[contract.milestone] : void 0;
-    if (contract.milestone && !desiredMilestone) diagnostics2.push({ code: "YKP-LEGACY-004", message: "milestone mapping is unavailable" });
-    else if (desiredMilestone !== observed.milestone) bump(counts, "set_milestone");
-    if (contract.parent !== observed.parent) bump(counts, "set_parent");
-    if (!observed.relationshipsComplete && (contract.dependsOn.length > 0 || contract.blocks.length > 0)) {
-      diagnostics2.push({ code: "YKP-RATE-001", message: "relationship snapshot requires the bounded fallback or a complete cache" });
-      deferred = true;
-    } else {
-      const wanted = new Set(contract.dependsOn), current = new Set(observed.blockedBy);
-      for (const n of wanted) if (!current.has(n)) bump(counts, "add_dependency");
-      for (const n of current) if (!wanted.has(n)) bump(counts, "remove_dependency");
-      const wantedBlocks = new Set(contract.blocks), currentBlocks = new Set(observed.blocking);
-      for (const n of wantedBlocks) if (!currentBlocks.has(n)) bump(counts, "add_blocking");
-      for (const n of currentBlocks) if (!wantedBlocks.has(n)) bump(counts, "remove_blocking");
-    }
-    for (const [key, value2] of Object.entries(counts)) totals[key] = (totals[key] ?? 0) + value2;
-    const operations = Object.values(counts).reduce((a, b) => a + b, 0), status = diagnostics2.some((d) => d.code !== "YKP-RATE-001") ? "error" : diagnostics2.length ? "deferred" : operations ? "drift" : "converged";
-    if (status === "error") failed = true;
-    reports.push({ issueNumber: issueNumber2, status, operationCounts: counts, diagnostics: diagnostics2 });
+    if (observed.values[declaration.projectField] === desired) continue;
+    const field = snapshot.fields.find((value2) => value2.name === declaration.projectField), createKey = operationKey("schema", "field", key, "create");
+    if (!field) operations.push({ operationKey: createKey, type: "create_field", subject: { ref: scope.subjectRef }, resource: { kind: "project_field", logicalKey: key, scopeRef: scope.projectRef }, action: "create", environment: "dry-run", reason: "legacy.project_field.missing", preconditions: [{ kind: "field_absent", logicalKey: key, expected: true }], dependsOn: [], desired: declaration.projectField });
+    operations.push({ operationKey: operationKey("item", "field", key, "set"), type: "set_field_value", subject: { ref: scope.subjectRef }, resource: { kind: "project_item_field", logicalKey: key, scopeRef: scope.projectRef, ...field ? { providerRef: field.id } : {} }, action: "set", environment: "dry-run", reason: "legacy.project_field.differs", preconditions: [{ kind: "item_fingerprint", logicalKey: "item", expected: observed.fingerprint }, { kind: "old_value", logicalKey: key, expected: observed.values[declaration.projectField] ?? null }], dependsOn: field ? [] : [createKey], desired });
   }
-  return { schema: 1, status: failed ? "error" : deferred ? "deferred" : "success", ...failed ? { failureClass: "invariant" } : deferred ? { failureClass: "deferred" } : {}, diagnostics: [], issues: reports, totals, capabilities: LEGACY_COMPATIBILITY_MATRIX, evidence: snapshot.evidence };
+  if (contract.milestone || Object.values(policy.fields).some((field) => Object.keys(field.labels).length)) throw new TypeError("legacy labels or milestones are not apply-compatible");
+  if (contract.parent !== void 0 && contract.parent !== observed.parent) operations.push({ operationKey: operationKey("relationship", "parent", contract.parent, "set"), type: "set_parent", subject: { ref: scope.subjectRef }, resource: { kind: "issue_parent", logicalKey: "parent", scopeRef: scope.repositoryRef }, action: "set", environment: "dry-run", reason: "legacy.parent.missing", preconditions: [{ kind: "parent_absent", logicalKey: "parent", expected: true }], dependsOn: [], desired: contract.parent });
+  if (contract.dependsOn.length || contract.blocks.length) throw new TypeError("legacy dependency apply requires complete graph planning");
+  return finish2(operations);
 }
-var EMPTY_EVIDENCE = { restRequests: 0, graphqlRequests: 0, restCacheHits: 0, conditionalRequests: 0, coalescedRequests: 0 };
-async function runLegacyShadow(input2, reader = readRestProjectSnapshot) {
+async function runLegacyDryRun(input2, reader = readRestProjectSnapshot) {
   try {
-    parseLegacyPolicy(input2.policySource);
-  } catch {
-    return { schema: 1, status: "error", failureClass: "invariant", diagnostics: [{ code: "YKP-LEGACY-001", message: "legacy policy is invalid" }], issues: [], totals: {}, capabilities: LEGACY_COMPATIBILITY_MATRIX, evidence: EMPTY_EVIDENCE };
-  }
-  try {
-    const snapshot = await reader({ ownerLogin: input2.ownerLogin, repositoryName: input2.repositoryName, projectNumber: input2.projectNumber, issueNumbers: input2.issueNumbers }, { token: input2.token, graphqlRemaining: 0 });
-    return runLegacyShadowAudit(input2.policySource, snapshot);
+    const policy = parseLegacyPolicy(input2.policySource), includeIssueTypes = Object.values(policy.fields).some((field) => field.target === "issue_type"), snapshot = await reader({ ownerLogin: input2.ownerLogin, repositoryName: input2.repositoryName, projectNumber: input2.projectNumber, issueNumbers: [input2.issueNumber] }, { token: input2.token, graphqlRemaining: 0, includeIssueTypes }), plan = planLegacyReconciliation(input2.policySource, snapshot, input2.issueNumber);
+    return { status: "success", report: renderPublicReport(plan) };
   } catch (error) {
-    const code = error instanceof GitHubTransportError ? error.code : "YKP-GH-READ-004", failureClass = code === "YKP-GH-READ-002" ? "authentication" : code === "YKP-GH-READ-003" ? "authorization" : code === "YKP-RATE-001" ? "deferred" : code === "YKP-REST-001" || code === "YKP-SNAPSHOT-001" || code === "YKP-CACHE-001" ? "invariant" : "provider";
-    return { schema: 1, status: failureClass === "deferred" ? "deferred" : "error", failureClass, diagnostics: [{ code, message: "snapshot acquisition failed" }], issues: [], totals: {}, capabilities: LEGACY_COMPATIBILITY_MATRIX, evidence: EMPTY_EVIDENCE };
+    const code = error instanceof WorkTypeProviderError ? error.code : "YKP-LEGACY-001", failureClass = code === "YKP-WORKTYPE-004" ? "authentication" : code === "YKP-WORKTYPE-005" ? "authorization" : code === "YKP-WORKTYPE-006" ? "provider" : code === "YKP-WORKTYPE-008" ? "deferred" : "invariant";
+    return { status: "error", failureClass, diagnostics: [{ code, message: "dry-run could not produce a complete report" }] };
   }
 }
 
@@ -8872,9 +8874,6 @@ function parseActionMode(value2) {
   if (value2 === "legacy-shadow") return value2;
   throw new TypeError("invalid action mode");
 }
-function legacyOperationCount(result) {
-  return Object.values(result.totals).reduce((total, count) => total + count, 0);
-}
 async function actionMain() {
   try {
     const mode = parseActionMode(process.env.INPUT_MODE), token = input("GITHUB-TOKEN");
@@ -8884,7 +8883,7 @@ async function actionMain() {
     if (!workspace || !temporary) throw new TypeError("invalid action environment");
     const scope = parseRuntimeScope({ owner: input("OWNER"), repository: input("REPOSITORY"), projectNumber: input("PROJECT-NUMBER"), issueNumber: input("ISSUE-NUMBER") });
     const policySource = await loadWorkspacePolicy(workspace, process.env["INPUT_POLICY-PATH"] || ".yukh/project.yaml");
-    const result = mode === "legacy-shadow" ? await runLegacyShadow({ ...scope, issueNumbers: [scope.issueNumber], policySource, token }) : await runDryRun({ scope, policySource, transport: createGitHubRestSnapshotReadTransport({ token }) });
+    const result = mode === "legacy-shadow" ? await runLegacyDryRun({ ...scope, policySource, token }) : await runDryRun({ scope, policySource, transport: createGitHubRestSnapshotReadTransport({ token }) });
     const reportPath = join(temporary, `yukh-projects-${process.pid}.json`);
     const file = await open2(reportPath, "wx", 384);
     try {
@@ -8893,11 +8892,11 @@ async function actionMain() {
     } finally {
       await file.close();
     }
-    const native = mode === "native", success = result.status === "success";
+    const success = result.status === "success";
     await output("status", result.status);
     await output("executable", String(success));
-    await output("plan-id", native && success && "report" in result ? result.report.planId : "");
-    await output("operation-count", String(success ? native && "report" in result ? result.report.counts.operations : legacyOperationCount(result) : 0));
+    await output("plan-id", success ? result.report.planId : "");
+    await output("operation-count", String(success ? result.report.counts.operations : 0));
     await output("report-path", reportPath);
     if (result.status === "error") {
       process.stderr.write(`::error title=Yukh Projects dry-run::${result.diagnostics[0]?.code ?? "YKP-RUNTIME-003"}

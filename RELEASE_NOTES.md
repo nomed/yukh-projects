@@ -1,45 +1,44 @@
-# Yukh Projects 1.4.0 <!-- x-release-please-version -->
+# Yukh Projects 1.5.1 <!-- x-release-please-version -->
 
-This release adds owner-aware work type reconciliation. The release delta is
-strictly the two commits after immutable release `v1.3.5`.
+This patch restores exact parity between single-issue legacy shadow and
+controlled apply planning.
 
-## Owner-aware provider routing
+## Planning parity
 
-- Organization-owned repositories use native GitHub Issue Type.
-- User-owned repositories use the Project single-select `Work Type` adapter.
-- Repository ownership selects the provider independently from Project
-  ownership, covering all four user/organization ownership combinations.
-- Conflicting native and Project representations fail closed with stable,
-  redacted diagnostics; no redundant dual write is performed.
+- Single-issue Action and CLI shadow runs now use the same owner-aware legacy
+  planner as controlled apply.
+- Shadow emits the exact deterministic plan ID and ordered operation count that
+  an approval would bind.
+- User-owned repositories select the Project `Work Type` fallback;
+  organization-owned repositories select native Issue Type.
+- Multi-issue legacy audit remains available as an aggregate compatibility
+  report and is explicitly not an approval artifact.
 
-## REST-first and rate safety
+## Safety
 
-- Native Issue Type mutation uses GitHub REST API version `2026-03-10` and has
-  no GraphQL fallback.
-- Deterministic snapshots for 1, 10, and 100 issues reuse one Issue Type
-  catalog and make zero GraphQL calls.
-- Project `Work Type` operations retain the bounded REST transport contract.
-- There is no hidden polling, sleep, or retry.
+- Dry-run remains structurally unable to mutate.
+- Provider selection remains REST-only with zero GraphQL budget.
+- Missing or conflicting provider state continues to fail closed.
+- The release does not migrate a consumer or authorize Project mutation.
 
 ## Compatibility
 
-- Project-owned `Status` remains preserved unless explicitly governed.
-- Existing organization-owned repository configurations continue to target
-  native Issue Type.
-- Personal repositories gain an explicit Project `Work Type` fallback.
-- This release does not remove or backfill any existing Project field.
+- Existing v1.5.0 native and controlled-apply inputs remain unchanged.
+- Single-issue legacy shadow reports now use the executable-plan report shape
+  already exposed by controlled planning.
+- Consumers that require the former aggregate report can continue to use the
+  bounded multi-issue CLI audit until they migrate.
 
 ## Integrity and qualification
 
-Publication remains separately gated by deterministic tests, reproducible
-bundles, startup smoke tests, checksums, SBOM, provenance attestations, and the
-protected immutable-release workflow. These notes do not authorize merge,
-publication, deployment, live apply, backfill, or consumer migration.
+The correction passes the complete test suite, byte-identical bundle
+verification, consumer-neutrality checks and dependency audit. Publication
+adds checksums, an SPDX SBOM, provenance attestations and immutable assets.
 
 ## Rollback
 
-The exact rollback pin is `v1.3.5` at commit
-`a11031b5301c4c3e0984443914cd420d9b771e2d`.
+The exact rollback pin is `v1.5.0` at commit
+`495920282c41f68bb61f9b34140a53d24e38e3d0`.
 
-Rollback does not authorize deployment, live apply, consumer migration, or
-movement of an existing immutable tag.
+Rollback requires a separately reviewed consumer pin change. It does not
+authorize moving or deleting a tag, deployment, live apply or migration.

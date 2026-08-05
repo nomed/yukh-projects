@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { planLegacyReconciliation } from "../src/legacy-plan.js";
+import { planLegacyReconciliation, runLegacyDryRun } from "../src/legacy-plan.js";
 import type { RestProjectSnapshot } from "../src/github-rest-snapshot.js";
 
 const policy=`version: 1
@@ -38,3 +38,5 @@ test("legacy plan fails closed without an Issue Type binding",()=>{const value=s
 test("legacy logical issue type routes to Project Work Type for a personal repository",()=>{const value=snapshot();value.ownerKind="users";value.repositoryOwnerKind="users";value.projectOwnerKind="orgs";value.issueTypes=undefined;const plan=planLegacyReconciliation(policy,value,27);assert.equal(plan.operations.some(operation=>operation.type==="set_issue_type"),false);const kindOperations=plan.operations.filter(operation=>operation.resource.logicalKey==="kind");assert.deepEqual(kindOperations.map(operation=>operation.type),["create_field","set_field_value"]);});
 
 test("legacy organization routing rejects conflicting dual representations",()=>{const value=snapshot();const issue=value.issues.get(27)!;value.issues=new Map([[27,{...issue,issueType:"Gate",values:{...issue.values,"Work Type":"Task"}}]]);assert.throws(()=>planLegacyReconciliation(policy,value,27));});
+
+test("single-issue legacy shadow returns the exact controlled plan for personal and organization repositories",async()=>{for(const ownerKind of ["users","orgs"] as const){const value=snapshot();value.ownerKind=ownerKind;value.repositoryOwnerKind=ownerKind;value.projectOwnerKind=ownerKind;if(ownerKind==="users")value.issueTypes=undefined;const expected=planLegacyReconciliation(policy,value,27),result=await runLegacyDryRun({ownerLogin:"example",repositoryName:"atlas",projectNumber:5,issueNumber:27,policySource:policy,token:"synthetic-token"},async(input,options)=>{assert.deepEqual(input.issueNumbers,[27]);assert.equal(options.graphqlRemaining,0);assert.equal(options.includeIssueTypes,true);return value;});assert.equal(result.status,"success");if(result.status==="success"){assert.equal(result.report.planId,expected.planId);assert.equal(result.report.counts.operations,expected.operations.length);}}});

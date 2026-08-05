@@ -7977,8 +7977,8 @@ async function applyCliMain(argv, workspace, factory, write) {
     approvedPlanId = options.approvedPlanId;
     const [readToken, writeToken, policySource, approvalArtifact, approvalPublicKey] = await Promise.all([readBoundedFd(options.readTokenFd), readBoundedFd(options.writeTokenFd), loadWorkspacePolicy(workspace, options.policyPath), readApprovalArtifact(workspace, options.approvalFile), readExclusiveWorkspaceFile(workspace, options.approvalPublicKeyFile)]);
     if (readToken === writeToken) throw new TypeError("credential profiles must be distinct");
-    const requestedScope = parseRuntimeScope({ owner: options.owner, repository: options.repository, projectNumber: options.projectNumber, issueNumber: options.issueNumber }), runtime = await factory.create({ reconciliationMode: options.mode === "legacy-apply-v1" ? "legacy-v1" : "native-v1", requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId: options.approvedPlanId, protectedEnvironment: options.environment, scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host);
-    write(`${JSON.stringify(report)}
+    const requestedScope = parseRuntimeScope({ owner: options.owner, repository: options.repository, projectNumber: options.projectNumber, issueNumber: options.issueNumber }), runtime = await factory.create({ reconciliationMode: options.mode === "legacy-apply-v1" ? "legacy-v1" : "native-v1", requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId: options.approvedPlanId, protectedEnvironment: options.environment, scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host), receipt = report.status === "deferred" ? runtime.deferredReceipt?.() : void 0;
+    write(`${JSON.stringify({ ...report, ...receipt ? { deferredReceipt: receipt } : {} })}
 `);
     return report.status === "success" ? 0 : report.status === "deferred" ? 6 : 5;
   } catch {
@@ -8001,8 +8001,8 @@ function canonical(value2) {
   }
   if (Array.isArray(value2)) return `[${value2.map(canonical).join(",")}]`;
   if (typeof value2 !== "object") throw new ApplyCoordinationError("YKP-COORD-001");
-  const record = value2, keys2 = Object.keys(record).sort();
-  return `{${keys2.map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`).join(",")}}`;
+  const record2 = value2, keys2 = Object.keys(record2).sort();
+  return `{${keys2.map((key) => `${JSON.stringify(key)}:${canonical(record2[key])}`).join(",")}}`;
 }
 function expiry(value2) {
   if (!Number.isSafeInteger(value2)) throw new ApplyCoordinationError("YKP-COORD-001");
@@ -8763,16 +8763,16 @@ function calculateEffectiveSchema(policy, observed) {
   for (const fieldKey of Object.keys(policy.fields).sort()) {
     const desired = policy.fields[fieldKey];
     managedNames.add(desired.name);
-    const exact4 = observed.fields.filter((field2) => field2.name === desired.name);
+    const exact5 = observed.fields.filter((field2) => field2.name === desired.name);
     const folded = observed.fields.filter((field2) => comparisonFold(field2.name) === comparisonFold(desired.name));
     const path = `$.fields.${fieldKey}`;
-    if (exact4.length === 0) {
+    if (exact5.length === 0) {
       if (folded.length > 0) add3(internal, "YKP-SCHEMA-005", `${path}.name`);
       else if (desired.mode === "observed") add3(internal, "YKP-SCHEMA-003", path);
       else operations.push({ type: "create_field", fieldKey, name: desired.name, kind: desired.kind, options: Object.entries(desired.options ?? {}).sort(([a], [b]) => a.localeCompare(b)).map(([optionKey, name]) => ({ optionKey, name })) });
       continue;
     }
-    const current = exact4[0];
+    const current = exact5[0];
     if (current.kind !== desired.kind) {
       add3(internal, "YKP-SCHEMA-004", `${path}.kind`);
       continue;
@@ -9019,18 +9019,25 @@ function finiteNonnegative(value2) {
 function createGitHubRateLedger(options = {}) {
   const restReserve = options.restReserve ?? 500, graphqlReserve = options.graphqlReserve ?? 500, maxRestRequests = options.maxRestRequests ?? 32, maxGraphqlRequests = options.maxGraphqlRequests ?? 1, maxGraphqlPoints = options.maxGraphqlPoints ?? 100;
   if (![restReserve, graphqlReserve, maxRestRequests, maxGraphqlRequests, maxGraphqlPoints].every(finiteNonnegative) || restReserve < 500 || graphqlReserve < 500 || maxRestRequests > 64 || maxGraphqlRequests > 2 || maxGraphqlPoints > 500) throw new TypeError("invalid rate ledger options");
-  let restRemaining = options.restRemaining ?? Number.POSITIVE_INFINITY, graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY, restRequests = 0, graphqlRequests = 0, graphqlPoints = 0;
+  let restRemaining = options.restRemaining ?? Number.POSITIVE_INFINITY, graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY, restRequests = 0, graphqlRequests = 0, graphqlPoints = 0, deferredResource = null;
   if (!(finiteNonnegative(restRemaining) || restRemaining === Number.POSITIVE_INFINITY) || !(finiteNonnegative(graphqlRemaining) || graphqlRemaining === Number.POSITIVE_INFINITY)) throw new TypeError("invalid provider rate state");
   return {
     reserve: (resource, cost = 1) => {
       if (!finiteNonnegative(cost) || cost < 1) return false;
       if (resource === "rest") {
-        if (restRequests >= maxRestRequests || restRemaining - cost < restReserve) return false;
+        if (restRequests >= maxRestRequests || restRemaining - cost < restReserve) {
+          deferredResource = "rest";
+          return false;
+        }
         restRequests++;
         if (Number.isFinite(restRemaining)) restRemaining -= cost;
         return true;
       }
-      if (resource !== "graphql" || graphqlRequests >= maxGraphqlRequests || graphqlPoints + cost > maxGraphqlPoints || graphqlRemaining - cost < graphqlReserve) return false;
+      if (resource !== "graphql") return false;
+      if (graphqlRequests >= maxGraphqlRequests || graphqlPoints + cost > maxGraphqlPoints || graphqlRemaining - cost < graphqlReserve) {
+        deferredResource = "graphql";
+        return false;
+      }
       graphqlRequests++;
       graphqlPoints += cost;
       if (Number.isFinite(graphqlRemaining)) graphqlRemaining -= cost;
@@ -9041,7 +9048,7 @@ function createGitHubRateLedger(options = {}) {
       if (resource === "rest") restRemaining = Math.min(restRemaining, remaining);
       else if (resource === "graphql") graphqlRemaining = Math.min(graphqlRemaining, remaining);
     },
-    snapshot: () => ({ restRequests, graphqlRequests, graphqlPoints, restRemaining, graphqlRemaining })
+    snapshot: () => ({ restRequests, graphqlRequests, graphqlPoints, restRemaining, graphqlRemaining, deferredResource })
   };
 }
 
@@ -9375,6 +9382,47 @@ function createGitHubRestSnapshotReadTransportFromReader(reader) {
   } };
 }
 
+// src/controlled-apply-host.ts
+import { createHash as createHash8 } from "node:crypto";
+
+// src/deferred-receipt.ts
+var DIGEST5 = /^[a-f0-9]{64}$/u;
+var REASONS = ["rest-reserve", "graphql-reserve", "provider-secondary-limit"];
+function record(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function exact(value2, keys2) {
+  if (Object.keys(value2).sort().join("\0") !== [...keys2].sort().join("\0")) throw new TypeError("invalid deferred receipt");
+}
+function integer2(value2) {
+  if (!Number.isSafeInteger(value2) || value2 < 0) throw new TypeError("invalid deferred receipt");
+  return value2;
+}
+function digest2(value2) {
+  if (typeof value2 !== "string" || !DIGEST5.test(value2)) throw new TypeError("invalid deferred receipt");
+  return value2;
+}
+function parseDeferredReceiptV1(source) {
+  if (!record(source)) throw new TypeError("invalid deferred receipt");
+  exact(source, ["schema", "version", "status", "reason", "issued_at_ms", "resume_after_ms", "resume_by_ms", "bindings", "ownership", "fresh_approval_required"]);
+  if (source.schema !== 1 || source.version !== "deferred-receipt-v1" || source.status !== "deferred" || !REASONS.includes(source.reason) || typeof source.fresh_approval_required !== "boolean") throw new TypeError("invalid deferred receipt");
+  const issued = integer2(source.issued_at_ms), after = integer2(source.resume_after_ms), by = integer2(source.resume_by_ms);
+  if (after < issued || by < after || by - issued > 24 * 60 * 60 * 1e3) throw new TypeError("invalid deferred receipt");
+  if (!record(source.bindings)) throw new TypeError("invalid deferred receipt");
+  exact(source.bindings, ["scope_digest", "request_digest", "plan_digest"]);
+  const bindings = { scope_digest: digest2(source.bindings.scope_digest), request_digest: digest2(source.bindings.request_digest), plan_digest: source.bindings.plan_digest === null ? null : digest2(source.bindings.plan_digest) };
+  if (!record(source.ownership)) throw new TypeError("invalid deferred receipt");
+  exact(source.ownership, ["disposition", "mode", "wakeup_digest", "cancellation_digest"]);
+  let ownership;
+  if (source.ownership.disposition === "retained" && source.ownership.mode === "durable-host") ownership = { disposition: "retained", mode: "durable-host", wakeup_digest: digest2(source.ownership.wakeup_digest), cancellation_digest: digest2(source.ownership.cancellation_digest) };
+  else if (source.ownership.disposition === "handoff" && source.ownership.mode === "governed-handoff" && source.ownership.wakeup_digest === null && source.ownership.cancellation_digest === null) ownership = { disposition: "handoff", mode: "governed-handoff", wakeup_digest: null, cancellation_digest: null };
+  else throw new TypeError("invalid deferred receipt");
+  return { schema: 1, version: "deferred-receipt-v1", status: "deferred", reason: source.reason, issued_at_ms: issued, resume_after_ms: after, resume_by_ms: by, bindings, ownership, fresh_approval_required: source.fresh_approval_required };
+}
+function createGovernedHandoffReceipt(input2) {
+  return parseDeferredReceiptV1({ schema: 1, version: "deferred-receipt-v1", status: "deferred", reason: input2.resource === "rest" ? "rest-reserve" : "graphql-reserve", issued_at_ms: input2.issuedAtMs, resume_after_ms: input2.resumeAfterMs ?? input2.issuedAtMs + 6e4, resume_by_ms: input2.resumeByMs ?? input2.issuedAtMs + 15 * 6e4, bindings: { scope_digest: input2.scopeDigest, request_digest: input2.requestDigest, plan_digest: input2.planDigest }, ownership: { disposition: "handoff", mode: "governed-handoff", wakeup_digest: null, cancellation_digest: null }, fresh_approval_required: input2.freshApprovalRequired });
+}
+
 // src/legacy-plan.ts
 import { createHash as createHash7 } from "node:crypto";
 
@@ -9480,7 +9528,7 @@ function selectWorkTypeProvider(input2) {
 }
 
 // src/legacy-plan.ts
-function digest2(value2) {
+function digest3(value2) {
   return createHash7("sha256").update(canonicalJson(value2)).digest("hex");
 }
 function operationKey(...parts) {
@@ -9488,7 +9536,7 @@ function operationKey(...parts) {
 }
 function finish2(operations) {
   const base = { schema: 1, executable: true, diagnostics: [], observations: [], operations };
-  return { ...base, planId: digest2(base) };
+  return { ...base, planId: digest3(base) };
 }
 function planLegacyReconciliation(policySource, snapshot, issueNumber2) {
   const policy = parseLegacyPolicy(policySource), observed = snapshot.issues.get(issueNumber2);
@@ -9524,7 +9572,7 @@ var KIND = { create_field: "create_project_field", add_option: "update_project_f
 function sameResource(a, b) {
   return a.resource.kind === b.resource.kind && a.resource.logicalKey === b.resource.logicalKey && a.resource.scopeRef === b.resource.scopeRef;
 }
-function exact(a, b) {
+function exact2(a, b) {
   return canonicalJson(a) === canonicalJson(b);
 }
 function createControlledLegacyApplyHostFactory(options) {
@@ -9569,7 +9617,7 @@ function createControlledLegacyApplyHostFactory(options) {
     };
     return { scope, host: { enablement: options.enablement, allowedIssuerRefs: options.allowedIssuerRefs, holderDigest: options.holderDigest, coordinationEpoch: options.coordinationEpoch, coordinationStore, ports: { nowMs: clock, replan, inspect: async (operation) => {
       const plan = await replan(), found = plan.operations.find((candidate) => candidate.operationKey === operation.operationKey);
-      if (found) return exact(found, operation) ? "ready" : "mismatch";
+      if (found) return exact2(found, operation) ? "ready" : "mismatch";
       return plan.operations.some((candidate) => sameResource(candidate, operation)) ? "mismatch" : "already_converged";
     }, mutate: async (kind2, operation, clientMutationId) => {
       if (KIND[operation.type] !== kind2) throw new ApplyPortError("invariant");
@@ -9594,8 +9642,11 @@ function failure3(value2) {
 function sameResource2(a, b) {
   return a.resource.kind === b.resource.kind && a.resource.logicalKey === b.resource.logicalKey && a.resource.scopeRef === b.resource.scopeRef;
 }
-function exact2(a, b) {
+function exact3(a, b) {
   return canonicalJson(a) === canonicalJson(b);
+}
+function digest4(value2) {
+  return createHash8("sha256").update(canonicalJson(value2)).digest("hex");
 }
 function field(snapshot, prepared, key) {
   const declaration = prepared.policy.fields[key], found = declaration && snapshot.fields.find((value2) => value2.name === declaration.name);
@@ -9659,9 +9710,13 @@ function createNativeControlledApplyHostFactory(options) {
       return prepared.plan;
     };
     await replan();
-    return { scope: latest.observation.scope, host: { enablement: options.enablement, allowedIssuerRefs: options.allowedIssuerRefs, holderDigest: options.holderDigest, coordinationEpoch: options.coordinationEpoch, coordinationStore, ports: { nowMs: clock, replan, inspect: async (operation) => {
+    const scope = latest.observation.scope;
+    return { scope, deferredReceipt: () => {
+      const resource = ledger.snapshot().deferredResource ?? "graphql", issuedAtMs = clock();
+      return createGovernedHandoffReceipt({ resource, issuedAtMs, scopeDigest: digest4(scope), requestDigest: digest4({ scope, policyDigest: digest4(input2.policySource) }), planDigest: latest?.plan.planId ?? null, freshApprovalRequired: true });
+    }, host: { enablement: options.enablement, allowedIssuerRefs: options.allowedIssuerRefs, holderDigest: options.holderDigest, coordinationEpoch: options.coordinationEpoch, coordinationStore, ports: { nowMs: clock, replan, inspect: async (operation) => {
       const plan = await replan(), found = plan.operations.find((candidate) => candidate.operationKey === operation.operationKey);
-      if (found) return exact2(found, operation) ? "ready" : "mismatch";
+      if (found) return exact3(found, operation) ? "ready" : "mismatch";
       return plan.operations.some((candidate) => sameResource2(candidate, operation)) ? "mismatch" : "already_converged";
     }, mutate: async (kind2, operation, clientMutationId) => {
       if (KIND2[operation.type] !== kind2) throw new ApplyPortError("invariant");
@@ -9683,20 +9738,20 @@ function createControlledApplyHostFactory(options) {
 }
 
 // src/protected-host-capsule.ts
-import { createHash as createHash8, createPrivateKey, randomUUID, sign } from "node:crypto";
-var DIGEST5 = /^[a-f0-9]{64}$/u;
+import { createHash as createHash9, createPrivateKey, randomUUID, sign } from "node:crypto";
+var DIGEST6 = /^[a-f0-9]{64}$/u;
 var KINDS2 = ["create_project_field", "update_project_field_options", "update_project_item_field_value", "add_sub_issue", "add_blocked_by"];
 function rec5(v) {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
-function exact3(v, keys2) {
+function exact4(v, keys2) {
   if (Object.keys(v).sort().join("\0") !== [...keys2].sort().join("\0")) throw new TypeError("invalid host capsule");
 }
 function text4(v, max = 256) {
   if (typeof v !== "string" || v.length < 1 || v.length > max || /[\u0000-\u001f\u007f]/u.test(v)) throw new TypeError("invalid host capsule");
   return v;
 }
-function integer2(v, min = 0) {
+function integer3(v, min = 0) {
   if (!Number.isSafeInteger(v) || v < min) throw new TypeError("invalid host capsule");
   return v;
 }
@@ -9723,7 +9778,7 @@ function proofFactory(credential, jwk, nowMs, jti) {
   if (key.asymmetricKeyType !== "ec" || key.asymmetricKeyDetails?.namedCurve !== "prime256v1" || typeof jwk.x !== "string" || typeof jwk.y !== "string" || jwk.kty !== "EC" || jwk.crv !== "P-256" || typeof jwk.d !== "string") throw new TypeError("invalid host capsule");
   const publicJwk = { crv: "P-256", kty: "EC", x: jwk.x, y: jwk.y };
   return async (request) => {
-    const header = b64(canonical2({ alg: "ES256", jwk: publicJwk, typ: "dpop+jwt" })), payload = b64(canonical2({ ath: b64(createHash8("sha256").update(credential).digest()), htm: request.method, htu: request.targetUri, iat: Math.floor(nowMs() / 1e3), jti: text4(jti(), 128) })), input2 = `${header}.${payload}`, signature = sign("sha256", Buffer.from(input2), { key, dsaEncoding: "ieee-p1363" });
+    const header = b64(canonical2({ alg: "ES256", jwk: publicJwk, typ: "dpop+jwt" })), payload = b64(canonical2({ ath: b64(createHash9("sha256").update(credential).digest()), htm: request.method, htu: request.targetUri, iat: Math.floor(nowMs() / 1e3), jti: text4(jti(), 128) })), input2 = `${header}.${payload}`, signature = sign("sha256", Buffer.from(input2), { key, dsaEncoding: "ieee-p1363" });
     return { credential, proof: `${input2}.${b64(signature)}` };
   };
 }
@@ -9735,27 +9790,27 @@ function parseProtectedHostCapsule(source, binding, runtime = {}) {
     throw new TypeError("invalid host capsule");
   }
   if (!rec5(value2) || canonical2(value2) !== source) throw new TypeError("invalid host capsule");
-  exact3(value2, ["schema", "version", "issued_at_ms", "expires_at_ms", "scope", "enablement", "allowed_issuer_refs", "holder_digest", "coordination", "permissions", "approved_kinds", "rate"]);
-  if (value2.schema !== 1 || value2.version !== "protected-host-capsule-v1" || value2.enablement !== "apply-explicitly-enabled" || !DIGEST5.test(String(value2.holder_digest))) throw new TypeError("invalid host capsule");
-  const now = runtime.nowMs ?? Date.now, issued = integer2(value2.issued_at_ms), expires = integer2(value2.expires_at_ms);
+  exact4(value2, ["schema", "version", "issued_at_ms", "expires_at_ms", "scope", "enablement", "allowed_issuer_refs", "holder_digest", "coordination", "permissions", "approved_kinds", "rate"]);
+  if (value2.schema !== 1 || value2.version !== "protected-host-capsule-v1" || value2.enablement !== "apply-explicitly-enabled" || !DIGEST6.test(String(value2.holder_digest))) throw new TypeError("invalid host capsule");
+  const now = runtime.nowMs ?? Date.now, issued = integer3(value2.issued_at_ms), expires = integer3(value2.expires_at_ms);
   if (issued > now() || expires < now() || expires - issued > 15 * 60 * 1e3) throw new TypeError("invalid host capsule");
   if (!rec5(value2.scope)) throw new TypeError("invalid host capsule");
-  exact3(value2.scope, ["owner", "repository", "project_number", "issue_number", "environment"]);
+  exact4(value2.scope, ["owner", "repository", "project_number", "issue_number", "environment"]);
   if (value2.scope.owner !== binding.scope.ownerLogin || value2.scope.repository !== binding.scope.repositoryName || value2.scope.project_number !== binding.scope.projectNumber || value2.scope.issue_number !== binding.scope.issueNumber || value2.scope.environment !== binding.environment) throw new TypeError("invalid host capsule");
   if (!Array.isArray(value2.allowed_issuer_refs) || value2.allowed_issuer_refs.length < 1 || value2.allowed_issuer_refs.length > 16) throw new TypeError("invalid host capsule");
   const issuers = value2.allowed_issuer_refs.map((v) => text4(v));
   if (new Set(issuers).size !== issuers.length) throw new TypeError("invalid host capsule");
   if (!rec5(value2.coordination)) throw new TypeError("invalid host capsule");
-  exact3(value2.coordination, ["base_uri", "epoch", "credential", "dpop_private_jwk"]);
-  const baseUri = text4(value2.coordination.base_uri, 1024), epoch = integer2(value2.coordination.epoch, 1), credential = text4(value2.coordination.credential, 8192);
+  exact4(value2.coordination, ["base_uri", "epoch", "credential", "dpop_private_jwk"]);
+  const baseUri = text4(value2.coordination.base_uri, 1024), epoch = integer3(value2.coordination.epoch, 1), credential = text4(value2.coordination.credential, 8192);
   if (!rec5(value2.coordination.dpop_private_jwk)) throw new TypeError("invalid host capsule");
   if (!rec5(value2.permissions)) throw new TypeError("invalid host capsule");
-  exact3(value2.permissions, ["projects", "issues", "extra_permissions"]);
+  exact4(value2.permissions, ["projects", "issues", "extra_permissions"]);
   if (!["none", "read", "write"].includes(String(value2.permissions.projects)) || !["none", "read", "write"].includes(String(value2.permissions.issues)) || !Array.isArray(value2.permissions.extra_permissions) || value2.permissions.extra_permissions.length !== 0) throw new TypeError("invalid host capsule");
   if (!Array.isArray(value2.approved_kinds) || value2.approved_kinds.length < 1 || value2.approved_kinds.some((v) => !KINDS2.includes(v)) || new Set(value2.approved_kinds).size !== value2.approved_kinds.length) throw new TypeError("invalid host capsule");
   if (!rec5(value2.rate)) throw new TypeError("invalid host capsule");
-  exact3(value2.rate, ["rest_remaining", "graphql_remaining", "rest_reserve", "graphql_reserve", "max_rest_requests", "max_graphql_requests", "max_graphql_points"]);
-  const rate = { restRemaining: integer2(value2.rate.rest_remaining), graphqlRemaining: integer2(value2.rate.graphql_remaining), restReserve: integer2(value2.rate.rest_reserve, 500), graphqlReserve: integer2(value2.rate.graphql_reserve, 500), maxRestRequests: integer2(value2.rate.max_rest_requests, 1), maxGraphqlRequests: integer2(value2.rate.max_graphql_requests), maxGraphqlPoints: integer2(value2.rate.max_graphql_points) };
+  exact4(value2.rate, ["rest_remaining", "graphql_remaining", "rest_reserve", "graphql_reserve", "max_rest_requests", "max_graphql_requests", "max_graphql_points"]);
+  const rate = { restRemaining: integer3(value2.rate.rest_remaining), graphqlRemaining: integer3(value2.rate.graphql_remaining), restReserve: integer3(value2.rate.rest_reserve, 500), graphqlReserve: integer3(value2.rate.graphql_reserve, 500), maxRestRequests: integer3(value2.rate.max_rest_requests, 1), maxGraphqlRequests: integer3(value2.rate.max_graphql_requests), maxGraphqlPoints: integer3(value2.rate.max_graphql_points) };
   const authenticate = proofFactory(credential, value2.coordination.dpop_private_jwk, now, runtime.jti ?? randomUUID);
   return { options: { enablement: "apply-explicitly-enabled", allowedIssuerRefs: issuers, holderDigest: String(value2.holder_digest), coordinationEpoch: epoch, coordination: { baseUri, epoch, deadlineMs: 5e3, authenticate }, permissions: { projects: value2.permissions.projects, issues: value2.permissions.issues, extraPermissions: [] }, approvedKinds: value2.approved_kinds, rate, nowMs: now } };
 }
