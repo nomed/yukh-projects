@@ -46,6 +46,34 @@ Controls:
 - verify that discovered nodes belong to the bound scope;
 - never accept arbitrary GraphQL documents or mutation names from configuration.
 
+Repository ownership and Project ownership are independent trust dimensions.
+An owner-aware work-type adapter must select native Issue Type only from a
+freshly observed organization-owned repository and the custom Project field
+only for a freshly observed personal repository. Project ownership, field
+presence, issue content, policy input, credential reachability, or cached state
+cannot override that selection. Mixed-owner Projects bind provider, repository,
+issue, Project and credential profile per item before planning.
+
+### Work type representation confusion
+
+An attacker or stale migration leaves both native `Type` and custom `Work Type`
+populated, induces a bidirectional synchronization loop, substitutes a Project
+field for an organization Issue Type, or makes a personal repository attempt an
+unsupported native mutation.
+
+Controls:
+
+- retain one logical `work_type` and choose exactly one physical provider per issue;
+- use native Issue Type only for organization-owned repositories and REST-only
+  discovery, update and verification;
+- use custom `Work Type` only as the personal-repository capability adapter;
+- read both representations only in explicit migration observation;
+- deny conflicting dual values before mutation and never repair by inferred precedence;
+- cache catalogs only under subject-, repository-, owner-, API-version- and
+  credential-profile-bound keys;
+- require separate authorization for backfill, zero-operation verification and
+  field removal.
+
 These controls also apply before any read is admitted as planning evidence. Every page remains anchored to the resolved repository, Project, issue, item, and authenticated subject. Cross-repository relationships and duplicate Project items fail closed.
 
 ### Malicious or compromised API responses

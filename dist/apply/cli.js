@@ -8828,11 +8828,10 @@ var REST_VERSION = "2026-03-10";
 var GITHUB_MUTATION_DOCUMENTS = Object.freeze({
   update_project_field_options: `mutation YukhUpdateProjectFieldOptions($input:UpdateProjectV2FieldInput!){updateProjectV2Field(input:$input){clientMutationId projectV2Field{id}}}`,
   update_project_item_field_value: `mutation YukhUpdateProjectItemFieldValue($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){clientMutationId projectV2Item{id}}}`,
-  set_issue_type: `mutation YukhSetIssueType($input:UpdateIssueIssueTypeInput!){updateIssueIssueType(input:$input){clientMutationId issue{id issueType{id}}}}`,
   add_sub_issue: `mutation YukhAddSubIssue($input:AddSubIssueInput!){addSubIssue(input:$input){clientMutationId issue{id} subIssue{id}}}`,
   add_blocked_by: `mutation YukhAddBlockedBy($input:AddBlockedByInput!){addBlockedBy(input:$input){clientMutationId issue{id} blockingIssue{id}}}`
 });
-var GITHUB_MUTATION_ESTIMATED_COSTS = Object.freeze({ update_project_field_options: 100, update_project_item_field_value: 100, set_issue_type: 100, add_sub_issue: 100, add_blocked_by: 100 });
+var GITHUB_MUTATION_ESTIMATED_COSTS = Object.freeze({ update_project_field_options: 100, update_project_item_field_value: 100, add_sub_issue: 100, add_blocked_by: 100 });
 var GitHubMutationTransportError = class extends Error {
   constructor(code) {
     super("GitHub mutation transport failed");
@@ -8858,6 +8857,9 @@ function positive(v) {
 }
 function owner(v) {
   return typeof v === "string" && /^[A-Za-z0-9-]{1,39}$/u.test(v);
+}
+function repository(v) {
+  return typeof v === "string" && /^[A-Za-z0-9_.-]{1,100}$/u.test(v);
 }
 function option(v, withId) {
   if (!rec2(v)) return false;
@@ -8892,8 +8894,8 @@ function input(kind2, v, clientMutationId) {
     return { input: { projectId: v.projectId, itemId: v.itemId, fieldId: v.fieldId, value: v.value, clientMutationId }, expected: { projectV2Item: v.itemId } };
   }
   if (kind2 === "set_issue_type" && v.kind === kind2) {
-    if (!keys(v, ["kind", "issueId", "issueTypeId"]) || !id(v.issueId) || !id(v.issueTypeId)) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
-    return { input: { issueId: v.issueId, issueTypeId: v.issueTypeId, clientMutationId }, expected: { issue: v.issueId } };
+    if (!keys(v, ["kind", "ownerLogin", "repositoryName", "issueNumber", "issueTypeName"]) || !owner(v.ownerLogin) || !repository(v.repositoryName) || !positive(v.issueNumber) || !text2(v.issueTypeName, 128)) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
+    return { input: { ownerLogin: v.ownerLogin, repositoryName: v.repositoryName, issueNumber: v.issueNumber, issueTypeName: v.issueTypeName }, expected: {} };
   }
   if (kind2 === "add_sub_issue" && v.kind === kind2) {
     if (!keys(v, ["kind", "parentIssueId", "subIssueId"]) || !id(v.parentIssueId) || !id(v.subIssueId) || v.parentIssueId === v.subIssueId) throw new GitHubMutationTransportError("YKP-GH-WRITE-001");
@@ -8910,13 +8912,16 @@ function createGitHubMutationTransport(options) {
   const fetcher = options.fetch ?? globalThis.fetch;
   return { execute: async (kind2, variables2, clientMutationId) => {
     if (!permissionsExact(kind2, options.permissions, options.approvedKinds)) throw new GitHubMutationTransportError("YKP-GH-WRITE-003");
-    const mapped = input(kind2, variables2, clientMutationId), rest = kind2 === "create_project_field", graphqlKind = kind2;
+    const mapped = input(kind2, variables2, clientMutationId), rest = kind2 === "create_project_field" || kind2 === "set_issue_type", graphqlKind = kind2;
     if (options.rateLedger && !options.rateLedger.reserve(rest ? "rest" : "graphql", rest ? 1 : GITHUB_MUTATION_ESTIMATED_COSTS[graphqlKind])) throw new GitHubMutationTransportError("YKP-GH-WRITE-008");
     let response;
     try {
-      if (rest) {
+      if (kind2 === "create_project_field") {
         const value2 = mapped.input;
         response = await fetcher(`${API}/${value2.ownerKind}/${value2.ownerLogin}/projectsV2/${value2.projectNumber}/fields`, { method: "POST", redirect: "manual", headers: { accept: "application/vnd.github+json", "content-type": "application/json", authorization: `Bearer ${options.token}`, "x-github-api-version": REST_VERSION }, body: JSON.stringify({ name: value2.name, data_type: String(value2.dataType).toLowerCase(), ...Array.isArray(value2.options) ? { single_select_options: value2.options } : {} }) });
+      } else if (kind2 === "set_issue_type") {
+        const value2 = mapped.input;
+        response = await fetcher(`${API}/repos/${value2.ownerLogin}/${value2.repositoryName}/issues/${value2.issueNumber}`, { method: "PATCH", redirect: "manual", headers: { accept: "application/vnd.github+json", "content-type": "application/json", authorization: `Bearer ${options.token}`, "x-github-api-version": REST_VERSION }, body: JSON.stringify({ type: value2.issueTypeName }) });
       } else {
         response = await fetcher(ENDPOINT, { method: "POST", redirect: "manual", headers: { accept: "application/vnd.github+json", "content-type": "application/json", authorization: `Bearer ${options.token}`, "x-github-api-version": "2022-11-28" }, body: JSON.stringify({ query: GITHUB_MUTATION_DOCUMENTS[graphqlKind], variables: { input: mapped.input } }) });
       }
@@ -8930,7 +8935,8 @@ function createGitHubMutationTransport(options) {
     if (response.status === 403) throw new GitHubMutationTransportError(response.headers.get("x-ratelimit-remaining") === "0" ? "YKP-GH-WRITE-008" : "YKP-GH-WRITE-007");
     if (response.status === 429) throw new GitHubMutationTransportError("YKP-GH-WRITE-008");
     if ([502, 503, 504].includes(response.status)) throw new GitHubMutationTransportError("YKP-GH-WRITE-004");
-    if (!response.ok || rest && response.status !== 201 || !response.headers.get("content-type")?.toLowerCase().includes("application/json")) throw new GitHubMutationTransportError(response.status === 422 ? "YKP-GH-WRITE-011" : "YKP-GH-WRITE-009");
+    const expectedRestStatus = kind2 === "create_project_field" ? 201 : kind2 === "set_issue_type" ? 200 : void 0;
+    if (!response.ok || expectedRestStatus !== void 0 && response.status !== expectedRestStatus || !response.headers.get("content-type")?.toLowerCase().includes("application/json")) throw new GitHubMutationTransportError(response.status === 422 ? "YKP-GH-WRITE-011" : "YKP-GH-WRITE-009");
     const bytes = new Uint8Array(await response.arrayBuffer());
     if (bytes.length > 2 * 1024 * 1024) throw new GitHubMutationTransportError("YKP-GH-WRITE-010");
     let body;
@@ -8939,7 +8945,7 @@ function createGitHubMutationTransport(options) {
     } catch {
       throw new GitHubMutationTransportError("YKP-GH-WRITE-009");
     }
-    if (rest) {
+    if (kind2 === "create_project_field") {
       const value2 = mapped.input;
       if (!rec2(body) || !id(body.node_id) || body.name !== value2.name || body.data_type !== String(value2.dataType).toLowerCase()) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
       if (Array.isArray(value2.options)) {
@@ -8951,17 +8957,18 @@ function createGitHubMutationTransport(options) {
       }
       return { kind: kind2, clientMutationId, providerAccepted: true };
     }
+    if (kind2 === "set_issue_type") {
+      const value2 = mapped.input;
+      if (!rec2(body) || body.number !== value2.issueNumber || !rec2(body.type) || body.type.name !== value2.issueTypeName) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
+      return { kind: kind2, clientMutationId, providerAccepted: true };
+    }
     if (!rec2(body) || Array.isArray(body.errors) || !rec2(body.data)) throw new GitHubMutationTransportError("YKP-GH-WRITE-011");
-    const field2 = { update_project_field_options: "updateProjectV2Field", update_project_item_field_value: "updateProjectV2ItemFieldValue", set_issue_type: "updateIssueIssueType", add_sub_issue: "addSubIssue", add_blocked_by: "addBlockedBy" }[graphqlKind];
+    const field2 = { update_project_field_options: "updateProjectV2Field", update_project_item_field_value: "updateProjectV2ItemFieldValue", add_sub_issue: "addSubIssue", add_blocked_by: "addBlockedBy" }[graphqlKind];
     const payload = body.data[field2];
     if (!rec2(payload) || payload.clientMutationId !== clientMutationId) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
     for (const [name, expected] of Object.entries(mapped.expected)) {
       const node = payload[name];
       if (!rec2(node) || node.id !== expected) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
-    }
-    if (kind2 === "set_issue_type") {
-      const issue = payload.issue;
-      if (!rec2(issue) || !rec2(issue.issueType) || variables2.kind !== kind2 || issue.issueType.id !== variables2.issueTypeId) throw new GitHubMutationTransportError("YKP-GH-WRITE-012");
     }
     return { kind: kind2, clientMutationId, providerAccepted: true };
   } };
@@ -9144,8 +9151,9 @@ var RestSnapshotClient = class {
     if (value2 !== null && /^\d+$/u.test(value2)) this.ledger.observe(resource, Number(value2));
   }
   invalidate(input2, effect) {
-    if (!/^[A-Za-z0-9-]{1,39}$/u.test(input2.ownerLogin) || !Number.isSafeInteger(input2.projectNumber) || input2.projectNumber < 1) throw new GitHubTransportError("YKP-GH-READ-001");
-    const prefix = new RegExp(`^/(?:orgs|users)/${input2.ownerLogin}/projectsV2/${input2.projectNumber}/(?:${effect === "schema" ? "fields|items" : "items"})\\?`, `u`), keys2 = /* @__PURE__ */ new Set([...this.cache.keys(), ...this.flights.keys()]);
+    const projectOwnerLogin = input2.projectOwnerLogin ?? input2.ownerLogin;
+    if (!/^[A-Za-z0-9-]{1,39}$/u.test(projectOwnerLogin) || !Number.isSafeInteger(input2.projectNumber) || input2.projectNumber < 1) throw new GitHubTransportError("YKP-GH-READ-001");
+    const prefix = new RegExp(`^/(?:orgs|users)/${projectOwnerLogin}/projectsV2/${input2.projectNumber}/(?:${effect === "schema" ? "fields|items" : "items"})\\?`, `u`), keys2 = /* @__PURE__ */ new Set([...this.cache.keys(), ...this.flights.keys()]);
     for (const key of keys2) if (prefix.test(key)) {
       this.generations.set(key, (this.generations.get(key) ?? 0) + 1);
       this.cache.delete(key);
@@ -9291,17 +9299,28 @@ async function readWithClient(input2, options, client) {
   if (!/^[A-Za-z0-9-]{1,39}$/u.test(input2.ownerLogin) || !/^[A-Za-z0-9_.-]{1,100}$/u.test(input2.repositoryName) || !Number.isSafeInteger(input2.projectNumber) || input2.projectNumber < 1 || numbers.length < 1 || numbers.length > 100 || numbers.some((n) => !Number.isSafeInteger(n) || n < 1)) throw new GitHubTransportError("YKP-GH-READ-001");
   const repoPage = await client.get(`/repos/${input2.ownerLogin}/${input2.repositoryName}`), repo = repoPage.body;
   if (!rec3(repo) || !rec3(repo.owner)) throw new GitHubTransportError("YKP-REST-001");
-  const ownerKind = repo.owner.type === "Organization" ? "orgs" : repo.owner.type === "User" ? "users" : (() => {
+  const repositoryOwnerKind = repo.owner.type === "Organization" ? "orgs" : repo.owner.type === "User" ? "users" : (() => {
     throw new GitHubTransportError("YKP-CAPABILITY-001");
   })();
-  const projectPage = await client.get(`/${ownerKind}/${input2.ownerLogin}/projectsV2/${input2.projectNumber}`), project = projectPage.body;
+  const projectOwnerLogin = input2.projectOwnerLogin ?? input2.ownerLogin;
+  if (!/^[A-Za-z0-9-]{1,39}$/u.test(projectOwnerLogin)) throw new GitHubTransportError("YKP-GH-READ-001");
+  let projectOwnerKind;
+  if (projectOwnerLogin === input2.ownerLogin) projectOwnerKind = repositoryOwnerKind;
+  else {
+    const projectOwner = (await client.get(`/users/${projectOwnerLogin}`)).body;
+    if (!rec3(projectOwner)) throw new GitHubTransportError("YKP-REST-001");
+    projectOwnerKind = projectOwner.type === "Organization" ? "orgs" : projectOwner.type === "User" ? "users" : (() => {
+      throw new GitHubTransportError("YKP-CAPABILITY-001");
+    })();
+  }
+  const projectPage = await client.get(`/${projectOwnerKind}/${projectOwnerLogin}/projectsV2/${input2.projectNumber}`), project = projectPage.body;
   if (!rec3(project) || integer(project.number) !== input2.projectNumber) throw new GitHubTransportError("YKP-SNAPSHOT-001");
   const projectRef = text3(project.node_id);
-  const fieldsPage = await client.list(`/${ownerKind}/${input2.ownerLogin}/projectsV2/${input2.projectNumber}/fields?per_page=100`);
+  const fieldsPage = await client.list(`/${projectOwnerKind}/${projectOwnerLogin}/projectsV2/${input2.projectNumber}/fields?per_page=100`);
   const fields = fieldsPage.nodes.filter((f) => ["text", "number", "date", "single_select", "iteration"].includes(String(f.data_type))).map((f) => ({ id: text3(f.node_id), name: text3(f.name, 128), kind: kind(f.data_type), options: fieldOptions(f) }));
   const fieldSelector = fieldsPage.nodes.map((f) => String(integer(f.id))).join(",");
   if (fieldSelector.length > 4096) throw new GitHubTransportError("YKP-GH-READ-005");
-  const itemsPage = await client.list(`/${ownerKind}/${input2.ownerLogin}/projectsV2/${input2.projectNumber}/items?per_page=100${fieldSelector ? `&fields=${fieldSelector}` : ""}`);
+  const itemsPage = await client.list(`/${projectOwnerKind}/${projectOwnerLogin}/projectsV2/${input2.projectNumber}/items?per_page=100${fieldSelector ? `&fields=${fieldSelector}` : ""}`);
   const wanted = new Set(numbers), selected = /* @__PURE__ */ new Map();
   for (const item of itemsPage.nodes) {
     if (!rec3(item.content) || !rec3(item.content.repository) || item.content.repository.full_name !== `${input2.ownerLogin}/${input2.repositoryName}`) continue;
@@ -9325,8 +9344,8 @@ async function readWithClient(input2, options, client) {
     }).sort() : [], milestone = rec3(content.milestone) && typeof content.milestone.title === "string" ? text3(content.milestone.title, 128) : void 0, issueType = rec3(content.type) && typeof content.type.name === "string" ? text3(content.type.name, 128) : void 0, summary = relationshipSummary(content), relationshipsComplete = Boolean(relation) || summary.blockedBy === 0 && summary.blocking === 0;
     issues.set(n, { issueRef: text3(content.node_id), issueDatabaseId: integer(content.id), body: typeof content.body === "string" ? content.body : "", itemRef: text3(item.node_id), fingerprint: text3(item.node_id), values: itemValues(item), ...issueType ? { issueType } : {}, labels, ...milestone ? { milestone } : {}, issueFields: nativeIssueFields(content), ...parent ? { parent } : {}, blockedBy: relation?.blockedBy ?? [], blocking: relation?.blocking ?? [], relationshipsComplete });
   }
-  const issueTypes = options.includeIssueTypes ? (await client.list(`/repos/${input2.ownerLogin}/${input2.repositoryName}/issue-types?per_page=100`)).nodes.map((value2) => ({ id: text3(value2.node_id), name: text3(value2.name, 128) })).sort((a, b) => a.id.localeCompare(b.id)) : void 0;
-  return { subjectRef: subject(options.token), ownerKind, ownerLogin: input2.ownerLogin, repositoryName: input2.repositoryName, projectNumber: input2.projectNumber, repositoryRef: text3(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), ...issueTypes ? { issueTypes } : {}, issues, evidence: { ...client.evidence } };
+  const issueTypes = options.includeIssueTypes && repositoryOwnerKind === "orgs" ? (await client.list(`/repos/${input2.ownerLogin}/${input2.repositoryName}/issue-types?per_page=100`)).nodes.map((value2) => ({ id: text3(value2.node_id), name: text3(value2.name, 128) })).sort((a, b) => a.id.localeCompare(b.id)) : void 0;
+  return { subjectRef: subject(options.token), ownerKind: projectOwnerKind, ownerLogin: input2.ownerLogin, repositoryOwnerKind, projectOwnerKind, projectOwnerLogin, repositoryName: input2.repositoryName, projectNumber: input2.projectNumber, repositoryRef: text3(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), ...issueTypes ? { issueTypes } : {}, issues, evidence: { ...client.evidence } };
 }
 function createRestProjectSnapshotReader(options) {
   const client = new RestSnapshotClient(options);
@@ -9337,10 +9356,10 @@ function createGitHubRestSnapshotReadTransportFromReader(reader) {
   let bound;
   return { execute: async (operation, variables2) => {
     const ownerLogin = text3(variables2.ownerLogin), repositoryName = text3(variables2.repositoryName), projectNumber = integer(variables2.projectNumber), issueNumber2 = integer(variables2.issueNumber);
-    const key = `${ownerLogin}/${repositoryName}/${projectNumber}/${issueNumber2}`;
+    const projectOwnerLogin = typeof variables2.projectOwnerLogin === "string" ? text3(variables2.projectOwnerLogin) : ownerLogin, key = `${ownerLogin}/${repositoryName}/${projectOwnerLogin}/${projectNumber}/${issueNumber2}`;
     if (bound && bound !== key) throw new GitHubTransportError("YKP-SNAPSHOT-001");
     bound = key;
-    snapshotPromise ??= reader.read({ ownerLogin, repositoryName, projectNumber, issueNumbers: [issueNumber2] });
+    snapshotPromise ??= reader.read({ ownerLogin, repositoryName, projectOwnerLogin, projectNumber, issueNumbers: [issueNumber2] });
     const snapshot = await snapshotPromise, issue = snapshot.issues.get(issueNumber2);
     if (!issue) throw new GitHubTransportError("YKP-SNAPSHOT-001");
     let data;
@@ -9431,6 +9450,34 @@ function parseLegacyContract(body) {
   return { kind: kind2, area, priority, ...size ? { size } : {}, ...estimate !== void 0 ? { estimate } : {}, ...milestone ? { milestone } : {}, ...parent !== void 0 ? { parent } : {}, dependsOn: list(raw2.depends_on), blocks: list(raw2.blocks), extensions };
 }
 
+// src/work-type-provider.ts
+var WorkTypeProviderError = class extends Error {
+  constructor(code) {
+    super("work type provider failed");
+    this.code = code;
+    this.name = "WorkTypeProviderError";
+  }
+  code;
+};
+function safe(value2, max = 128) {
+  return typeof value2 === "string" && value2.length > 0 && [...value2].length <= max && !/[\u0000-\u001f\u007f]/u.test(value2);
+}
+function selectWorkTypeProvider(input2) {
+  if (!input2 || !["users", "orgs"].includes(input2.projectOwnerKind) || !["users", "orgs"].includes(input2.repositoryOwnerKind) || !safe(input2.desired) || !safe(input2.fieldName) || !Array.isArray(input2.fields)) throw new WorkTypeProviderError("YKP-WORKTYPE-001");
+  const projectValue = typeof input2.projectValue === "string" ? input2.projectValue : void 0;
+  if (input2.nativeValue !== void 0 && projectValue !== void 0 && input2.nativeValue !== projectValue) throw new WorkTypeProviderError("YKP-WORKTYPE-003");
+  if (input2.repositoryOwnerKind === "orgs") {
+    const matches = (input2.issueTypes ?? []).filter((value2) => value2.name === input2.desired);
+    if (matches.length !== 1 || !safe(matches[0]?.id, 256)) throw new WorkTypeProviderError("YKP-WORKTYPE-002");
+    return { provider: "native_issue_type", desired: input2.desired, issueTypeId: matches[0].id, converged: input2.nativeValue === input2.desired };
+  }
+  const fields = input2.fields.filter((value2) => value2.name === input2.fieldName);
+  if (fields.length > 1 || fields[0] && fields[0].kind !== "single_select") throw new WorkTypeProviderError("YKP-WORKTYPE-002");
+  const field2 = fields[0], options = field2?.options.filter((value2) => value2.name === input2.desired) ?? [];
+  if (field2 && options.length !== 1) throw new WorkTypeProviderError("YKP-WORKTYPE-002");
+  return { provider: "project_work_type", desired: input2.desired, ...field2 ? { field: field2, optionId: options[0].id } : {}, converged: projectValue === input2.desired };
+}
+
 // src/legacy-plan.ts
 function digest2(value2) {
   return createHash7("sha256").update(canonicalJson(value2)).digest("hex");
@@ -9453,11 +9500,12 @@ function planLegacyReconciliation(policySource, snapshot, issueNumber2) {
     if (desired === void 0) throw new TypeError("legacy value is unsupported");
     if (declaration.target === "issue_field") throw new TypeError("legacy issue fields are not apply-compatible");
     if (declaration.target === "issue_type") {
-      if (observed.issueType === desired) continue;
-      const binding = snapshot.issueTypes?.find((value2) => value2.name === desired);
-      if (!binding) throw new TypeError("legacy issue type binding is unavailable");
-      operations.push({ operationKey: operationKey("issue", "type", "set"), type: "set_issue_type", subject: { ref: scope.subjectRef }, resource: { kind: "issue_type", logicalKey: key, scopeRef: scope.repositoryRef, providerRef: binding.id }, action: "set", environment: "dry-run", reason: "legacy.issue_type.differs", preconditions: [{ kind: "old_value", logicalKey: key, expected: observed.issueType ?? null }], dependsOn: [], desired });
-      continue;
+      const selection = selectWorkTypeProvider({ projectOwnerKind: snapshot.projectOwnerKind ?? snapshot.ownerKind, repositoryOwnerKind: snapshot.repositoryOwnerKind ?? snapshot.ownerKind, desired: String(desired), nativeValue: observed.issueType, projectValue: observed.values[declaration.projectField], issueTypes: snapshot.issueTypes, fields: snapshot.fields, fieldName: declaration.projectField });
+      if (selection.converged) continue;
+      if (selection.provider === "native_issue_type") {
+        operations.push({ operationKey: operationKey("issue", "type", "set"), type: "set_issue_type", subject: { ref: scope.subjectRef }, resource: { kind: "issue_type", logicalKey: key, scopeRef: scope.repositoryRef, providerRef: selection.issueTypeId }, action: "set", environment: "dry-run", reason: "legacy.issue_type.differs", preconditions: [{ kind: "old_value", logicalKey: key, expected: observed.issueType ?? null }], dependsOn: [], desired });
+        continue;
+      }
     }
     if (observed.values[declaration.projectField] === desired) continue;
     const field2 = snapshot.fields.find((value2) => value2.name === declaration.projectField), createKey = operationKey("schema", "field", key, "create");
@@ -9490,9 +9538,10 @@ function createControlledLegacyApplyHostFactory(options) {
       if (!issue) throw new ApplyPortError("invariant");
       const declaration = policy.fields[operation.resource.logicalKey];
       if (operation.type === "create_field") {
-        if (!declaration || declaration.target !== "project_field") throw new ApplyPortError("invariant");
+        const repositoryOwner = snapshot.repositoryOwnerKind ?? snapshot.ownerKind;
+        if (!declaration || declaration.target !== "project_field" && !(declaration.target === "issue_type" && repositoryOwner === "users")) throw new ApplyPortError("invariant");
         const names = Object.values(declaration.values);
-        return { kind: "create_project_field", ownerKind: snapshot.ownerKind, ownerLogin: snapshot.ownerLogin, projectNumber: snapshot.projectNumber, dataType: names.length ? "SINGLE_SELECT" : declaration.type === "number" ? "NUMBER" : declaration.type === "date" ? "DATE" : "TEXT", name: declaration.projectField, ...names.length ? { options: [...new Set(names)].sort().map((name) => ({ name, color: "GRAY", description: "" })) } : {} };
+        return { kind: "create_project_field", ownerKind: snapshot.projectOwnerKind ?? snapshot.ownerKind, ownerLogin: snapshot.projectOwnerLogin ?? snapshot.ownerLogin, projectNumber: snapshot.projectNumber, dataType: names.length ? "SINGLE_SELECT" : declaration.type === "number" ? "NUMBER" : declaration.type === "date" ? "DATE" : "TEXT", name: declaration.projectField, ...names.length ? { options: [...new Set(names)].sort().map((name) => ({ name, color: "GRAY", description: "" })) } : {} };
       }
       if (operation.type === "set_field_value") {
         if (!declaration) throw new ApplyPortError("invariant");
@@ -9507,8 +9556,8 @@ function createControlledLegacyApplyHostFactory(options) {
         return { kind: "update_project_item_field_value", projectId: snapshot.projectRef, itemId: issue.itemRef, fieldId: field2.id, value: value2 };
       }
       if (operation.type === "set_issue_type") {
-        if (!operation.resource.providerRef) throw new ApplyPortError("invariant");
-        return { kind: "set_issue_type", issueId: issue.issueRef, issueTypeId: operation.resource.providerRef };
+        if (typeof operation.desired !== "string") throw new ApplyPortError("invariant");
+        return { kind: "set_issue_type", ownerLogin: snapshot.ownerLogin, repositoryName: snapshot.repositoryName, issueNumber: input2.requestedScope.issueNumber, issueTypeName: operation.desired };
       }
       if (operation.type === "set_parent") {
         const parent = Number(operation.desired), related = await reader.read({ ...snapshotInput, issueNumbers: [input2.requestedScope.issueNumber, parent] }), parentIssue = related.issues.get(parent);
@@ -9559,7 +9608,7 @@ async function variables(operation, prepared, reader, input2) {
     const declaration = prepared.policy.fields[operation.resource.logicalKey];
     if (!declaration || declaration.kind === "iteration") throw new ApplyPortError("invariant");
     const dataType = { text: "TEXT", number: "NUMBER", date: "DATE", single_select: "SINGLE_SELECT" };
-    return { kind: "create_project_field", ownerKind: snapshot.ownerKind, ownerLogin: snapshot.ownerLogin, projectNumber: snapshot.projectNumber, dataType: dataType[declaration.kind], name: declaration.name, ...declaration.kind === "single_select" ? { options: Object.values(declaration.options ?? {}).map((name) => ({ name, color: "GRAY", description: "" })) } : {} };
+    return { kind: "create_project_field", ownerKind: snapshot.projectOwnerKind ?? snapshot.ownerKind, ownerLogin: snapshot.projectOwnerLogin ?? snapshot.ownerLogin, projectNumber: snapshot.projectNumber, dataType: dataType[declaration.kind], name: declaration.name, ...declaration.kind === "single_select" ? { options: Object.values(declaration.options ?? {}).map((name) => ({ name, color: "GRAY", description: "" })) } : {} };
   }
   if (operation.type === "add_option") {
     const key = operation.resource.logicalKey.split(".")[0], { declaration, found } = field(snapshot, prepared, key), name = String(operation.desired ?? declaration.options?.[operation.resource.logicalKey.split(".")[1] ?? ""]);
@@ -9580,8 +9629,8 @@ async function variables(operation, prepared, reader, input2) {
     return { kind: "update_project_item_field_value", projectId: snapshot.projectRef, itemId: issue.itemRef, fieldId: found.id, value: value2 };
   }
   if (operation.type === "set_issue_type") {
-    if (!operation.resource.providerRef) throw new ApplyPortError("invariant");
-    return { kind: "set_issue_type", issueId: issue.issueRef, issueTypeId: operation.resource.providerRef };
+    if (typeof operation.desired !== "string") throw new ApplyPortError("invariant");
+    return { kind: "set_issue_type", ownerLogin: snapshot.ownerLogin, repositoryName: snapshot.repositoryName, issueNumber: input2.issueNumbers[0], issueTypeName: operation.desired };
   }
   if (operation.type === "set_parent") {
     const parent = Number(operation.desired), related2 = await reader.read({ ...input2, issueNumbers: [input2.issueNumbers[0], parent] });

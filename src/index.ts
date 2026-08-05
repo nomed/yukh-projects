@@ -26,3 +26,4 @@ export * from "./runtime-input.js";
 export * from "./release-plan.js";
 export * from "./protected-publisher.js";
 export * from "./aggregate-migration.js";
+export * from "./work-type-provider.js";

@@ -7527,8 +7527,9 @@ var RestSnapshotClient = class {
     if (value2 !== null && /^\d+$/u.test(value2)) this.ledger.observe(resource, Number(value2));
   }
   invalidate(input2, effect) {
-    if (!/^[A-Za-z0-9-]{1,39}$/u.test(input2.ownerLogin) || !Number.isSafeInteger(input2.projectNumber) || input2.projectNumber < 1) throw new GitHubTransportError("YKP-GH-READ-001");
-    const prefix = new RegExp(`^/(?:orgs|users)/${input2.ownerLogin}/projectsV2/${input2.projectNumber}/(?:${effect === "schema" ? "fields|items" : "items"})\\?`, `u`), keys = /* @__PURE__ */ new Set([...this.cache.keys(), ...this.flights.keys()]);
+    const projectOwnerLogin = input2.projectOwnerLogin ?? input2.ownerLogin;
+    if (!/^[A-Za-z0-9-]{1,39}$/u.test(projectOwnerLogin) || !Number.isSafeInteger(input2.projectNumber) || input2.projectNumber < 1) throw new GitHubTransportError("YKP-GH-READ-001");
+    const prefix = new RegExp(`^/(?:orgs|users)/${projectOwnerLogin}/projectsV2/${input2.projectNumber}/(?:${effect === "schema" ? "fields|items" : "items"})\\?`, `u`), keys = /* @__PURE__ */ new Set([...this.cache.keys(), ...this.flights.keys()]);
     for (const key of keys) if (prefix.test(key)) {
       this.generations.set(key, (this.generations.get(key) ?? 0) + 1);
       this.cache.delete(key);
@@ -7671,17 +7672,28 @@ async function readWithClient(input2, options, client) {
   if (!/^[A-Za-z0-9-]{1,39}$/u.test(input2.ownerLogin) || !/^[A-Za-z0-9_.-]{1,100}$/u.test(input2.repositoryName) || !Number.isSafeInteger(input2.projectNumber) || input2.projectNumber < 1 || numbers.length < 1 || numbers.length > 100 || numbers.some((n) => !Number.isSafeInteger(n) || n < 1)) throw new GitHubTransportError("YKP-GH-READ-001");
   const repoPage = await client.get(`/repos/${input2.ownerLogin}/${input2.repositoryName}`), repo = repoPage.body;
   if (!rec(repo) || !rec(repo.owner)) throw new GitHubTransportError("YKP-REST-001");
-  const ownerKind = repo.owner.type === "Organization" ? "orgs" : repo.owner.type === "User" ? "users" : (() => {
+  const repositoryOwnerKind = repo.owner.type === "Organization" ? "orgs" : repo.owner.type === "User" ? "users" : (() => {
     throw new GitHubTransportError("YKP-CAPABILITY-001");
   })();
-  const projectPage = await client.get(`/${ownerKind}/${input2.ownerLogin}/projectsV2/${input2.projectNumber}`), project = projectPage.body;
+  const projectOwnerLogin = input2.projectOwnerLogin ?? input2.ownerLogin;
+  if (!/^[A-Za-z0-9-]{1,39}$/u.test(projectOwnerLogin)) throw new GitHubTransportError("YKP-GH-READ-001");
+  let projectOwnerKind;
+  if (projectOwnerLogin === input2.ownerLogin) projectOwnerKind = repositoryOwnerKind;
+  else {
+    const projectOwner = (await client.get(`/users/${projectOwnerLogin}`)).body;
+    if (!rec(projectOwner)) throw new GitHubTransportError("YKP-REST-001");
+    projectOwnerKind = projectOwner.type === "Organization" ? "orgs" : projectOwner.type === "User" ? "users" : (() => {
+      throw new GitHubTransportError("YKP-CAPABILITY-001");
+    })();
+  }
+  const projectPage = await client.get(`/${projectOwnerKind}/${projectOwnerLogin}/projectsV2/${input2.projectNumber}`), project = projectPage.body;
   if (!rec(project) || integer(project.number) !== input2.projectNumber) throw new GitHubTransportError("YKP-SNAPSHOT-001");
   const projectRef = text(project.node_id);
-  const fieldsPage = await client.list(`/${ownerKind}/${input2.ownerLogin}/projectsV2/${input2.projectNumber}/fields?per_page=100`);
+  const fieldsPage = await client.list(`/${projectOwnerKind}/${projectOwnerLogin}/projectsV2/${input2.projectNumber}/fields?per_page=100`);
   const fields = fieldsPage.nodes.filter((f) => ["text", "number", "date", "single_select", "iteration"].includes(String(f.data_type))).map((f) => ({ id: text(f.node_id), name: text(f.name, 128), kind: kind(f.data_type), options: fieldOptions(f) }));
   const fieldSelector = fieldsPage.nodes.map((f) => String(integer(f.id))).join(",");
   if (fieldSelector.length > 4096) throw new GitHubTransportError("YKP-GH-READ-005");
-  const itemsPage = await client.list(`/${ownerKind}/${input2.ownerLogin}/projectsV2/${input2.projectNumber}/items?per_page=100${fieldSelector ? `&fields=${fieldSelector}` : ""}`);
+  const itemsPage = await client.list(`/${projectOwnerKind}/${projectOwnerLogin}/projectsV2/${input2.projectNumber}/items?per_page=100${fieldSelector ? `&fields=${fieldSelector}` : ""}`);
   const wanted = new Set(numbers), selected = /* @__PURE__ */ new Map();
   for (const item of itemsPage.nodes) {
     if (!rec(item.content) || !rec(item.content.repository) || item.content.repository.full_name !== `${input2.ownerLogin}/${input2.repositoryName}`) continue;
@@ -7705,8 +7717,8 @@ async function readWithClient(input2, options, client) {
     }).sort() : [], milestone = rec(content.milestone) && typeof content.milestone.title === "string" ? text(content.milestone.title, 128) : void 0, issueType = rec(content.type) && typeof content.type.name === "string" ? text(content.type.name, 128) : void 0, summary = relationshipSummary(content), relationshipsComplete = Boolean(relation) || summary.blockedBy === 0 && summary.blocking === 0;
     issues.set(n, { issueRef: text(content.node_id), issueDatabaseId: integer(content.id), body: typeof content.body === "string" ? content.body : "", itemRef: text(item.node_id), fingerprint: text(item.node_id), values: itemValues(item), ...issueType ? { issueType } : {}, labels, ...milestone ? { milestone } : {}, issueFields: nativeIssueFields(content), ...parent ? { parent } : {}, blockedBy: relation?.blockedBy ?? [], blocking: relation?.blocking ?? [], relationshipsComplete });
   }
-  const issueTypes = options.includeIssueTypes ? (await client.list(`/repos/${input2.ownerLogin}/${input2.repositoryName}/issue-types?per_page=100`)).nodes.map((value2) => ({ id: text(value2.node_id), name: text(value2.name, 128) })).sort((a, b) => a.id.localeCompare(b.id)) : void 0;
-  return { subjectRef: subject(options.token), ownerKind, ownerLogin: input2.ownerLogin, repositoryName: input2.repositoryName, projectNumber: input2.projectNumber, repositoryRef: text(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), ...issueTypes ? { issueTypes } : {}, issues, evidence: { ...client.evidence } };
+  const issueTypes = options.includeIssueTypes && repositoryOwnerKind === "orgs" ? (await client.list(`/repos/${input2.ownerLogin}/${input2.repositoryName}/issue-types?per_page=100`)).nodes.map((value2) => ({ id: text(value2.node_id), name: text(value2.name, 128) })).sort((a, b) => a.id.localeCompare(b.id)) : void 0;
+  return { subjectRef: subject(options.token), ownerKind: projectOwnerKind, ownerLogin: input2.ownerLogin, repositoryOwnerKind, projectOwnerKind, projectOwnerLogin, repositoryName: input2.repositoryName, projectNumber: input2.projectNumber, repositoryRef: text(repo.node_id), projectRef, fields: fields.sort((a, b) => a.id.localeCompare(b.id)), ...issueTypes ? { issueTypes } : {}, issues, evidence: { ...client.evidence } };
 }
 function createRestProjectSnapshotReader(options) {
   const client = new RestSnapshotClient(options);
@@ -7720,10 +7732,10 @@ function createGitHubRestSnapshotReadTransportFromReader(reader) {
   let bound;
   return { execute: async (operation, variables) => {
     const ownerLogin = text(variables.ownerLogin), repositoryName = text(variables.repositoryName), projectNumber = integer(variables.projectNumber), issueNumber2 = integer(variables.issueNumber);
-    const key = `${ownerLogin}/${repositoryName}/${projectNumber}/${issueNumber2}`;
+    const projectOwnerLogin = typeof variables.projectOwnerLogin === "string" ? text(variables.projectOwnerLogin) : ownerLogin, key = `${ownerLogin}/${repositoryName}/${projectOwnerLogin}/${projectNumber}/${issueNumber2}`;
     if (bound && bound !== key) throw new GitHubTransportError("YKP-SNAPSHOT-001");
     bound = key;
-    snapshotPromise ??= reader.read({ ownerLogin, repositoryName, projectNumber, issueNumbers: [issueNumber2] });
+    snapshotPromise ??= reader.read({ ownerLogin, repositoryName, projectOwnerLogin, projectNumber, issueNumbers: [issueNumber2] });
     const snapshot = await snapshotPromise, issue = snapshot.issues.get(issueNumber2);
     if (!issue) throw new GitHubTransportError("YKP-SNAPSHOT-001");
     let data;
