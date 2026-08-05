@@ -5,6 +5,7 @@ export * from "./github-readonly.js";
 export * from "./github-rest-snapshot.js";
 export * from "./github-rate-ledger.js";
 export * from "./deferred-receipt.js";
+export * from "./resumable-deferral-host.js";
 export * from "./legacy-shadow.js";
 export * from "./legacy-plan.js";
 export * from "./controlled-legacy-apply-host.js";

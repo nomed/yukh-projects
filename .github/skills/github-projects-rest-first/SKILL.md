@@ -13,8 +13,20 @@ Use REST for every supported operation. Treat GraphQL as a reviewed fallback, no
 2. Use the helper's allowlisted read commands for Projects, issues, pull requests, checks, and Actions.
 3. Read `references/operations.md` before a Project mutation or GraphQL fallback.
 4. Cache repeated GETs. Do not use `gh project`, `gh pr checks --watch`, `statusCheckRollup`, or an unbounded polling loop.
-5. Stop when the relevant reserve is reached. Resume only after GitHub's declared reset.
+5. Stop when the relevant reserve is reached. Emit a `deferred-receipt-v1`; never wait or retry inside the transport.
 6. Never print, copy, or infer credentials. Authentication does not grant mutation authorization.
+
+## Deferred work
+
+When GitHub declares a reset or the helper reaches a reserve:
+
+1. Bind the receipt to SHA-256 digests of scope, request, and plan. Do not include raw repository data, provider identifiers, tokens, URLs, payloads, approvals, nonces, claims, or leases.
+2. Retain execution ownership only when the host provides durable storage, an observable bounded wake-up, cancellation, and immutable bindings. Record hashed wake-up and cancellation handles.
+3. Otherwise release through a governed handoff receipt. A conversation, shell process, Action job, or `sleep` is not a durable host.
+4. At reset, start a fresh process. Recheck rate state, governing issue, claim or lease, snapshot, convergence, approval, and nonce. Never replay a captured request or mutation.
+5. Cancel or block on expiry, changed bindings, missing authority, or unavailable durable state. Repeated deferral must remain inside `resume_by_ms`.
+
+GitHub Actions do not load this skill. Action and CLI consumers receive the same contract only after pinning a release that exposes `deferred-receipt`; they must supply a separately governed durable coordinator.
 
 ## Read commands
 

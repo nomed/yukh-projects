@@ -19,6 +19,7 @@ outputs:
   plan-id: {description: Applied plan digest}
   remaining: {description: Remaining drift count}
   report: {description: Redacted public report}
+  deferred-receipt: {description: Versioned redacted receipt when status is deferred}
 runs:
   using: node24
   main: dist/apply/action.js
