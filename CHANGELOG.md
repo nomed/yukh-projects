@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/nomed/yukh-projects/compare/v1.5.0...v1.5.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* align legacy shadow planning ([#126](https://github.com/nomed/yukh-projects/issues/126)) ([38d8c14](https://github.com/nomed/yukh-projects/commit/38d8c1435e932d3e0600829123e496a79621123c))
+
 ## [1.5.0](https://github.com/nomed/yukh-projects/compare/v1.4.0...v1.5.0) (2026-08-05)
 
 

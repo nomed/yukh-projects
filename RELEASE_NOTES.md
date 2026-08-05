@@ -1,4 +1,4 @@
-# Yukh Projects 1.5.0 <!-- x-release-please-version -->
+# Yukh Projects 1.5.1 <!-- x-release-please-version -->
 
 This release adds resumable, rate-aware deferral for controlled GitHub operations. The release delta is the accepted design, contract, and implementation after immutable release `v1.4.0`.
 
