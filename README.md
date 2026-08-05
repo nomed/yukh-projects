@@ -41,6 +41,7 @@ This repository currently contains the public project foundation. Functional cod
 - [Accepted controlled mutations v1](docs/contracts/controlled-mutations-v1.md)
 - [Accepted controlled apply entrypoint v1](docs/contracts/controlled-apply-entrypoint-v1.md)
 - [Accepted GitHub mutation transport v1](docs/contracts/github-mutation-transport-v1.md)
+- [Proposed owner-aware work type provider routing v1](docs/contracts/work-type-provider-routing-v1.md)
 - [Accepted Action, CLI, and protected release v1](docs/contracts/action-cli-release-v1.md)
 - [Proposed aggregate manifest migration planner v1](docs/contracts/aggregate-manifest-migration-v1.md)
 - [Release operations](docs/release-operations.md)
