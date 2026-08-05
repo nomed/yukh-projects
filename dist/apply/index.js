@@ -7838,6 +7838,13 @@ async function executeControlledPlan(request, ports) {
     operations = fresh?.operations ?? [];
     if (!integrity(fresh) || fresh.planId !== planId2 || !dependenciesValid(operations) || !operationsMatchScope(operations, request.scope) || hash(operations) !== approval.operationDigest) return result(planId2, operations, states, "YKP-APPLY-007");
     if (operations.some((op) => !MAP[op.type])) return result(planId2, operations, states, "YKP-APPLY-005");
+    let admitted = false;
+    try {
+      admitted = await ports.admit(operations.map((op) => MAP[op.type]));
+    } catch (error) {
+      return result(planId2, operations, states, portCode(error, "YKP-APPLY-017"));
+    }
+    if (!admitted) return result(planId2, operations, states, "YKP-APPLY-015");
     if (!await ports.consumeNonce(approval.nonce)) return result(planId2, operations, states, "YKP-APPLY-008");
     await ports.audit({ type: "apply_started", planId: planId2, outcome: "approved" });
     for (const op of operations) {
@@ -8950,7 +8957,10 @@ function input2(kind2, v, clientMutationId) {
 function createGitHubMutationTransport(options) {
   if (!text2(options?.token, 4096) || !Array.isArray(options.approvedKinds)) throw new TypeError("invalid credential");
   const fetcher = options.fetch ?? globalThis.fetch;
-  return { execute: async (kind2, variables2, clientMutationId) => {
+  return { admit: (kinds) => {
+    if (!Array.isArray(kinds) || kinds.some((kind2) => !permissionsExact(kind2, options.permissions, options.approvedKinds))) throw new GitHubMutationTransportError("YKP-GH-WRITE-003");
+    return !options.rateLedger || options.rateLedger.admit(kinds.map((kind2) => kind2 === "create_project_field" || kind2 === "set_issue_type" ? { resource: "rest", cost: 1 } : { resource: "graphql", cost: GITHUB_MUTATION_ESTIMATED_COSTS[kind2] }));
+  }, execute: async (kind2, variables2, clientMutationId) => {
     if (!permissionsExact(kind2, options.permissions, options.approvedKinds)) throw new GitHubMutationTransportError("YKP-GH-WRITE-003");
     const mapped = input2(kind2, variables2, clientMutationId), rest = kind2 === "create_project_field" || kind2 === "set_issue_type", graphqlKind = kind2;
     if (options.rateLedger && !options.rateLedger.reserve(rest ? "rest" : "graphql", rest ? 1 : GITHUB_MUTATION_ESTIMATED_COSTS[graphqlKind])) throw new GitHubMutationTransportError("YKP-GH-WRITE-008");
@@ -9057,10 +9067,30 @@ function finiteNonnegative(value2) {
 }
 function createGitHubRateLedger(options = {}) {
   const restReserve = options.restReserve ?? 500, graphqlReserve = options.graphqlReserve ?? 500, maxRestRequests = options.maxRestRequests ?? 32, maxGraphqlRequests = options.maxGraphqlRequests ?? 1, maxGraphqlPoints = options.maxGraphqlPoints ?? 100;
-  if (![restReserve, graphqlReserve, maxRestRequests, maxGraphqlRequests, maxGraphqlPoints].every(finiteNonnegative) || restReserve < 500 || graphqlReserve < 500 || maxRestRequests > 64 || maxGraphqlRequests > 2 || maxGraphqlPoints > 500) throw new TypeError("invalid rate ledger options");
+  if (![restReserve, graphqlReserve, maxRestRequests, maxGraphqlRequests, maxGraphqlPoints].every(finiteNonnegative) || restReserve < 500 || graphqlReserve < 500 || maxRestRequests > 64 || maxGraphqlRequests > 4 || maxGraphqlPoints > 500) throw new TypeError("invalid rate ledger options");
   let restRemaining = options.restRemaining ?? Number.POSITIVE_INFINITY, graphqlRemaining = options.graphqlRemaining ?? Number.POSITIVE_INFINITY, restRequests = 0, graphqlRequests = 0, graphqlPoints = 0, deferredResource = null;
   if (!(finiteNonnegative(restRemaining) || restRemaining === Number.POSITIVE_INFINITY) || !(finiteNonnegative(graphqlRemaining) || graphqlRemaining === Number.POSITIVE_INFINITY)) throw new TypeError("invalid provider rate state");
   return {
+    admit: (requests) => {
+      let restDemand = 0, graphqlDemand = 0, graphqlPointDemand = 0;
+      for (const request of requests) {
+        if (!request || !finiteNonnegative(request.cost) || request.cost < 1) return false;
+        if (request.resource === "rest") restDemand += request.cost;
+        else if (request.resource === "graphql") {
+          graphqlDemand++;
+          graphqlPointDemand += request.cost;
+        } else return false;
+      }
+      if (restRequests + requests.filter((request) => request.resource === "rest").length > maxRestRequests || restRemaining - restDemand < restReserve) {
+        deferredResource = "rest";
+        return false;
+      }
+      if (graphqlRequests + graphqlDemand > maxGraphqlRequests || graphqlPoints + graphqlPointDemand > maxGraphqlPoints || graphqlRemaining - graphqlPointDemand < graphqlReserve) {
+        deferredResource = "graphql";
+        return false;
+      }
+      return true;
+    },
     reserve: (resource, cost = 1) => {
       if (!finiteNonnegative(cost) || cost < 1) return false;
       if (resource === "rest") {
@@ -9654,7 +9684,13 @@ function createControlledLegacyApplyHostFactory(options) {
       }
       throw new ApplyPortError("invariant");
     };
-    return { scope, host: { enablement: options.enablement, allowedIssuerRefs: options.allowedIssuerRefs, holderDigest: options.holderDigest, coordinationEpoch: options.coordinationEpoch, coordinationStore, ports: { nowMs: clock, replan, inspect: async (operation) => {
+    return { scope, host: { enablement: options.enablement, allowedIssuerRefs: options.allowedIssuerRefs, holderDigest: options.holderDigest, coordinationEpoch: options.coordinationEpoch, coordinationStore, ports: { nowMs: clock, replan, admit: async (kinds) => {
+      try {
+        return mutation.admit(kinds);
+      } catch (error) {
+        throw normalizeGitHubApplyFailure(error);
+      }
+    }, inspect: async (operation) => {
       const plan = await replan(), found = plan.operations.find((candidate) => candidate.operationKey === operation.operationKey);
       if (found) return exact2(found, operation) ? "ready" : "mismatch";
       return plan.operations.some((candidate) => sameResource(candidate, operation)) ? "mismatch" : "already_converged";
@@ -9753,7 +9789,13 @@ function createNativeControlledApplyHostFactory(options) {
     return { scope, deferredReceipt: () => {
       const resource = ledger.snapshot().deferredResource ?? "graphql", issuedAtMs = clock();
       return createGovernedHandoffReceipt({ resource, issuedAtMs, scopeDigest: digest4(scope), requestDigest: digest4({ scope, policyDigest: digest4(input3.policySource) }), planDigest: latest?.plan.planId ?? null, freshApprovalRequired: true });
-    }, host: { enablement: options.enablement, allowedIssuerRefs: options.allowedIssuerRefs, holderDigest: options.holderDigest, coordinationEpoch: options.coordinationEpoch, coordinationStore, ports: { nowMs: clock, replan, inspect: async (operation) => {
+    }, host: { enablement: options.enablement, allowedIssuerRefs: options.allowedIssuerRefs, holderDigest: options.holderDigest, coordinationEpoch: options.coordinationEpoch, coordinationStore, ports: { nowMs: clock, replan, admit: async (kinds) => {
+      try {
+        return mutation.admit(kinds);
+      } catch (error) {
+        throw normalizeGitHubApplyFailure(error);
+      }
+    }, inspect: async (operation) => {
       const plan = await replan(), found = plan.operations.find((candidate) => candidate.operationKey === operation.operationKey);
       if (found) return exact3(found, operation) ? "ready" : "mismatch";
       return plan.operations.some((candidate) => sameResource2(candidate, operation)) ? "mismatch" : "already_converged";
