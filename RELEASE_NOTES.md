@@ -1,4 +1,4 @@
-# Yukh Projects 1.4.0 <!-- x-release-please-version -->
+# Yukh Projects 1.5.0 <!-- x-release-please-version -->
 
 This release adds owner-aware work type reconciliation. The release delta is
 strictly the two commits after immutable release `v1.3.5`.
