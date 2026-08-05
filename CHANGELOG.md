@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.0](https://github.com/nomed/yukh-projects/compare/v1.4.0...v1.5.0) (2026-08-05)
+
+
+### Features
+
+* implement resumable rate deferral ([6f22aeb](https://github.com/nomed/yukh-projects/commit/6f22aebfc96a55e468104aad43b2832edb671da1))
+* specify resumable deferral receipt ([b5c78ed](https://github.com/nomed/yukh-projects/commit/b5c78ed4b76fbcc5daf399675ce26a5e1b745013))
+
 ## [1.4.0](https://github.com/nomed/yukh-projects/compare/v1.3.5...v1.4.0) (2026-08-05)
 
 

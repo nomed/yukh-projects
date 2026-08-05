@@ -1,45 +1,34 @@
-# Yukh Projects 1.4.0 <!-- x-release-please-version -->
+# Yukh Projects 1.5.0 <!-- x-release-please-version -->
 
-This release adds owner-aware work type reconciliation. The release delta is
-strictly the two commits after immutable release `v1.3.5`.
+This release adds resumable, rate-aware deferral for controlled GitHub operations. The release delta is the accepted design, contract, and implementation after immutable release `v1.4.0`.
 
-## Owner-aware provider routing
+## Deferred receipt
 
-- Organization-owned repositories use native GitHub Issue Type.
-- User-owned repositories use the Project single-select `Work Type` adapter.
-- Repository ownership selects the provider independently from Project
-  ownership, covering all four user/organization ownership combinations.
-- Conflicting native and Project representations fail closed with stable,
-  redacted diagnostics; no redundant dual write is performed.
+- Action and CLI expose the versioned, redacted `deferred-receipt-v1` contract.
+- Receipts bind scope, request, and plan by SHA-256 digest and contain no credentials, provider payloads, approval artifacts, nonces, claims, leases, or replayable mutations.
+- The shared rate ledger records whether REST or GraphQL reached its reserve.
+- Without a durable coordinator, the runtime emits a governed handoff and releases ownership.
 
-## REST-first and rate safety
+## Durable resume
 
-- Native Issue Type mutation uses GitHub REST API version `2026-03-10` and has
-  no GraphQL fallback.
-- Deterministic snapshots for 1, 10, and 100 issues reuse one Issue Type
-  catalog and make zero GraphQL calls.
-- Project `Work Type` operations retain the bounded REST transport contract.
-- There is no hidden polling, sleep, or retry.
+- `createResumableDeferralHost` supports durable scheduling, observable state, cancellation, bounded expiry, and repeated deferral.
+- Ownership is retained only after the durable port supplies hashed wake-up and cancellation handles.
+- Resume starts a fresh governed process with immutable bindings. It rechecks rate state, claims or leases, snapshots, convergence, approval, and nonce; it never replays a captured request.
+- Action, CLI, transports, and the operator skill contain no sleep, polling, self-dispatch, credential switching, or automatic mutation retry.
 
 ## Compatibility
 
-- Project-owned `Status` remains preserved unless explicitly governed.
-- Existing organization-owned repository configurations continue to target
-  native Issue Type.
-- Personal repositories gain an explicit Project `Work Type` fallback.
-- This release does not remove or backfill any existing Project field.
+- Action consumers must pin the immutable `v1.5.0` commit SHA published by this release, not a floating tag or branch.
+- The apply Action exposes `deferred-receipt`; the apply CLI adds `deferredReceipt` to its redacted JSON result and continues to exit with code `6` when deferred.
+- A GitHub Actions job is not a durable coordinator. Consumers that retain ownership must provide a separately governed scheduler implementing durable storage, observable wake-up, cancellation, expiry, and fresh-process launch.
+- Existing consumers may remain pinned to `v1.4.0`; no consumer is migrated by this release.
 
 ## Integrity and qualification
 
-Publication remains separately gated by deterministic tests, reproducible
-bundles, startup smoke tests, checksums, SBOM, provenance attestations, and the
-protected immutable-release workflow. These notes do not authorize merge,
-publication, deployment, live apply, backfill, or consumer migration.
+The implementation validates the operator skill, passes the complete test suite, rebuilds checked-in bundles byte-identically, and preserves consumer-neutrality and controlled-apply security gates. Publication adds checksums, an SPDX SBOM, provenance attestations, and immutable GitHub release assets.
 
 ## Rollback
 
-The exact rollback pin is `v1.3.5` at commit
-`a11031b5301c4c3e0984443914cd420d9b771e2d`.
+The exact rollback pin is `v1.4.0` at commit `d1f787ca82c085b215146949d039aa217b399c27`.
 
-Rollback does not authorize deployment, live apply, consumer migration, or
-movement of an existing immutable tag.
+Rollback means updating a consumer to that immutable commit in separately authorized work. It does not authorize moving or deleting a tag, deployment, live apply, or consumer migration.
