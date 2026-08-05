@@ -34,3 +34,7 @@ test("legacy plan expands consumer drift into stable executable operations",()=>
 test("legacy plan proves zero-operation convergence",()=>{const plan=planLegacyReconciliation(policy,snapshot(true),27);assert.equal(plan.executable,true);assert.deepEqual(plan.operations,[]);assert.match(plan.planId,/^[a-f0-9]{64}$/u);});
 
 test("legacy plan fails closed without an Issue Type binding",()=>{const value=snapshot();value.issueTypes=[];assert.throws(()=>planLegacyReconciliation(policy,value,27));});
+
+test("legacy logical issue type routes to Project Work Type for a personal repository",()=>{const value=snapshot();value.ownerKind="users";value.repositoryOwnerKind="users";value.projectOwnerKind="orgs";value.issueTypes=undefined;const plan=planLegacyReconciliation(policy,value,27);assert.equal(plan.operations.some(operation=>operation.type==="set_issue_type"),false);const kindOperations=plan.operations.filter(operation=>operation.resource.logicalKey==="kind");assert.deepEqual(kindOperations.map(operation=>operation.type),["create_field","set_field_value"]);});
+
+test("legacy organization routing rejects conflicting dual representations",()=>{const value=snapshot();const issue=value.issues.get(27)!;value.issues=new Map([[27,{...issue,issueType:"Gate",values:{...issue.values,"Work Type":"Task"}}]]);assert.throws(()=>planLegacyReconciliation(policy,value,27));});
