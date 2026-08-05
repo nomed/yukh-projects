@@ -37,3 +37,16 @@ test("documentation diagrams use the maintained SVG asset", async () => {
   assert.doesNotMatch(threatModel, /mermaid/i);
   assert.match(threatModel, /assets\/reconciliation-flow\.svg/);
 });
+
+test("the proposed work type contract separates Project and repository ownership", async () => {
+  const contract = await read("docs/contracts/work-type-provider-routing-v1.md");
+  const threatModel = await read("docs/security/threat-model.md");
+
+  for (const provider of ["NativeIssueTypeProvider", "ProjectWorkTypeProvider"]) {
+    assert.match(contract, new RegExp(provider));
+  }
+  assert.match(contract, /Project ownership never selects or overrides\s+the provider/);
+  assert.match(contract, /GraphQL remaining zero/);
+  assert.match(contract, /YKP-WORKTYPE-003/);
+  assert.match(threatModel, /Work type representation confusion/);
+});
