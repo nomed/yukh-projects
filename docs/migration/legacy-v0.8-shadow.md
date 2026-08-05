@@ -2,7 +2,8 @@
 
 This profile allows an existing version-1 `.yukh/project.yaml` and hidden
 `<!-- yukh ... -->` issue contracts to be audited without rewriting the backlog.
-It is a read-only migration aid, not an apply-compatible release.
+Shadow remains read-only. The separately distributed apply bundle supports a
+bounded compatibility subset only through explicit `legacy-apply-v1` mode.
 
 ## Compatibility matrix
 
@@ -18,7 +19,7 @@ It is a read-only migration aid, not an apply-compatible release.
 | Native dependencies and blocking | Changed | One fixed bounded GraphQL batch is allowlisted; with zero GraphQL budget an incomplete REST observation is deferred |
 | One-issue shadow dry-run | Supported | Uses one immutable REST-first snapshot |
 | Backlog shadow audit | Supported | Up to 100 issue numbers reuse one snapshot; larger backlogs use explicit batches |
-| Full apply and mandatory zero-operation second apply | Missing | Remains unavailable until the controlled-apply roadmap is complete |
+| Controlled apply and mandatory zero-operation second apply | Changed | Explicit `legacy-apply-v1` supports the qualified operation subset; every pass requires a fresh exact approval and nonce |
 
 The machine-readable report repeats this matrix. It contains operation counts,
 stable diagnostic codes and request counts, but excludes credentials, provider
@@ -70,3 +71,17 @@ prove completeness, and `5` means an invariant or provider failure.
 The qualification issue supplies the candidate commit, checksums, SBOM,
 attestations and exact release pin. Until that gate publishes an immutable
 artifact, this document intentionally supplies no candidate release.
+
+## Controlled compatibility boundary
+
+The compatibility entrypoint does not infer legacy semantics from policy text.
+The Action or CLI caller selects exact mode `legacy-apply-v1`; the host then
+requires a version-1 legacy policy and rejects substitutions before provider
+access. The qualified subset is Project field creation/value setting, native
+Issue Type, and native parent operations already covered by the controlled
+mutation allowlist. Labels, milestones, issue fields, destructive operations,
+and incomplete dependency graphs remain fail-closed.
+
+The first pass uses a freshly generated exact plan and independent signed
+approval. A convergence proof is a second complete run with a new zero-operation
+plan, approval, and nonce. Neither pass is authorized by this document.

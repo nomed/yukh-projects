@@ -8696,7 +8696,7 @@ var LEGACY_COMPATIBILITY_MATRIX = Object.freeze([
   { capability: "native dependencies", state: "Changed", note: "one fixed bounded GraphQL batch; GraphQL-zero requires complete cached state or returns deferred" },
   { capability: "single issue shadow dry-run", state: "Supported", note: "REST-first immutable snapshot" },
   { capability: "complete backlog shadow audit", state: "Supported", note: "bounded scopes of at most 100 issues reuse one snapshot reader" },
-  { capability: "full apply and zero-operation second apply", state: "Missing", note: "blocked until controlled apply issues are complete" }
+  { capability: "controlled apply and zero-operation second apply", state: "Changed", note: "explicit legacy-apply-v1 mode supports the qualified bounded operation subset; every pass requires a fresh exact approval" }
 ]);
 function rec3(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
