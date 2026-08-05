@@ -5,6 +5,12 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - .release-please-manifest.json
+      - CHANGELOG.md
+      - RELEASE_NOTES.md
+      - package.json
+      - package-lock.json
 
 permissions:
   contents: write

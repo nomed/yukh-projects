@@ -6,6 +6,14 @@ The protected publisher normally establishes the immutable tag that Release Plea
 
 The hold is advanced only through a reviewed pull request. It may be removed after the separately authorized protected publisher creates and verifies the corresponding immutable tag. Tags, Releases, attestations, and packages must never be created merely to repair Release Please state.
 
+Release Please ignores pushes that change only its version manifest, changelog,
+release notes and package version files. The protected publisher consumes that
+metadata-only push first and establishes the immutable tag; Release Please
+therefore cannot race the publisher and open the next candidate against the
+previous tag. A later product or maintenance change triggers Release Please
+against the now-immutable baseline. Manual dispatch remains available for
+read-only recovery after the baseline has been verified.
+
 Repository immutable releases must be enabled before publication. The protected
 workflow checks that policy once in its read-only preflight and checks it again
 immediately before the first GitHub mutation. Either unavailable, malformed or
