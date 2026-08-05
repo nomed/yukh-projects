@@ -1,7 +1,8 @@
 # Yukh Projects 1.6.0 <!-- x-release-please-version -->
 
-This release adds an explicit, versioned controlled-apply entrypoint for
-legacy-compatible policies without weakening the native apply path.
+This release makes controlled apply budget-complete for accepted
+multi-operation plans. The complete mutation budget is admitted before the
+first mutation; an insufficient budget defers the plan with zero effects.
 
 ## Explicit legacy apply
 
