@@ -4,6 +4,14 @@ This validation records the implementation contract for issue #131. It is
 synthetic evidence only: no provider access, live apply, deployment, consumer
 migration, tag, or release is performed.
 
+## Release qualification
+
+The first immutable patch artifact published after this record must contain
+the merged whole-plan admission change at
+`2c8a2de19e323cb4ddb1f35c75d6b6b5581cc185`. This record qualifies that
+artifact's budget-complete behavior; it does not authorize live apply,
+consumer migration, or any later transition gate.
+
 After the fresh plan has been validated against its approval, the executor
 derives the complete ordered mutation-kind sequence and asks the write
 transport to admit that sequence before consuming the nonce, inspecting an
