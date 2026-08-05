@@ -25,7 +25,7 @@ The apply Action accepts only these named inputs:
 
 | Input | Required | Contract |
 | --- | --- | --- |
-| `mode` | yes | exact literal `apply`; no default or alias |
+| `mode` | yes | exact literal `apply` for native policy or `legacy-apply-v1` for the bounded version-1 compatibility policy; no default or alias |
 | `github-read-token` | yes | masked, short-lived read profile |
 | `github-write-token` | yes | separately masked least-privilege write profile |
 | `owner` | yes | validated canonical owner login |
@@ -45,8 +45,14 @@ prompt, inference from git remotes or event payloads, alternate endpoint, shell
 hook, arbitrary GraphQL, resume flag, force flag or partial-apply selector.
 
 The host separately injects the exact literal enablement
-`apply-explicitly-enabled`. `mode=apply` and enablement are independent gates.
+`apply-explicitly-enabled`. The selected mode and enablement are independent gates.
 Neither may be derived from the other or from approval contents.
+
+The entrypoint passes an internal exact reconciliation-mode discriminator to the
+host factory. Policy contents never select the apply implementation. A native
+policy presented with `legacy-apply-v1`, a legacy policy presented with `apply`,
+an unversioned legacy alias, or a changed version fails closed before provider
+access.
 
 ## Approval envelope
 

@@ -7414,11 +7414,12 @@ function parseApplyCliArgs(argv) {
     values.set(key, value2);
   }
   for (const key of VALUES) if (key !== "--policy-path" && !values.has(key)) throw new TypeError("invalid apply arguments");
-  if (values.get("--mode") !== "apply" || !DIGEST.test(values.get("--approved-plan-id") ?? "") || !bounded(values.get("--environment") ?? "", 64)) throw new TypeError("invalid apply arguments");
+  const mode = values.get("--mode");
+  if (mode !== "apply" && mode !== "legacy-apply-v1" || !DIGEST.test(values.get("--approved-plan-id") ?? "") || !bounded(values.get("--environment") ?? "", 64)) throw new TypeError("invalid apply arguments");
   parseRuntimeScope({ owner: values.get("--owner"), repository: values.get("--repository"), projectNumber: values.get("--project-number"), issueNumber: values.get("--issue-number") });
   const readTokenFd = fd(values.get("--github-read-token-fd")), writeTokenFd = fd(values.get("--github-write-token-fd")), hostCapsuleFd = fd(values.get("--host-capsule-fd"));
   if ((/* @__PURE__ */ new Set([readTokenFd, writeTokenFd, hostCapsuleFd])).size !== 3) throw new TypeError("invalid apply arguments");
-  return { mode: "apply", owner: values.get("--owner"), repository: values.get("--repository"), projectNumber: values.get("--project-number"), issueNumber: values.get("--issue-number"), policyPath: values.get("--policy-path") ?? ".yukh/project.yaml", approvedPlanId: values.get("--approved-plan-id"), approvalFile: values.get("--approval-file"), approvalPublicKeyFile: values.get("--approval-public-key-file"), environment: values.get("--environment"), readTokenFd, writeTokenFd, hostCapsuleFd };
+  return { mode, owner: values.get("--owner"), repository: values.get("--repository"), projectNumber: values.get("--project-number"), issueNumber: values.get("--issue-number"), policyPath: values.get("--policy-path") ?? ".yukh/project.yaml", approvedPlanId: values.get("--approved-plan-id"), approvalFile: values.get("--approval-file"), approvalPublicKeyFile: values.get("--approval-public-key-file"), environment: values.get("--environment"), readTokenFd, writeTokenFd, hostCapsuleFd };
 }
 async function readBoundedFd(fdValue, maxBytes = 8192) {
   if (!Number.isSafeInteger(fdValue) || fdValue < 3 || fdValue > 1024 || maxBytes < 1 || maxBytes > 64 * 1024) throw new TypeError("invalid credential descriptor");
@@ -7976,7 +7977,7 @@ async function applyCliMain(argv, workspace, factory, write) {
     approvedPlanId = options.approvedPlanId;
     const [readToken, writeToken, policySource, approvalArtifact, approvalPublicKey] = await Promise.all([readBoundedFd(options.readTokenFd), readBoundedFd(options.writeTokenFd), loadWorkspacePolicy(workspace, options.policyPath), readApprovalArtifact(workspace, options.approvalFile), readExclusiveWorkspaceFile(workspace, options.approvalPublicKeyFile)]);
     if (readToken === writeToken) throw new TypeError("credential profiles must be distinct");
-    const requestedScope = parseRuntimeScope({ owner: options.owner, repository: options.repository, projectNumber: options.projectNumber, issueNumber: options.issueNumber }), runtime = await factory.create({ requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId: options.approvedPlanId, protectedEnvironment: options.environment, scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host);
+    const requestedScope = parseRuntimeScope({ owner: options.owner, repository: options.repository, projectNumber: options.projectNumber, issueNumber: options.issueNumber }), runtime = await factory.create({ reconciliationMode: options.mode === "legacy-apply-v1" ? "legacy-v1" : "native-v1", requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId: options.approvedPlanId, protectedEnvironment: options.environment, scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host);
     write(`${JSON.stringify(report)}
 `);
     return report.status === "success" ? 0 : report.status === "deferred" ? 6 : 5;
@@ -9390,7 +9391,7 @@ var LEGACY_COMPATIBILITY_MATRIX = Object.freeze([
   { capability: "native dependencies", state: "Changed", note: "one fixed bounded GraphQL batch; GraphQL-zero requires complete cached state or returns deferred" },
   { capability: "single issue shadow dry-run", state: "Supported", note: "REST-first immutable snapshot" },
   { capability: "complete backlog shadow audit", state: "Supported", note: "bounded scopes of at most 100 issues reuse one snapshot reader" },
-  { capability: "full apply and zero-operation second apply", state: "Missing", note: "blocked until controlled apply issues are complete" }
+  { capability: "controlled apply and zero-operation second apply", state: "Changed", note: "explicit legacy-apply-v1 mode supports the qualified bounded operation subset; every pass requires a fresh exact approval" }
 ]);
 function rec4(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
@@ -9678,7 +9679,7 @@ function createNativeControlledApplyHostFactory(options) {
 }
 function createControlledApplyHostFactory(options) {
   const native = createNativeControlledApplyHostFactory(options), legacy = createControlledLegacyApplyHostFactory(options);
-  return { create: (input2) => /^\s*version:\s*1\s*$/mu.test(input2.policySource) ? legacy.create(input2) : native.create(input2) };
+  return { create: (input2) => input2.reconciliationMode === "legacy-v1" ? legacy.create(input2) : input2.reconciliationMode === "native-v1" ? native.create(input2) : Promise.reject(new TypeError("invalid reconciliation mode")) };
 }
 
 // src/protected-host-capsule.ts

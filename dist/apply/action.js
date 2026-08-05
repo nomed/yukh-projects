@@ -7946,13 +7946,17 @@ function input(io2, name) {
   if (value2 === void 0 || value2 === "") throw new TypeError("invalid action input");
   return value2;
 }
+function parseApplyActionMode(value2) {
+  if (value2 === "apply" || value2 === "legacy-apply-v1") return value2;
+  throw new TypeError("invalid action mode");
+}
 function failure(planId2) {
   return { schema: 1, status: "error", planId: /^[a-f0-9]{64}$/u.test(planId2) ? planId2 : "invalid", counts: { already_converged: 0, verified: 0, failed: 0, not_attempted: 0 }, remaining: 0, diagnostics: [{ code: "YKP-APPLY-001", severity: "error", message: "apply request is invalid" }] };
 }
 async function applyActionMain(io2, factory) {
   let approvedPlanId = "invalid";
   try {
-    if (input(io2, "MODE") !== "apply") throw new TypeError("invalid action mode");
+    const mode = parseApplyActionMode(input(io2, "MODE"));
     const readToken = input(io2, "GITHUB-READ-TOKEN");
     io2.mask(readToken);
     const writeToken = input(io2, "GITHUB-WRITE-TOKEN");
@@ -7961,7 +7965,7 @@ async function applyActionMain(io2, factory) {
     approvedPlanId = input(io2, "APPROVED-PLAN-ID");
     const workspace = io2.env.GITHUB_WORKSPACE;
     if (!workspace) throw new TypeError("invalid action environment");
-    const requestedScope = parseRuntimeScope({ owner: input(io2, "OWNER"), repository: input(io2, "REPOSITORY"), projectNumber: input(io2, "PROJECT-NUMBER"), issueNumber: input(io2, "ISSUE-NUMBER") }), [policySource, approvalArtifact, approvalPublicKey] = await Promise.all([loadWorkspacePolicy(workspace, io2.env["INPUT_POLICY-PATH"] || ".yukh/project.yaml"), readApprovalArtifact(workspace, input(io2, "APPROVAL-FILE")), readExclusiveWorkspaceFile(workspace, input(io2, "APPROVAL-PUBLIC-KEY-FILE"))]), runtime = await factory.create({ requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId, protectedEnvironment: input(io2, "ENVIRONMENT"), scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host);
+    const requestedScope = parseRuntimeScope({ owner: input(io2, "OWNER"), repository: input(io2, "REPOSITORY"), projectNumber: input(io2, "PROJECT-NUMBER"), issueNumber: input(io2, "ISSUE-NUMBER") }), [policySource, approvalArtifact, approvalPublicKey] = await Promise.all([loadWorkspacePolicy(workspace, io2.env["INPUT_POLICY-PATH"] || ".yukh/project.yaml"), readApprovalArtifact(workspace, input(io2, "APPROVAL-FILE")), readExclusiveWorkspaceFile(workspace, input(io2, "APPROVAL-PUBLIC-KEY-FILE"))]), runtime = await factory.create({ reconciliationMode: mode === "legacy-apply-v1" ? "legacy-v1" : "native-v1", requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId, protectedEnvironment: input(io2, "ENVIRONMENT"), scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host);
     await io2.output("status", report.status);
     await io2.output("plan-id", report.planId);
     await io2.output("remaining", String(report.remaining));
@@ -9378,7 +9382,7 @@ var LEGACY_COMPATIBILITY_MATRIX = Object.freeze([
   { capability: "native dependencies", state: "Changed", note: "one fixed bounded GraphQL batch; GraphQL-zero requires complete cached state or returns deferred" },
   { capability: "single issue shadow dry-run", state: "Supported", note: "REST-first immutable snapshot" },
   { capability: "complete backlog shadow audit", state: "Supported", note: "bounded scopes of at most 100 issues reuse one snapshot reader" },
-  { capability: "full apply and zero-operation second apply", state: "Missing", note: "blocked until controlled apply issues are complete" }
+  { capability: "controlled apply and zero-operation second apply", state: "Changed", note: "explicit legacy-apply-v1 mode supports the qualified bounded operation subset; every pass requires a fresh exact approval" }
 ]);
 function rec4(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
@@ -9666,7 +9670,7 @@ function createNativeControlledApplyHostFactory(options) {
 }
 function createControlledApplyHostFactory(options) {
   const native = createNativeControlledApplyHostFactory(options), legacy = createControlledLegacyApplyHostFactory(options);
-  return { create: (input3) => /^\s*version:\s*1\s*$/mu.test(input3.policySource) ? legacy.create(input3) : native.create(input3) };
+  return { create: (input3) => input3.reconciliationMode === "legacy-v1" ? legacy.create(input3) : input3.reconciliationMode === "native-v1" ? native.create(input3) : Promise.reject(new TypeError("invalid reconciliation mode")) };
 }
 
 // src/protected-host-capsule.ts
