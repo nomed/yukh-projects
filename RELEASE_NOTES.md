@@ -1,44 +1,46 @@
 # Yukh Projects 1.5.1 <!-- x-release-please-version -->
 
-This patch restores exact parity between single-issue legacy shadow and
-controlled apply planning.
+This release adds an explicit, versioned controlled-apply entrypoint for
+legacy-compatible policies without weakening the native apply path.
 
-## Planning parity
+## Explicit legacy apply
 
-- Single-issue Action and CLI shadow runs now use the same owner-aware legacy
-  planner as controlled apply.
-- Shadow emits the exact deterministic plan ID and ordered operation count that
-  an approval would bind.
-- User-owned repositories select the Project `Work Type` fallback;
-  organization-owned repositories select native Issue Type.
-- Multi-issue legacy audit remains available as an aggregate compatibility
-  report and is explicitly not an approval artifact.
+- Action and CLI accept the exact mode `legacy-apply-v1`.
+- A closed internal discriminator selects the version-1 compatibility planner;
+  policy text cannot select or substitute the apply host.
+- Native `apply` and structurally separate shadow entrypoints remain unchanged.
+- Every apply pass still requires its own fresh, exact signed approval.
 
 ## Safety
 
-- Dry-run remains structurally unable to mutate.
-- Provider selection remains REST-only with zero GraphQL budget.
-- Missing or conflicting provider state continues to fail closed.
-- The release does not migrate a consumer or authorize Project mutation.
+- Synthetic qualification used an organization-owned repository fixture with
+  GraphQL remaining zero and no provider access.
+- The first synthetic runtime performed one native Issue Type REST mutation and
+  converged; a separately constructed second runtime planned zero operations.
+- Mode and policy substitution fail before provider reads.
+- Signed plan approval, protected coordination, fresh preflight, bounded
+  mutation, resumable deferral, verification and redacted diagnostics remain in
+  force.
 
 ## Compatibility
 
-- Existing v1.5.0 native and controlled-apply inputs remain unchanged.
-- Single-issue legacy shadow reports now use the executable-plan report shape
-  already exposed by controlled planning.
-- Consumers that require the former aggregate report can continue to use the
-  bounded multi-issue CLI audit until they migrate.
+- Existing v1.5.1 native, shadow and resumable-deferral behavior is preserved.
+- Legacy controlled apply is an explicit changed capability, not an implicit
+  interpretation of `.yukh/project.yaml`.
+- This release does not itself enable live apply, backfill, legacy removal or
+  consumer migration.
 
 ## Integrity and qualification
 
-The correction passes the complete test suite, byte-identical bundle
-verification, consumer-neutrality checks and dependency audit. Publication
-adds checksums, an SPDX SBOM, provenance attestations and immutable assets.
+The integrated candidate passes 219 tests, byte-identical bundle verification,
+consumer-neutrality checks, CodeQL and dependency audit. A separately
+authorized publication would add checksums, an SPDX SBOM, provenance
+attestations and immutable assets.
 
 ## Rollback
 
-The exact rollback pin is `v1.5.0` at commit
-`495920282c41f68bb61f9b34140a53d24e38e3d0`.
+The exact rollback pin is `v1.5.1` at commit
+`d58837397bc5856923e0e742458be34d8e5a27d6`.
 
 Rollback requires a separately reviewed consumer pin change. It does not
 authorize moving or deleting a tag, deployment, live apply or migration.
