@@ -1,42 +1,45 @@
-# Yukh Projects 1.3.5 <!-- x-release-please-version -->
+# Yukh Projects 1.4.0 <!-- x-release-please-version -->
 
-This release adds the post-v1.3.4 changes without repeating content already
-published in v1.3.4.
+This release adds owner-aware work type reconciliation. The release delta is
+strictly the two commits after immutable release `v1.3.5`.
 
-## REST-first field creation
+## Owner-aware provider routing
 
-- Project field creation uses GitHub API version `2026-03-10`.
-- The supported path makes zero GraphQL calls and has no GraphQL fallback.
-- The implementation preserves the bounded, fail-closed request contract and
-  does not poll, sleep, or retry implicitly.
+- Organization-owned repositories use native GitHub Issue Type.
+- User-owned repositories use the Project single-select `Work Type` adapter.
+- Repository ownership selects the provider independently from Project
+  ownership, covering all four user/organization ownership combinations.
+- Conflicting native and Project representations fail closed with stable,
+  redacted diagnostics; no redundant dual write is performed.
 
-## Credentials and Project ownership
+## REST-first and rate safety
 
-- For organization-owned Projects, the recommended profile is a short-lived
-  GitHub App installation token with the required organization Project access.
-- GitHub's user-owned Project field endpoint does not support GitHub App
-  installation tokens or fine-grained PATs. Use the documented OAuth or classic
-  PAT profile when that endpoint is required.
-- Authentication, authorization, provider, budget, and invariant failures
-  remain distinguishable without exposing credentials or provider bodies.
+- Native Issue Type mutation uses GitHub REST API version `2026-03-10` and has
+  no GraphQL fallback.
+- Deterministic snapshots for 1, 10, and 100 issues reuse one Issue Type
+  catalog and make zero GraphQL calls.
+- Project `Work Type` operations retain the bounded REST transport contract.
+- There is no hidden polling, sleep, or retry.
 
 ## Compatibility
 
-- Issue Type mutation support is included in the post-v1.3.4 delta.
 - Project-owned `Status` remains preserved unless explicitly governed.
-- These release notes do not authorize deployment, live apply, or consumer
-  migration.
+- Existing organization-owned repository configurations continue to target
+  native Issue Type.
+- Personal repositories gain an explicit Project `Work Type` fallback.
+- This release does not remove or backfill any existing Project field.
 
 ## Integrity and qualification
 
-Publication remains separately gated by deterministic qualification of the
-generated bundle, checksums, SBOM, provenance attestations, and the immutable
-release workflow.
+Publication remains separately gated by deterministic tests, reproducible
+bundles, startup smoke tests, checksums, SBOM, provenance attestations, and the
+protected immutable-release workflow. These notes do not authorize merge,
+publication, deployment, live apply, backfill, or consumer migration.
 
 ## Rollback
 
-The exact rollback pin is `v1.3.4` at commit
-`21731941c96525802ee1e31c6df9e888ceab07e7`.
+The exact rollback pin is `v1.3.5` at commit
+`a11031b5301c4c3e0984443914cd420d9b771e2d`.
 
 Rollback does not authorize deployment, live apply, consumer migration, or
 movement of an existing immutable tag.

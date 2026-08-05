@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0](https://github.com/nomed/yukh-projects/compare/v1.3.5...v1.4.0) (2026-08-05)
+
+
+### Features
+
+* implement owner-aware work type providers ([#112](https://github.com/nomed/yukh-projects/pull/112)) ([a2f4f60](https://github.com/nomed/yukh-projects/commit/a2f4f6055f9ca8b805445f7e536d074434c8211a))
+
+
+### Documentation
+
+* specify owner-aware work type routing ([#110](https://github.com/nomed/yukh-projects/pull/110)) ([e12b221](https://github.com/nomed/yukh-projects/commit/e12b2212cddb2ce2b7d447859811eb3495c92ec4))
+
 ## [1.3.5](https://github.com/nomed/yukh-projects/compare/v1.3.4...v1.3.5) (2026-08-04)
 
 
