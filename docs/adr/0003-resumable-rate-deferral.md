@@ -1,7 +1,8 @@
 # ADR 0003: Resumable rate deferral is a host responsibility
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-05
+- **Accepted:** 2026-08-05 by `@nomed`
 - **Governing issue:** [#115](https://github.com/nomed/yukh-projects/issues/115)
 - **Related:** ADR 0002, controlled apply entrypoint v1
 
