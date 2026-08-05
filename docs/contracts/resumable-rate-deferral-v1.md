@@ -67,3 +67,7 @@ The operator skill uses the same reasons and lifecycle but is not loaded by GitH
 ## Implementation gate
 
 This specification adds validation only. It does not schedule work, retain claims, enable apply, retry network calls, or change production consumers. Implementation remains governed by #118; qualification and immutable release remain governed by #119.
+
+## Implemented surfaces
+
+The apply Action emits `deferred-receipt`; the apply CLI adds `deferredReceipt` to its single redacted JSON result and continues to exit with status `6`. The controlled host derives the resource from the shared rate ledger and emits governed handoff by default. `createResumableDeferralHost` promotes that handoff to retained ownership only after a durable port returns hashed wake-up and cancellation handles. Its `resume` callback receives bindings and the fresh-approval requirement, never a captured mutation request.

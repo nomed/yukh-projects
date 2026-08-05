@@ -58,6 +58,8 @@ test("skill contains no unfinished template markers", async () => {
   assert.doesNotMatch(body, /TODO|Structuring This Skill/);
 });
 
+test("skill requires durable resume or governed handoff without sleeping",async()=>{const body=await readFile(path.join(root,".github/skills/github-projects-rest-first/SKILL.md"),"utf8");assert.match(body,/deferred-receipt-v1/u);assert.match(body,/durable coordinator/u);assert.match(body,/Never replay/u);assert.doesNotMatch(body,/\bsleep\s+[0-9$]/u);});
+
 test("helper remains compatible with gh versions that lack api --slurp", async () => {
   const body = await readFile(script, "utf8");
   assert.doesNotMatch(body, /--slurp/u);
