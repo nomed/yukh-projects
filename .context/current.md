@@ -1,39 +1,51 @@
 # Current context
 
-**Status:** repository hardening and clean-room planning
+**Status:** v1.7.0 producer qualification complete; consumer read-only
+qualification pending
 **Project:** Yukh Projects
 **Visibility:** public
 
 ## Objective
 
-Complete the security baseline and approve the behavior-led migration gates before functional code enters the repository.
+Qualify the immutable `v1.7.0` release against one exact consumer-owned,
+read-only scope without granting apply authority.
 
 ## Now
 
-- Track the hardening baseline and migration gates in issue #2.
-- Review the repository-settings baseline and threat model.
-- Apply admin-only GitHub settings.
-- Review the candidate capability inventory and provenance ledger.
+- Immutable `v1.7.0` is pinned to
+  `71784218366805922e5a12903eef9073f715f59f`.
+- Merged [#144](https://github.com/nomed/yukh-projects/pull/144) records that
+  the producer-side [#121](https://github.com/nomed/yukh-projects/issues/121)
+  provider-parity gate is resolved.
+- The next scope is read-only and exact: repository `nomed/yukh-mcp`, Project
+  `5`, issue `27`, policy `.yukh/project.yaml`.
+- No live apply is authorized.
 
 ## Next
 
-- Close every applicable repository-hardening checkbox.
-- Approve the contract and diagnostics specification.
-- Implement the first pure, bounded, network-free migration slice.
-- Add entirely synthetic parser and diagnostic tests.
+1. Review and commit a fresh policy revision for that exact scope.
+2. Produce a fresh plan from one bounded, read-only snapshot, following the
+   [v1.7.0 provider-parity qualification](../docs/validation/release-1.7.0-provider-parity.md).
+3. Review the redacted qualification evidence.
+4. Require a separate explicit approval for the fresh plan before any later
+   apply proposal. The policy commit and read-only qualification grant no apply
+   authority.
 
 ## Non-goals
 
-- Importing another repository's history.
-- Copying legacy tests, documentation, examples, context, or release evidence.
-- Introducing GitHub API access or mutations in the first implementation slice.
-- Claiming production readiness before the release gates pass.
+- Running or authorizing live apply.
+- Recording consumer observations, provider responses, credentials, plan
+  contents, approval material, or other private operational data here.
+- Reusing a stale plan, policy revision, snapshot, or approval.
+- Changing accepted contracts as part of this context alignment.
 
 ## Invariants
 
 - Consumer neutrality is mandatory.
-- Every migration slice has provenance, neutrality, security, and test evidence.
 - Dry-run is structurally separated from mutation.
-- Apply requires two explicit gates and least privilege.
-- Published Actions install no dependencies at consumer runtime.
-- Executable third-party automation is pinned immutably.
+- The qualification uses read-only credentials and has no mutation transport or
+  apply host.
+- Scope, policy revision, release commit, snapshot, plan, and approval must
+  match exactly and remain fresh.
+- Any later apply requires a separate, exact approval and all accepted
+  controlled-apply gates.
