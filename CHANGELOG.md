@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/nomed/yukh-projects/compare/v1.6.1...v1.7.0) (2026-08-06)
+
+
+### Features
+
+* support fixed-profile single-token apply ([#141](https://github.com/nomed/yukh-projects/issues/141)) ([6e7b6c4](https://github.com/nomed/yukh-projects/commit/6e7b6c4ff5a3b3cf9ebc54b651e4ff15a8a19576)), closes [#140](https://github.com/nomed/yukh-projects/issues/140)
+
 ## [1.6.1](https://github.com/nomed/yukh-projects/compare/v1.6.0...v1.6.1) (2026-08-05)
 
 

@@ -1,4 +1,4 @@
-# Yukh Projects 1.6.1 <!-- x-release-please-version -->
+# Yukh Projects 1.7.0 <!-- x-release-please-version -->
 
 This release adds the explicit `legacy-single-token-apply-v1` profile for the
 fixed Yukh MCP Project 5 issue #27 scope. It retains fresh-plan matching,
