@@ -1,8 +1,9 @@
 # Yukh Projects 1.6.1 <!-- x-release-please-version -->
 
-This release makes controlled apply budget-complete for accepted
-multi-operation plans. The complete mutation budget is admitted before the
-first mutation; an insufficient budget defers the plan with zero effects.
+This release adds the explicit `legacy-single-token-apply-v1` profile for the
+fixed Yukh MCP Project 5 issue #27 scope. It retains fresh-plan matching,
+approval, whole-plan rate admission, one attempt, and verification while using
+one write-capable credential for reads and writes.
 
 ## Explicit legacy apply
 
