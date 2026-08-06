@@ -1,9 +1,9 @@
 name: Yukh Projects controlled apply
 description: Apply one freshly approved bounded reconciliation plan
 inputs:
-  mode: {description: Exact apply mode, required: true}
-  github-read-token: {description: Short-lived read credential, required: true}
-  github-write-token: {description: Separate write credential, required: true}
+  mode: {description: Exact apply mode; legacy-single-token-apply-v1 is the reviewed fixed-profile exception, required: true}
+  github-read-token: {description: Short-lived read credential; it may be the reviewed shared credential only in legacy-single-token-apply-v1, required: true}
+  github-write-token: {description: Separate write credential; it may equal the read credential only in legacy-single-token-apply-v1, required: true}
   owner: {description: GitHub owner login, required: true}
   repository: {description: GitHub repository name, required: true}
   project-number: {description: GitHub Project number, required: true}

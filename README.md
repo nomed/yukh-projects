@@ -39,7 +39,7 @@ This repository currently contains the public project foundation. Functional cod
 - [Accepted REST-first Project snapshot v2](docs/contracts/rest-project-snapshot-v2.md)
 - [Accepted GitHub issue-contract source v1](docs/contracts/github-issue-contract-source-v1.md)
 - [Accepted controlled mutations v1](docs/contracts/controlled-mutations-v1.md)
-- [Accepted controlled apply entrypoint v1](docs/contracts/controlled-apply-entrypoint-v1.md)
+- [Accepted controlled apply entrypoint v1](docs/contracts/controlled-apply-entrypoint-v1.md) and [reviewed single-token profile amendment](docs/contracts/controlled-apply-single-token-profile-v1.md)
 - [Accepted GitHub mutation transport v1](docs/contracts/github-mutation-transport-v1.md)
 - [REST Issue Type mutation transport v3 candidate](docs/contracts/github-mutation-transport-v3.md)
 - [Accepted owner-aware work type provider routing v1](docs/contracts/work-type-provider-routing-v1.md)

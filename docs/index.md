@@ -32,5 +32,6 @@ cannot mutate state, even if given a write-capable credential.
 
 Controlled apply exists as a separate, protected surface. It requires an exact
 plan, authenticated approval, fresh preflight, separate credentials, replay
-protection, and a qualified host. This site does not present apply as a quick
-installation path.
+protection, and a qualified host. A reviewed fixed-profile legacy mode is the
+only explicit exception that may reuse its credential. This site does not
+present apply as a quick installation path.

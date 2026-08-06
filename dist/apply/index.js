@@ -7391,6 +7391,20 @@ async function loadWorkspacePolicy(workspace, policyPath = ".yukh/project.yaml")
 import { constants, createReadStream } from "node:fs";
 import { open as open2, realpath as realpath2 } from "node:fs/promises";
 import { basename, dirname as dirname2, isAbsolute as isAbsolute2, relative as relative2, resolve as resolve2, sep as sep2 } from "node:path";
+
+// src/apply-mode.ts
+function parseControlledApplyMode(value2) {
+  if (value2 === "apply" || value2 === "legacy-apply-v1" || value2 === "legacy-single-token-apply-v1") return value2;
+  throw new TypeError("invalid apply mode");
+}
+function allowsSharedControlledApplyCredential(mode) {
+  return mode === "legacy-single-token-apply-v1";
+}
+function reconciliationModeForControlledApply(mode) {
+  return mode === "apply" ? "native-v1" : mode === "legacy-apply-v1" ? "legacy-v1" : "legacy-single-token-v1";
+}
+
+// src/apply-runtime-input.ts
 var VALUES = /* @__PURE__ */ new Set(["--mode", "--owner", "--repository", "--project-number", "--issue-number", "--policy-path", "--approved-plan-id", "--approval-file", "--approval-public-key-file", "--environment", "--github-read-token-fd", "--github-write-token-fd", "--host-capsule-fd"]);
 var DIGEST = /^[a-f0-9]{64}$/u;
 var FD = /^(?:[3-9][0-9]{0,2}|1[0-9]{3})$/u;
@@ -7413,8 +7427,13 @@ function parseApplyCliArgs(argv) {
     values.set(key, value2);
   }
   for (const key of VALUES) if (key !== "--policy-path" && !values.has(key)) throw new TypeError("invalid apply arguments");
-  const mode = values.get("--mode");
-  if (mode !== "apply" && mode !== "legacy-apply-v1" || !DIGEST.test(values.get("--approved-plan-id") ?? "") || !bounded(values.get("--environment") ?? "", 64)) throw new TypeError("invalid apply arguments");
+  let mode;
+  try {
+    mode = parseControlledApplyMode(values.get("--mode") ?? "");
+  } catch {
+    throw new TypeError("invalid apply arguments");
+  }
+  if (!DIGEST.test(values.get("--approved-plan-id") ?? "") || !bounded(values.get("--environment") ?? "", 64)) throw new TypeError("invalid apply arguments");
   parseRuntimeScope({ owner: values.get("--owner"), repository: values.get("--repository"), projectNumber: values.get("--project-number"), issueNumber: values.get("--issue-number") });
   const readTokenFd = fd(values.get("--github-read-token-fd")), writeTokenFd = fd(values.get("--github-write-token-fd")), hostCapsuleFd = fd(values.get("--host-capsule-fd"));
   if ((/* @__PURE__ */ new Set([readTokenFd, writeTokenFd, hostCapsuleFd])).size !== 3) throw new TypeError("invalid apply arguments");
@@ -7979,8 +7998,10 @@ function input(io, name) {
   return value2;
 }
 function parseApplyActionMode(value2) {
-  if (value2 === "apply" || value2 === "legacy-apply-v1") return value2;
-  throw new TypeError("invalid action mode");
+  return parseControlledApplyMode(value2);
+}
+function allowsSharedApplyCredential(mode) {
+  return allowsSharedControlledApplyCredential(mode);
 }
 function failure(planId2) {
   return { schema: 1, status: "error", planId: /^[a-f0-9]{64}$/u.test(planId2) ? planId2 : "invalid", counts: { already_converged: 0, verified: 0, failed: 0, not_attempted: 0 }, remaining: 0, diagnostics: [{ code: "YKP-APPLY-001", severity: "error", message: "apply request is invalid" }] };
@@ -7993,11 +8014,11 @@ async function applyActionMain(io, factory) {
     io.mask(readToken);
     const writeToken = input(io, "GITHUB-WRITE-TOKEN");
     io.mask(writeToken);
-    if (readToken === writeToken) throw new TypeError("credential profiles must be distinct");
+    if (readToken === writeToken && !allowsSharedApplyCredential(mode)) throw new TypeError("credential profiles must be distinct");
     approvedPlanId = input(io, "APPROVED-PLAN-ID");
     const workspace = io.env.GITHUB_WORKSPACE;
     if (!workspace) throw new TypeError("invalid action environment");
-    const requestedScope = parseRuntimeScope({ owner: input(io, "OWNER"), repository: input(io, "REPOSITORY"), projectNumber: input(io, "PROJECT-NUMBER"), issueNumber: input(io, "ISSUE-NUMBER") }), [policySource, approvalArtifact, approvalPublicKey] = await Promise.all([loadWorkspacePolicy(workspace, io.env["INPUT_POLICY-PATH"] || ".yukh/project.yaml"), readApprovalArtifact(workspace, input(io, "APPROVAL-FILE")), readExclusiveWorkspaceFile(workspace, input(io, "APPROVAL-PUBLIC-KEY-FILE"))]), runtime = await factory.create({ reconciliationMode: mode === "legacy-apply-v1" ? "legacy-v1" : "native-v1", requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId, protectedEnvironment: input(io, "ENVIRONMENT"), scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host), receipt = report.status === "deferred" ? runtime.deferredReceipt?.() : void 0;
+    const requestedScope = parseRuntimeScope({ owner: input(io, "OWNER"), repository: input(io, "REPOSITORY"), projectNumber: input(io, "PROJECT-NUMBER"), issueNumber: input(io, "ISSUE-NUMBER") }), [policySource, approvalArtifact, approvalPublicKey] = await Promise.all([loadWorkspacePolicy(workspace, io.env["INPUT_POLICY-PATH"] || ".yukh/project.yaml"), readApprovalArtifact(workspace, input(io, "APPROVAL-FILE")), readExclusiveWorkspaceFile(workspace, input(io, "APPROVAL-PUBLIC-KEY-FILE"))]), runtime = await factory.create({ reconciliationMode: reconciliationModeForControlledApply(mode), requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId, protectedEnvironment: input(io, "ENVIRONMENT"), scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host), receipt = report.status === "deferred" ? runtime.deferredReceipt?.() : void 0;
     await io.output("status", report.status);
     await io.output("plan-id", report.planId);
     await io.output("remaining", String(report.remaining));
@@ -8022,8 +8043,8 @@ async function applyCliMain(argv, workspace, factory, write) {
     const options = parseApplyCliArgs(argv);
     approvedPlanId = options.approvedPlanId;
     const [readToken, writeToken, policySource, approvalArtifact, approvalPublicKey] = await Promise.all([readBoundedFd(options.readTokenFd), readBoundedFd(options.writeTokenFd), loadWorkspacePolicy(workspace, options.policyPath), readApprovalArtifact(workspace, options.approvalFile), readExclusiveWorkspaceFile(workspace, options.approvalPublicKeyFile)]);
-    if (readToken === writeToken) throw new TypeError("credential profiles must be distinct");
-    const requestedScope = parseRuntimeScope({ owner: options.owner, repository: options.repository, projectNumber: options.projectNumber, issueNumber: options.issueNumber }), runtime = await factory.create({ reconciliationMode: options.mode === "legacy-apply-v1" ? "legacy-v1" : "native-v1", requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId: options.approvedPlanId, protectedEnvironment: options.environment, scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host), receipt = report.status === "deferred" ? runtime.deferredReceipt?.() : void 0;
+    if (readToken === writeToken && !allowsSharedControlledApplyCredential(options.mode)) throw new TypeError("credential profiles must be distinct");
+    const requestedScope = parseRuntimeScope({ owner: options.owner, repository: options.repository, projectNumber: options.projectNumber, issueNumber: options.issueNumber }), runtime = await factory.create({ reconciliationMode: reconciliationModeForControlledApply(options.mode), requestedScope, policySource, readToken, writeToken }), report = await runApplyEntrypoint({ approvedPlanId: options.approvedPlanId, protectedEnvironment: options.environment, scope: runtime.scope, approvalArtifact, approvalPublicKey }, runtime.host), receipt = report.status === "deferred" ? runtime.deferredReceipt?.() : void 0;
     write(`${JSON.stringify({ ...report, ...receipt ? { deferredReceipt: receipt } : {} })}
 `);
     return report.status === "success" ? 0 : report.status === "deferred" ? 6 : 5;
@@ -9648,7 +9669,7 @@ function createControlledLegacyApplyHostFactory(options) {
   if (!options || options.coordination.epoch !== options.coordinationEpoch || options.allowedIssuerRefs.length < 1 || new Set(options.allowedIssuerRefs).size !== options.allowedIssuerRefs.length) throw new TypeError("invalid controlled apply host configuration");
   const coordinationStore = createApplyCoordinationHttpStore(options.coordination), clock = options.nowMs ?? Date.now;
   return { create: async (input3) => {
-    if (input3.readToken === input3.writeToken) throw new TypeError("credential profiles must be distinct");
+    if (input3.reconciliationMode !== "legacy-v1" && input3.reconciliationMode !== "legacy-single-token-v1" || input3.readToken === input3.writeToken && input3.reconciliationMode !== "legacy-single-token-v1") throw new TypeError("credential profiles must be distinct");
     const policy = parseLegacyPolicy(input3.policySource), includeIssueTypes = Object.values(policy.fields).some((field2) => field2.target === "issue_type"), ledger = createGitHubRateLedger(options.rate), reader = createRestProjectSnapshotReader({ token: input3.readToken, fetch: options.readFetch, rateLedger: ledger, graphqlRemaining: options.rate.graphqlRemaining, includeIssueTypes }), snapshotInput = { ownerLogin: input3.requestedScope.ownerLogin, repositoryName: input3.requestedScope.repositoryName, projectNumber: input3.requestedScope.projectNumber, issueNumbers: [input3.requestedScope.issueNumber] }, mutation = createGitHubMutationTransport({ token: input3.writeToken, permissions: options.permissions, approvedKinds: options.approvedKinds, fetch: options.writeFetch, rateLedger: ledger });
     const replan = async () => planLegacyReconciliation(input3.policySource, await reader.read(snapshotInput), input3.requestedScope.issueNumber), initial = await reader.read(snapshotInput), scope = { subjectRef: initial.subjectRef, repositoryRef: initial.repositoryRef, projectRef: initial.projectRef, issueRef: initial.issues.get(input3.requestedScope.issueNumber).issueRef, issueNumber: input3.requestedScope.issueNumber };
     const variables2 = async (operation) => {
@@ -9815,7 +9836,7 @@ function createNativeControlledApplyHostFactory(options) {
 }
 function createControlledApplyHostFactory(options) {
   const native = createNativeControlledApplyHostFactory(options), legacy = createControlledLegacyApplyHostFactory(options);
-  return { create: (input3) => input3.reconciliationMode === "legacy-v1" ? legacy.create(input3) : input3.reconciliationMode === "native-v1" ? native.create(input3) : Promise.reject(new TypeError("invalid reconciliation mode")) };
+  return { create: (input3) => input3.reconciliationMode === "legacy-v1" || input3.reconciliationMode === "legacy-single-token-v1" ? legacy.create(input3) : input3.reconciliationMode === "native-v1" ? native.create(input3) : Promise.reject(new TypeError("invalid reconciliation mode")) };
 }
 
 // src/protected-host-capsule.ts
