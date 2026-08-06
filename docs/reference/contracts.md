@@ -14,6 +14,7 @@ limits, diagnostics, and compatibility rules.
 | Controlled mutation semantics | [Controlled mutations v1](../contracts/controlled-mutations-v1.md) |
 | GitHub mutation transport | [REST-first field creation v2](../contracts/github-mutation-transport-v2.md) |
 | Apply entrypoint | [Controlled apply entrypoint v1](../contracts/controlled-apply-entrypoint-v1.md) |
+| Reviewed single-token exception | [Controlled apply single-token profile v1](../contracts/controlled-apply-single-token-profile-v1.md) |
 | Resumable rate deferral | [Resumable rate-limit deferral v1](../contracts/resumable-rate-deferral-v1.md) |
 
 Unknown versions and fields fail closed. A plan or credential alone never
