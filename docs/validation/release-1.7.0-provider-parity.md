@@ -38,10 +38,13 @@ The evidence covers:
 - conflict, ambiguous-provider, and redacted failure paths.
 
 The single-issue shadow and controlled path call the same
-`planLegacyReconciliation` implementation. Plan IDs digest the complete ordered
-operation set, so equal plan IDs prove equal ordered logical effects, not only
-equal totals. The aggregate backlog audit remains non-authoritative and cannot
-be used as approval evidence.
+`planLegacyReconciliation` implementation. Plan IDs digest the complete
+canonical internal plan, including its ordered operations. The public report
+does not expose a separate operation-set digest; it does expose the deterministic
+redacted `operations` array in planner order. Equal plan IDs plus exact equality
+of those arrays proves parity of the publicly reviewable ordered effects, not
+only equal totals. The aggregate backlog audit remains non-authoritative and
+cannot be used as approval evidence.
 
 ## Exact next dry-run gate
 
@@ -54,8 +57,10 @@ The consumer-owned qualification must:
 4. acquire one fresh bounded REST snapshot containing repository and Project
    ownership plus the selected Work Type provider observations;
 5. calculate single-issue shadow and controlled planning from that same snapshot;
-6. require identical plan ID, operation-set digest, and ordered logical effects,
-   with zero diagnostics, zero GraphQL requests, and zero mutations;
+6. require identical plan IDs and exactly equal redacted `operations` arrays in
+   their emitted order, comparing each public operation's `type`, `logicalKey`,
+   optional `desired`, `reason`, and ordered `dependsOn`, with zero diagnostics,
+   zero GraphQL requests, and zero mutations;
 7. publish only redacted plan bindings and aggregate request evidence in the
    consumer-owned review; and
 8. discard the result on any state, policy, release, scope, credential-profile,
@@ -72,7 +77,10 @@ must name the release commit and bound consumer scope and must explicitly grant
 no apply authority.
 
 Only after that run may a separate human approval bind the fresh plan ID,
-ordered operation-set digest, exact scope, environment, planner and snapshot
-versions, expiry, and nonce in the accepted signed envelope. The protected host
-capsule, rate admission, lease, credential profile, and final zero-operation
-second pass remain independent gates. This record supplies none of them.
+internal ordered operation-set digest, exact scope, environment, planner and
+snapshot versions, expiry, and nonce in the accepted signed envelope. The
+redacted-effect comparison above is qualification evidence only: it is not that
+digest, cannot substitute for any approval claim, and grants no apply authority.
+The protected host capsule, rate admission, lease, credential profile, and final
+zero-operation second pass remain independent gates. This record supplies none
+of them.
