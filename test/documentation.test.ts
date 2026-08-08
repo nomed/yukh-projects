@@ -52,6 +52,14 @@ test("the proposed work type contract separates Project and repository ownership
 });
 
 test("dry-run credential eligibility is structural rather than scope-exclusive", async () => {
+  const current = await read(".context/current.md");
+  const actionContract = await read("docs/contracts/action-cli-release-v1.md");
+  assert.doesNotMatch(current, /read-only (?:scope|qualification|credential)/iu);
+  assert.doesNotMatch(
+    actionContract,
+    /\|\s*`github-token`\s*\|\s*yes\s*\|\s*Read-only credential/iu,
+  );
+
   const paths = [
     ".context/current.md",
     "docs/contracts/action-cli-release-v1.md",
