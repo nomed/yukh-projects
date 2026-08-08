@@ -50,3 +50,24 @@ test("the proposed work type contract separates Project and repository ownership
   assert.match(contract, /YKP-WORKTYPE-003/);
   assert.match(threatModel, /Work type representation confusion/);
 });
+
+test("dry-run credential eligibility is structural rather than scope-exclusive", async () => {
+  const paths = [
+    ".context/current.md",
+    "docs/contracts/dry-run-credential-profile-v1.md",
+    "docs/reference/dry-run-action.md",
+    "docs/validation/release-1.7.0-provider-parity.md",
+    "docs/migration/legacy-v0.8-shadow.md",
+  ];
+  const sources = await Promise.all(paths.map(read));
+
+  for (const source of sources) {
+    assert.match(source, /read permissions|read access/iu);
+    assert.match(source, /write permissions/iu);
+    assert.match(source, /MUST NOT|must not|remains eligible|accepted/iu);
+    assert.match(source, /no\s+mutation transport/iu);
+    assert.match(source, /apply\s+host/iu);
+    assert.match(source, /approval/iu);
+    assert.match(source, /apply\s+authority|controlled-apply\s+authority/iu);
+  }
+});

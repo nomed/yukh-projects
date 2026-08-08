@@ -43,8 +43,10 @@ read-only scope without granting apply authority.
 
 - Consumer neutrality is mandatory.
 - Dry-run is structurally separated from mutation.
-- The qualification uses read-only credentials and has no mutation transport or
-  apply host.
+- GitHub read permissions are the functional minimum for qualification. A
+  supplied credential with additional write permissions remains eligible and
+  grants no apply authority; safety comes from having no mutation transport,
+  apply host, approval input, or controlled-apply authority.
 - Scope, policy revision, release commit, snapshot, plan, and approval must
   match exactly and remain fresh.
 - Any later apply requires a separate, exact approval and all accepted
