@@ -54,7 +54,9 @@ test("the proposed work type contract separates Project and repository ownership
 test("dry-run credential eligibility is structural rather than scope-exclusive", async () => {
   const paths = [
     ".context/current.md",
+    "docs/contracts/action-cli-release-v1.md",
     "docs/contracts/dry-run-credential-profile-v1.md",
+    "docs/contracts/github-read-only-adapter-v1.md",
     "docs/reference/dry-run-action.md",
     "docs/validation/release-1.7.0-provider-parity.md",
     "docs/migration/legacy-v0.8-shadow.md",

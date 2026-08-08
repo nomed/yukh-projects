@@ -28,7 +28,7 @@ Inputs are fixed and have no aliases:
 
 | Input | Required | Meaning and validation |
 | --- | --- | --- |
-| `github-token` | yes | Read-only credential, passed only to the read transport and masked before use |
+| `github-token` | yes | Credential with the required GitHub read access; additional write permissions MUST NOT invalidate dry-run or legacy-shadow and confer no additional behavior; passed only to the read transport and masked before use |
 | `owner` | yes | Scope-bound GitHub owner; canonical login syntax, maximum 39 characters |
 | `repository` | yes | Scope-bound repository name; canonical name syntax, maximum 100 characters |
 | `project-number` | yes | Decimal integer from 1 through 2,147,483,647 |
@@ -55,7 +55,7 @@ There is no interactive prompt. `--help` and `--version` perform no file, creden
 
 ## Permissions and workflow use
 
-The example preview workflow declares only the permissions proven necessary for the fixed reads, beginning with `contents: read`, `issues: read`, and the narrowest available Projects read permission. If GitHub cannot express a required Projects scope for the default token, documentation requires a separately supplied short-lived read credential and records the unavoidable permission delta. It never recommends a classic broad personal access token.
+The example preview workflow declares only the permissions proven necessary for the fixed reads, beginning with `contents: read`, `issues: read`, and the narrowest available Projects read permission. Those reads are the minimum capability, and a short-lived credential limited to them remains recommended. If an existing supplied credential also has write permissions, the preview MUST accept it without treating the excess scope as approval or apply authority. The workflow never requests or broadens write access: dry-run and legacy-shadow have no mutation transport, apply host, approval input, or controlled-apply authority. If GitHub cannot express a required Projects scope for the default token, documentation requires a separately supplied credential and records the unavoidable permission delta. It never recommends a classic broad personal access token.
 
 The example runs on `workflow_dispatch` only in v1, checks out the bound commit without persisted credentials, and pins every action to a reviewed full commit SHA. Pull-request and issue-trigger examples are excluded until event trust and fork behavior receive a separate review. Workflow expressions are never embedded into shell source.
 

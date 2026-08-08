@@ -2,8 +2,8 @@
 
 - **Status:** Reviewed implementation amendment
 - **Governing issue:** [#54](https://github.com/nomed/yukh-projects/issues/54)
-- **Supersedes:** credential-eligibility restrictions in GitHub read-only adapter
-  v1 and Action, CLI, and protected release v1 for `native` dry-run and
+- **Clarifies:** credential eligibility in GitHub read-only adapter v1 and
+  Action, CLI, and protected release v1 for `native` dry-run and
   `legacy-shadow` only
 
 ## Credential eligibility
