@@ -52,7 +52,11 @@ The consumer-owned qualification must:
 
 1. pin `v1.7.0` at
    `71784218366805922e5a12903eef9073f715f59f`;
-2. use a read-only credential profile with no mutation transport or apply host;
+2. use a credential with the GitHub read permissions required by the fixed
+   reads; additional write permissions on an existing supplied credential MUST
+   NOT invalidate qualification or grant apply authority, because the path has
+   no mutation transport, apply host, approval input, or controlled-apply
+   authority;
 3. bind one repository, Project, issue, and the current reviewed policy revision;
 4. acquire one fresh bounded REST snapshot containing repository and Project
    ownership plus the selected Work Type provider observations;
@@ -63,8 +67,9 @@ The consumer-owned qualification must:
    zero GraphQL requests, and zero mutations;
 7. publish only redacted plan bindings and aggregate request evidence in the
    consumer-owned review; and
-8. discard the result on any state, policy, release, scope, credential-profile,
-   observation, or rate-budget change.
+8. discard the result on any state, policy, release, scope, credential identity
+   or required-read-access, observation, or rate-budget change; excess
+   permissions alone do not invalidate the result.
 
 No fresh `v1.7.0` consumer plan ID is recorded here. Producing one requires
 separately authorized access to current consumer policy and provider state,
@@ -72,7 +77,7 @@ which is outside this repository-owned qualification.
 
 ## Human approval boundary
 
-The next approval is limited to the exact read-only qualification above. It
+The next approval is limited to the exact non-mutating qualification above. It
 must name the release commit and bound consumer scope and must explicitly grant
 no apply authority.
 

@@ -2,7 +2,7 @@ name: Yukh Projects dry-run
 description: Produce a bounded, redacted reconciliation plan without mutations
 inputs:
   github-token:
-    description: Read-only GitHub credential
+    description: GitHub credential with the required read access
     required: true
   owner:
     description: GitHub owner login

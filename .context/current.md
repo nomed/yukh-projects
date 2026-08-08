@@ -1,14 +1,14 @@
 # Current context
 
-**Status:** v1.7.0 producer qualification complete; consumer read-only
+**Status:** v1.7.0 producer qualification complete; consumer non-mutating
 qualification pending
 **Project:** Yukh Projects
 **Visibility:** public
 
 ## Objective
 
-Qualify the immutable `v1.7.0` release against one exact consumer-owned,
-read-only scope without granting apply authority.
+Qualify the immutable `v1.7.0` release against one exact consumer-owned scope
+using the minimum required GitHub reads without granting apply authority.
 
 ## Now
 
@@ -17,19 +17,20 @@ read-only scope without granting apply authority.
 - Merged [#144](https://github.com/nomed/yukh-projects/pull/144) records that
   the producer-side [#121](https://github.com/nomed/yukh-projects/issues/121)
   provider-parity gate is resolved.
-- The next scope is read-only and exact: repository `nomed/yukh-mcp`, Project
+- The next scope is non-mutating and exact: repository `nomed/yukh-mcp`, Project
   `5`, issue `27`, policy `.yukh/project.yaml`.
 - No live apply is authorized.
 
 ## Next
 
 1. Review and commit a fresh policy revision for that exact scope.
-2. Produce a fresh plan from one bounded, read-only snapshot, following the
-   [v1.7.0 provider-parity qualification](../docs/validation/release-1.7.0-provider-parity.md).
+2. Produce a fresh plan from one bounded snapshot acquired through fixed reads,
+   following the [v1.7.0 provider-parity
+   qualification](../docs/validation/release-1.7.0-provider-parity.md).
 3. Review the redacted qualification evidence.
 4. Require a separate explicit approval for the fresh plan before any later
-   apply proposal. The policy commit and read-only qualification grant no apply
-   authority.
+   apply proposal. The policy commit and non-mutating qualification grant no
+   apply authority.
 
 ## Non-goals
 
@@ -43,8 +44,10 @@ read-only scope without granting apply authority.
 
 - Consumer neutrality is mandatory.
 - Dry-run is structurally separated from mutation.
-- The qualification uses read-only credentials and has no mutation transport or
-  apply host.
+- GitHub read permissions are the functional minimum for qualification. A
+  supplied credential with additional write permissions remains eligible and
+  grants no apply authority; safety comes from having no mutation transport,
+  apply host, approval input, or controlled-apply authority.
 - Scope, policy revision, release commit, snapshot, plan, and approval must
   match exactly and remain fresh.
 - Any later apply requires a separate, exact approval and all accepted

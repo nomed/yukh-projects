@@ -11,6 +11,7 @@ limits, diagnostics, and compatibility rules.
 | Read-only GitHub boundary | [GitHub read-only adapter v1](../contracts/github-read-only-adapter-v1.md) |
 | REST-first snapshot | [REST Project snapshot v2](../contracts/rest-project-snapshot-v2.md) |
 | Dry-run Action and CLI | [Action and CLI release v1](../contracts/action-cli-release-v1.md) |
+| Dry-run and legacy-shadow credential eligibility | [Dry-run credential profile v1](../contracts/dry-run-credential-profile-v1.md) |
 | Controlled mutation semantics | [Controlled mutations v1](../contracts/controlled-mutations-v1.md) |
 | GitHub mutation transport | [REST-first field creation v2](../contracts/github-mutation-transport-v2.md) |
 | Apply entrypoint | [Controlled apply entrypoint v1](../contracts/controlled-apply-entrypoint-v1.md) |
@@ -18,4 +19,6 @@ limits, diagnostics, and compatibility rules.
 | Resumable rate deferral | [Resumable rate-limit deferral v1](../contracts/resumable-rate-deferral-v1.md) |
 
 Unknown versions and fields fail closed. A plan or credential alone never
-authorizes apply.
+authorizes apply. For dry-run and legacy-shadow, read permissions are the
+functional minimum and least privilege is recommended; excess write permissions
+on an existing supplied credential are not an eligibility failure.

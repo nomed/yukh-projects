@@ -33,6 +33,13 @@ the installation access. OAuth and fine-grained or classic PAT profiles are also
 supported when they can read the repository and organization Project. Supply the
 credential only on standard input.
 
+Those GitHub read permissions are the functional minimum, and a short-lived
+read-limited token is recommended. An existing supplied token that also has
+write permissions MUST NOT invalidate shadow qualification. Shadow safety is
+structural: this command has no mutation transport, apply host, approval input,
+or controlled-apply authority, so excess token permissions confer no additional
+behavior.
+
 ```sh
 printf '%s\n' "$YUKH_PROJECTS_TOKEN" | \
   node dist/cli/index.js \

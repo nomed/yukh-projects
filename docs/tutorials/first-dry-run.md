@@ -48,11 +48,14 @@ Text outside the block remains ordinary issue content.
 Add:
 
 - repository variable `YUKH_PROJECT_NUMBER` with the target Project number;
-- repository secret `YUKH_PROJECTS_READ_TOKEN` with read-only access to the
-  bound repository issues and Project.
+- repository secret `YUKH_PROJECTS_READ_TOKEN` with access to read the bound
+  repository issues and Project.
 
-Prefer a short-lived GitHub App installation token. Do not use a broad classic
-personal access token.
+Prefer a short-lived GitHub App installation token limited to those reads. An
+existing supplied token with additional write permissions is also accepted:
+dry-run has no mutation transport, apply host, approval input, or apply
+authority, so token scope does not enable mutation. Do not create or broaden a
+token merely to run dry-run.
 
 ## 4. Add the workflow
 

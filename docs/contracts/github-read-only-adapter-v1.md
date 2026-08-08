@@ -129,7 +129,14 @@ Unsafe failures collapse to `YKP-GH-READ-010`. Redaction occurs before logging, 
 
 ## Permission profile
 
-The host credential MUST be short-lived where supported and restricted to read-only organization Projects plus minimum repository metadata and issue read permissions. It MUST NOT have Projects write, issues write, contents write, administration, workflow, or package permissions.
+The host credential MUST provide organization Projects, repository metadata,
+and issue read permissions sufficient for the fixed operations. A short-lived
+credential restricted to those reads remains the recommended least-privilege
+profile. An existing supplied credential that also has write permissions MUST
+NOT be rejected or fail dry-run or legacy-shadow qualification solely because
+of that excess scope. The adapter has no mutation transport, apply host,
+approval input, or controlled-apply authority, so excess permissions confer no
+additional behavior.
 
 If the transport can attest that a credential is overprivileged, the adapter emits a non-public permission-delta warning. Excess privilege never becomes authorization.
 
