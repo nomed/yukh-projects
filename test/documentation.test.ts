@@ -81,3 +81,159 @@ test("dry-run credential eligibility is structural rather than scope-exclusive",
     assert.match(source, /apply\s+authority|controlled-apply\s+authority/iu);
   }
 });
+
+test("the accepted preview contract keeps RFC-0003 effects independently authorized", async () => {
+  const contract = await read(
+    "docs/contracts/first-usable-preview-projects-v1.md",
+  );
+  const index = await read("docs/reference/contracts.md");
+  const current = await read(".context/current.md");
+  const approvalCountSources = [contract, index, current];
+
+  assert.match(contract, /\*\*Status:\*\* Accepted/);
+  assert.match(contract, /\*\*Accepted:\*\* 2026-08-09 by `@nomed`/);
+  assert.match(
+    contract,
+    /nomed\/nomed\.github\.io@12d9215f10c4b7fb1762a5025367e3e81543800f/,
+  );
+  assert.match(contract, /exactly one `set_field_value`/);
+  assert.match(contract, /exactly one `add_dependency`/);
+  assert.match(contract, /`projects\.add-dependency\.v1`/);
+  assert.match(contract, /exactly two suite-level effect plans/);
+  assert.match(contract, /distinct nested provider-owned Projects\s+plan `B-Projects`/);
+  assert.match(
+    contract,
+    /exactly three independently verifiable approval\s+assertions/,
+  );
+  assert.match(
+    contract,
+    /Each Projects\s+approval assertion is an atomic pair of the unchanged v1 envelope and the\s+proposed v2 bridge claim/,
+  );
+  for (const approval of [
+    "Projects Approval `A`",
+    "MCP Approval `B-MCP`",
+    "Projects Approval `B-Projects`",
+  ]) {
+    assert.match(contract, new RegExp(approval.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  for (const source of approvalCountSources) {
+    assert.doesNotMatch(
+      source,
+      /\btwo(?:[-\s]+\w+){0,2}[-\s]+approvals\b/iu,
+    );
+  }
+  assert.match(
+    contract,
+    /keeps the accepted v1 `subjectRef` meaning: the\s+opaque host-attested GitHub installation or principal reference/,
+  );
+  assert.match(
+    contract,
+    /Neither contains or uses an\s+MCP capability, provider, verifier, plan, or policy digest as `subjectRef`/,
+  );
+  assert.match(
+    contract,
+    /MCP Approval `B-MCP` is the separately authenticated admission artifact/,
+  );
+  assert.match(
+    contract,
+    /Neither approval authorizes,\s+derives, modifies,\s+substitutes for, or implies the other/,
+  );
+  assert.match(contract, /form a compound\s+admission bridge/);
+  for (const releaseBinding of [
+    "projectsProducerReleaseA",
+    "projectsProducerReleaseBProjects",
+  ]) {
+    assert.match(contract, new RegExp(releaseBinding));
+  }
+  assert.match(
+    contract,
+    /producer release bindings are independently authority-bound\s+values, but they are not required to differ/,
+  );
+  assert.match(
+    contract,
+    /Byte\s+equality does not make either plan, approval, or release binding shared or\s+reusable/,
+  );
+  assert.match(
+    contract,
+    /Changing either producer release commit, artifact digest, or entrypoint version\s+invalidates that complete effect plan and every approval that binds it/,
+  );
+  assert.match(
+    contract,
+    /requires a fresh observation, fresh plan envelope, and every applicable\s+fresh approval/,
+  );
+  assert.doesNotMatch(
+    contract,
+    /Shared release commits,[\s\S]{0,120}descriptive bindings only/,
+  );
+  assert.match(
+    contract,
+    /accepted Projects approval envelope v1 is closed and rejects unknown\s+fields/,
+  );
+  assert.match(
+    contract,
+    /schema: "yukh-projects-approval-bridge-v2"/,
+  );
+  assert.match(
+    contract,
+    /Every listed field\s+is required; unknown fields, unknown schema values, aliases, unlisted nesting,\s+sidecars, partial claims, and extra signatures fail closed/,
+  );
+  assert.match(
+    contract,
+    /implementation is blocked until a separately reviewed and accepted Projects\s+approval-bridge v2 and entrypoint compatibility contract/,
+  );
+  assert.match(
+    contract,
+    /There is no automatic\s+upgrade, inference, wrapping, or fallback between v1 and v2/,
+  );
+  assert.match(contract, /leaves current v1 behavior unchanged/);
+  assert.match(contract, /effectBPostconditionBinding/);
+  assert.match(
+    contract,
+    /MCP Approval `B-MCP` and Projects Approval `B-Projects` MUST carry the same\s+byte-identical canonical `effectBPostconditionBinding` digest/,
+  );
+  assert.match(
+    contract,
+    /verifier\s+identities, verifier artifacts, evidence chains, and authority scopes remain\s+distinct/,
+  );
+  assert.doesNotMatch(
+    contract,
+    /verifier identity and declared postconditions/,
+  );
+
+  for (const binding of [
+    "plan ID",
+    "operation-set digest",
+    "nonce",
+    "credential",
+    "lease",
+    "idempotency key",
+    "verifier identity",
+    "audit chain",
+  ]) {
+    assert.match(contract, new RegExp(binding));
+  }
+
+  assert.match(contract, /denied MCP admission performs zero Projects\s+provider calls/);
+  assert.match(contract, /teardown, rather than reverse reconciliation/);
+  assert.match(
+    contract,
+    /Teardown is available after every terminal effect\s+outcome: pre-effect denial, verified success, failure, or\s+`completion_unknown`/,
+  );
+  assert.match(
+    contract,
+    /seals its own terminal outcome and effect-specific\s+evidence before teardown/,
+  );
+  assert.match(
+    contract,
+    /Teardown success cannot convert a denied, failed, or\s+`completion_unknown` effect into success/,
+  );
+  assert.match(
+    contract,
+    /reports teardown\s+authorization, execution, and verification separately/,
+  );
+  assert.match(contract, /Acceptance authorizes no implementation, provider access/);
+  assert.match(index, /Projects effects v1/);
+  assert.match(index, /specification-only/);
+  assert.match(current, /approval bridge\s+and wrapper contract pending/);
+  assert.match(current, /No live apply is authorized/);
+});
