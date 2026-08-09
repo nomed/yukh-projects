@@ -88,6 +88,7 @@ test("the proposed preview contract keeps RFC-0003 effects independently authori
   );
   const index = await read("docs/reference/contracts.md");
   const current = await read(".context/current.md");
+  const approvalCountSources = [contract, index, current];
 
   assert.match(contract, /\*\*Status:\*\* Proposed/);
   assert.match(
@@ -109,6 +110,12 @@ test("the proposed preview contract keeps RFC-0003 effects independently authori
     "Projects Approval `B-Projects`",
   ]) {
     assert.match(contract, new RegExp(approval.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  for (const source of approvalCountSources) {
+    assert.doesNotMatch(
+      source,
+      /\btwo(?:[-\s]+\w+){0,2}[-\s]+approvals\b/iu,
+    );
   }
   assert.match(
     contract,
