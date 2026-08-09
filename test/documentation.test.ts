@@ -234,6 +234,97 @@ test("the accepted preview contract keeps RFC-0003 effects independently authori
   assert.match(contract, /Acceptance authorizes no implementation, provider access/);
   assert.match(index, /Projects effects v1/);
   assert.match(index, /specification-only/);
-  assert.match(current, /approval bridge\s+and wrapper contract pending/);
+  assert.match(
+    current,
+    /approval bridge\s+and wrapper contract proposed for owner review/,
+  );
   assert.match(current, /No live apply is authorized/);
+});
+
+test("the proposed MCP bridge and wrapper preserve compound authority", async () => {
+  const contract = await read(
+    "docs/contracts/mcp-compound-approval-wrapper-v1.md",
+  );
+  const threatModel = await read("docs/security/threat-model.md");
+  const index = await read("docs/reference/contracts.md");
+  const current = await read(".context/current.md");
+
+  assert.match(contract, /\*\*Status:\*\* Proposed/);
+  assert.match(
+    contract,
+    /nomed\/yukh-mcp@cef0d9c1088ae641e3a5892d616859458e429bb0/,
+  );
+  assert.match(contract, /schema: "yukh-projects-approval-bridge-v2"/);
+  assert.match(
+    contract,
+    /Projects `SignedApprovalEnvelope` schema 1 and `ApprovalClaims` remain\s+byte-for-byte and semantically unchanged/,
+  );
+  assert.match(
+    contract,
+    /Projects v1 `subjectRef` remains the opaque host-attested GitHub\s+installation or principal reference/,
+  );
+  assert.match(contract, /The bridge is evidence, not authorization/);
+  assert.match(contract, /Compatibility conflict requiring owner decision/);
+  assert.match(contract, /`projects\.add-dependency\.v1`/);
+  assert.match(contract, /`github\.projects\.item\.status\.set@1\.0\.0`/);
+  assert.match(
+    contract,
+    /cannot exact-match and\s+cannot be treated as two names for one effect/,
+  );
+  assert.match(contract, /Every field is required/);
+  assert.match(contract, /Unknown fields, missing fields/);
+  assert.match(
+    contract,
+    /MCP and Projects approvals bind the same byte-identical canonical Effect B\s+postcondition/,
+  );
+  assert.match(contract, /MCP MUST NOT consume it/);
+  assert.match(
+    contract,
+    /keeps MCP assertion verification inside the MCP approval\s+adapter/,
+  );
+  assert.match(contract, /mcpVerifiedAdmissionHandle/);
+  assert.doesNotMatch(contract, /mcpTrustHandle/);
+  assert.match(contract, /Compound admission is atomic at the provider boundary/);
+  assert.match(
+    contract,
+    /zero GitHub or other provider calls/,
+  );
+  assert.match(
+    contract,
+    /runMcpEffectBControlledApplyV1/,
+  );
+  assert.match(contract, /reconciliation mode `native-v1`/);
+  assert.match(contract, /exactly one `set_field_value` operation for logical field `status`/);
+  assert.match(
+    contract,
+    /cannot contain or select a repository, Project, issue, item,\s+field, option, provider identifier, target, policy, environment, mode/,
+  );
+  for (const primitive of [
+    "parseProtectedHostCapsule",
+    "createControlledApplyHostFactory",
+    "runApplyEntrypoint",
+  ]) {
+    assert.match(contract, new RegExp(primitive));
+  }
+  assert.match(contract, /Exactly one request is allowed/);
+  assert.match(contract, /There is no hidden retry/);
+  assert.match(contract, /status: "completion_unknown"/);
+  assert.match(contract, /checksums and an SPDX SBOM/);
+  assert.match(contract, /closed conformance vector corpus/);
+  assert.match(
+    contract,
+    /Acceptance would still authorize no live GitHub request, credential creation/,
+  );
+
+  assert.match(threatModel, /MCP compound approval and wrapper confusion/);
+  assert.match(
+    threatModel,
+    /different Effect B operation kinds \(`add_dependency` and\s+`set_field_value\(status\)`\)/,
+  );
+  assert.match(threatModel, /durable `completion_unknown`/);
+  assert.match(index, /MCP compound approval bridge and wrapper v1/);
+  assert.match(index, /remains blocked on explicit\s+owner acceptance/);
+  assert.match(current, /wrapper contract proposed for owner review/);
+  assert.match(current, /cross-record conflict before suite compatibility/);
+  assert.match(current, /Proposal review grants no implementation or release authority/);
 });
