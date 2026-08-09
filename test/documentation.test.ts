@@ -98,6 +98,19 @@ test("the proposed preview contract keeps RFC-0003 effects independently authori
   assert.match(contract, /exactly one `add_dependency`/);
   assert.match(contract, /`projects\.add-dependency\.v1`/);
   assert.match(contract, /exactly two consequential plans and two independently\s+issued approvals/);
+  assert.match(
+    contract,
+    /`subjectRef`\s+remains the opaque host-attested GitHub installation or principal reference/,
+  );
+  assert.match(
+    contract,
+    /It never contains or\s+identifies an MCP capability, provider, verifier, plan, or policy digest/,
+  );
+  assert.match(contract, /MCP separately authenticates an admission artifact/);
+  assert.match(
+    contract,
+    /MCP artifact cannot replace, modify, derive, or\s+authorize a Projects approval or `subjectRef`/,
+  );
 
   for (const binding of [
     "plan ID",

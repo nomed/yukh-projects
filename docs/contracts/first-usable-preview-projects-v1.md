@@ -101,10 +101,28 @@ issued approvals:
 - Projects plan `B` and approval `B` authorize only Effect B after MCP
   admission.
 
-Approval `B` uses the accepted Projects approval envelope. Its bounded subject
-reference identifies the immutable MCP capability definition digest, allowing
-MCP and Projects to verify the same exact authority artifact without deriving,
-translating, or minting a second approval.
+Approval `B` uses the accepted Projects approval envelope. Its `subjectRef`
+remains the opaque host-attested GitHub installation or principal reference
+defined by the read-only adapter. It MUST exactly match the authenticated
+subject bound by the Effect B read and write hosts. It never contains or
+identifies an MCP capability, provider, verifier, plan, or policy digest.
+
+MCP separately authenticates an admission artifact that binds:
+
+- capability name and immutable capability-definition digest;
+- immutable provider-implementation and MCP verifier digests;
+- Effect B target and exact `add_dependency` operation;
+- Effect B Projects plan ID and ordered operation-set digest;
+- the same host-attested GitHub principal reference carried by the Projects
+  scope and approval; and
+- MCP policy, approval, expiry, nonce, idempotency, and audit bindings.
+
+Before invoking Projects, MCP verifies that artifact and exact-matches every
+shared Effect B value against the closed provider invocation. Projects
+independently verifies its approval, authenticated principal, plan, and
+controlled-apply gates. The MCP artifact cannot replace, modify, derive, or
+authorize a Projects approval or `subjectRef`; the Projects approval cannot
+replace or imply MCP admission. Any mismatch denies before provider invocation.
 
 The following values MUST be distinct between A and B:
 
@@ -214,6 +232,8 @@ permit later implementation of a new MCP-to-Projects call path. Review must
 address:
 
 - capability or target substitution at the MCP provider boundary;
+- an MCP capability or provider digest being substituted for the authenticated
+  Projects principal in `subjectRef`;
 - one approval being replayed, translated, or treated as authority for both
   effects;
 - credential, nonce, lease, idempotency, verifier, or audit-chain reuse;
@@ -232,7 +252,8 @@ of mutation and MCP provider imports.
 Owner acceptance must explicitly approve or revise:
 
 1. the exact invented targets and disjoint operation sets;
-2. the two-plan, two-approval model and Effect B subject binding;
+2. the two-plan, two-approval model, authenticated Projects principal binding,
+   and separate MCP admission artifact;
 3. the required distinct authority-bearing values;
 4. the MCP provider closure and zero-call denial boundary;
 5. teardown as the version-1 final-state mechanism; and
