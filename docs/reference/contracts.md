@@ -28,7 +28,7 @@ on an existing supplied credential are not an eligibility failure.
 
 | Concern | Proposed contract | Required decision |
 | --- | --- | --- |
-| First usable suite preview | [Projects effects v1](../contracts/first-usable-preview-projects-v1.md) | Accept or revise the exact synthetic targets, disjoint operation allowlists, two plans, two approvals, teardown boundary, and evidence contract |
+| First usable suite preview | [Projects effects v1](../contracts/first-usable-preview-projects-v1.md) | Accept or revise the exact synthetic targets, disjoint operation allowlists, two suite effect plans, nested Effect B Projects plan, three approvals, teardown boundary, and evidence contract |
 
 Proposed records are non-executable and cannot authorize implementation, live
 apply, credential creation, release, deployment, or consumer migration.

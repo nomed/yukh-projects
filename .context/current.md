@@ -18,9 +18,10 @@ without implementing or authorizing either preview effect.
 - [#147](https://github.com/nomed/yukh-projects/issues/147) governs the
   Projects-owned proposal.
 - [Projects effects v1](../docs/contracts/first-usable-preview-projects-v1.md)
-  proposes exact invented targets, disjoint operation allowlists, two fresh
-  plans, two independent approvals, separate authority chains, teardown, and
-  redacted qualification evidence.
+  proposes exact invented targets, disjoint operation allowlists, two
+  suite-level effect plans, a nested Effect B Projects plan, three independent
+  approval assertions, separate authority chains, teardown, and redacted
+  qualification evidence.
 - The proposal adds no runtime, provider access, credential source, mutation
   authority, or release surface.
 

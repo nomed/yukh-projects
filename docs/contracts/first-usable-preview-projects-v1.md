@@ -35,7 +35,10 @@ The version-1 corpus uses this invented logical sandbox:
 | Project | synthetic Project `7` | synthetic Project `7` |
 | Primary issue | synthetic issue `101` | synthetic issue `201` |
 | Related issue | none | synthetic issue `202` |
-| Projects plan | exactly one `set_field_value` | exactly one `add_dependency` |
+| Suite effect plan | Projects plan `A` | MCP plan `B-MCP` |
+| Nested provider plan | none | Projects plan `B-Projects` with exactly one `add_dependency` |
+| Approval assertions | Projects Approval `A` | MCP Approval `B-MCP` and Projects Approval `B-Projects` |
+| Projects operation | exactly one `set_field_value` | exactly one `add_dependency` |
 | Logical intent | set managed `status` from `backlog` to `ready` | add `201 blocks 202` |
 | MCP capability | none | `projects.add-dependency.v1` |
 
@@ -81,50 +84,71 @@ cycle. The plan may contain no field, schema, parent, Issue Type, second
 relationship, or caller-selected operation.
 
 MCP may admit only capability `projects.add-dependency.v1` with an immutable
-definition digest bound to the exact Effect B plan. Its provider receives a
-closed invocation containing that plan and the accepted Projects
-controlled-apply inputs. It cannot select a URL, method, GraphQL document,
-credential, endpoint, mutation kind, target, retry policy, verifier, or
-postcondition.
+definition digest bound to the exact MCP plan `B-MCP`. Its provider receives a
+closed invocation containing the separately generated Projects plan
+`B-Projects` and accepted Projects controlled-apply inputs. It cannot select a
+URL, method, GraphQL document, credential, endpoint, mutation kind, target,
+retry policy, verifier, or postcondition.
 
 MCP admission is necessary but is not Projects approval. Projects independently
-verifies the Effect B approval and all accepted controlled-apply gates before
-the provider boundary. A denied MCP admission performs zero Projects provider
-calls. A valid Projects approval cannot bypass MCP admission.
+verifies Projects Approval `B-Projects` and all accepted controlled-apply gates
+before the provider boundary. A denied MCP admission performs zero Projects
+provider calls. A valid Projects approval cannot bypass MCP admission.
 
-## Two plans and two approvals
+## Two effects, two suite plans, and three approvals
 
-The preview contains exactly two consequential plans and two independently
-issued approvals:
+The preview contains exactly two suite-level effect plans:
 
-- Projects plan `A` and approval `A` authorize only Effect A;
-- Projects plan `B` and approval `B` authorize only Effect B after MCP
-  admission.
+- Projects plan `A` defines Effect A;
+- MCP plan `B-MCP` defines Effect B.
 
-Approval `B` uses the accepted Projects approval envelope. Its `subjectRef`
-remains the opaque host-attested GitHub installation or principal reference
-defined by the read-only adapter. It MUST exactly match the authenticated
-subject bound by the Effect B read and write hosts. It never contains or
-identifies an MCP capability, provider, verifier, plan, or policy digest.
+Effect B additionally contains the distinct nested provider-owned Projects
+plan `B-Projects`. That nested plan is not a third suite effect, but it remains
+an independently canonicalized controlled-apply plan with its own plan ID and
+ordered operation-set digest.
 
-MCP separately authenticates an admission artifact that binds:
+The preview therefore requires exactly three independently verifiable approval
+assertions and artifacts:
+
+1. **Projects Approval `A`** binds Projects plan `A`, its operation set, and the
+   authenticated GitHub principal for Effect A.
+2. **MCP Approval `B-MCP`** binds MCP plan `B-MCP`, the MCP subject, capability
+   definition, provider implementation, verifier, and the digest of nested
+   Projects plan `B-Projects`.
+3. **Projects Approval `B-Projects`** binds Projects plan `B-Projects`, its
+   ordered operation set, and the authenticated GitHub principal for the
+   provider-owned mutation.
+
+Projects Approval `B-Projects` uses the accepted Projects approval envelope.
+Its `subjectRef` remains the opaque host-attested GitHub installation or
+principal reference defined by the read-only adapter. It MUST exactly match
+the authenticated subject bound by the Effect B read and write hosts. It never
+contains or identifies an MCP capability, provider, verifier, plan, or policy
+digest.
+
+MCP Approval `B-MCP` is the separately authenticated admission artifact that
+binds:
 
 - capability name and immutable capability-definition digest;
 - immutable provider-implementation and MCP verifier digests;
+- MCP plan `B-MCP` ID, subject, and ordered operation-set digest;
 - Effect B target and exact `add_dependency` operation;
-- Effect B Projects plan ID and ordered operation-set digest;
+- nested Projects plan `B-Projects` ID and ordered operation-set digest;
 - the same host-attested GitHub principal reference carried by the Projects
   scope and approval; and
-- MCP policy, approval, expiry, nonce, idempotency, and audit bindings.
+- MCP policy, expiry, nonce, idempotency, and audit bindings.
 
-Before invoking Projects, MCP verifies that artifact and exact-matches every
-shared Effect B value against the closed provider invocation. Projects
-independently verifies its approval, authenticated principal, plan, and
-controlled-apply gates. The MCP artifact cannot replace, modify, derive, or
-authorize a Projects approval or `subjectRef`; the Projects approval cannot
-replace or imply MCP admission. Any mismatch denies before provider invocation.
+MCP Approval `B-MCP` and Projects Approval `B-Projects` form a compound
+admission bridge: both must authenticate and exact-match the shared target,
+nested Projects plan ID, Projects operation-set digest, GitHub principal, and
+declared postcondition before provider invocation. MCP independently verifies
+`B-MCP`; Projects independently verifies `B-Projects`, its authenticated
+principal, plan, and controlled-apply gates. Neither approval authorizes,
+derives, modifies, substitutes for, or implies the other. Any missing artifact
+or mismatch denies before provider invocation.
 
-The following values MUST be distinct between A and B:
+The following values MUST be distinct across Projects Approval `A`, MCP
+Approval `B-MCP`, and Projects Approval `B-Projects`, where the value applies:
 
 - complete plan ID and ordered operation-set digest;
 - approval issuer allowlist, trust-root fingerprint, subject reference,
@@ -146,11 +170,13 @@ execution authority.
 
 ## Execution and verification
 
-Each effect starts from its own complete fresh observation and independently
-reproduces its approved plan under its own lease. Accepted rate admission,
+Effect A starts from its own complete fresh observation and reproduces Projects
+plan `A` under its own lease. Effect B independently verifies MCP plan `B-MCP`,
+then Projects starts from a separate complete fresh observation and reproduces
+nested Projects plan `B-Projects` under its own lease. Accepted rate admission,
 precondition checks, nonce consumption, one-request mutation attempt,
-stop-on-first-failure behavior, targeted verification, and final
-zero-operation reconciliation remain unchanged.
+stop-on-first-failure behavior, targeted verification, and final zero-operation
+reconciliation remain unchanged.
 
 A provider acknowledgement is not success. A lost response or timeout after a
 possible effect produces `completion_unknown`, no automatic retry, and no
@@ -206,7 +232,9 @@ The deterministic repository corpus emits only:
 
 - contract and fixture versions;
 - immutable synthetic input digest;
-- distinct plan and operation-set digests for A and B;
+- distinct suite plan digests for A and B plus the nested `B-Projects` plan and
+  operation-set digest;
+- independent verification outcomes for all three named approval artifacts;
 - stable operation kind and aggregate count for each effect;
 - MCP capability definition digest and admission outcome for B;
 - zero-provider-call outcome for every pre-effect denial;
@@ -246,8 +274,8 @@ address:
 - capability or target substitution at the MCP provider boundary;
 - an MCP capability or provider digest being substituted for the authenticated
   Projects principal in `subjectRef`;
-- one approval being replayed, translated, or treated as authority for both
-  effects;
+- one of the three approvals being replayed, translated, or treated as
+  authority for another assertion or effect;
 - credential, nonce, lease, idempotency, verifier, or audit-chain reuse;
 - MCP admission being mistaken for Projects approval, or vice versa;
 - provider completion becoming ambiguous after possible effect;
@@ -267,18 +295,21 @@ of mutation and MCP provider imports.
 Owner acceptance must explicitly approve or revise:
 
 1. the exact invented targets and disjoint operation sets;
-2. the two-plan, two-approval model, authenticated Projects principal binding,
-   and separate MCP admission artifact;
-3. the required distinct authority-bearing values;
-4. the MCP provider closure and zero-call denial boundary;
-5. teardown as the version-1 final-state mechanism; and
-6. the redacted evidence and threat-model delta.
+2. two suite-level effect plans, nested Projects plan `B-Projects`, and the
+   three named approval assertions;
+3. the compound `B-MCP`/`B-Projects` admission bridge, authenticated Projects
+   principal binding, and no authority substitution;
+4. the required distinct authority-bearing values;
+5. the MCP provider closure and zero-call denial boundary;
+6. teardown as the version-1 final-state mechanism; and
+7. the redacted evidence and threat-model delta.
 
 Only after acceptance may separate issues propose deterministic synthetic
 implementation, adversarial tests, sandbox qualification, candidate release
 artifacts, or operational-readiness evidence. Any live synthetic provider
 mutation remains gated by a fresh exact plan, approval, protected host, and
-separate operational authorization.
+separate operational authorization. Effect B requires fresh `B-MCP` and
+`B-Projects` plans and both independently verified approvals.
 
 This proposal authorizes no implementation, merge, provider access, credential
 creation, Project or issue mutation, teardown, deployment, release, tag,

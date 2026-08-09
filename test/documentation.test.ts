@@ -97,20 +97,36 @@ test("the proposed preview contract keeps RFC-0003 effects independently authori
   assert.match(contract, /exactly one `set_field_value`/);
   assert.match(contract, /exactly one `add_dependency`/);
   assert.match(contract, /`projects\.add-dependency\.v1`/);
-  assert.match(contract, /exactly two consequential plans and two independently\s+issued approvals/);
+  assert.match(contract, /exactly two suite-level effect plans/);
+  assert.match(contract, /distinct nested provider-owned Projects\s+plan `B-Projects`/);
   assert.match(
     contract,
-    /`subjectRef`\s+remains the opaque host-attested GitHub installation or principal reference/,
+    /exactly three independently verifiable approval\s+assertions and artifacts/,
+  );
+  for (const approval of [
+    "Projects Approval `A`",
+    "MCP Approval `B-MCP`",
+    "Projects Approval `B-Projects`",
+  ]) {
+    assert.match(contract, new RegExp(approval.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(
+    contract,
+    /`subjectRef`\s+remains the opaque host-attested GitHub installation or\s+principal reference/,
   );
   assert.match(
     contract,
-    /It never contains or\s+identifies an MCP capability, provider, verifier, plan, or policy digest/,
+    /It never\s+contains or identifies an MCP capability, provider, verifier, plan, or policy\s+digest/,
   );
-  assert.match(contract, /MCP separately authenticates an admission artifact/);
   assert.match(
     contract,
-    /MCP artifact cannot replace, modify, derive, or\s+authorize a Projects approval or `subjectRef`/,
+    /MCP Approval `B-MCP` is the separately authenticated admission artifact/,
   );
+  assert.match(
+    contract,
+    /Neither approval authorizes,\s+derives, modifies, substitutes for, or implies the other/,
+  );
+  assert.match(contract, /form a compound\s+admission bridge/);
 
   for (const binding of [
     "plan ID",
@@ -125,7 +141,7 @@ test("the proposed preview contract keeps RFC-0003 effects independently authori
     assert.match(contract, new RegExp(binding));
   }
 
-  assert.match(contract, /denied MCP admission performs zero Projects provider\s+calls/);
+  assert.match(contract, /denied MCP admission performs zero Projects\s+provider calls/);
   assert.match(contract, /teardown, rather than reverse reconciliation/);
   assert.match(
     contract,
