@@ -1,7 +1,7 @@
 # Current context
 
 **Status:** first usable preview Projects contract accepted; approval bridge
-and wrapper contract proposed for owner review
+and wrapper contract proposed for independent review
 **Project:** Yukh Projects
 **Visibility:** public
 
@@ -29,20 +29,23 @@ without implementing or authorizing either preview effect.
   defines a closed authenticated bridge v2, and specifies one immutable
   producer-owned Effect B wrapper with zero provider calls before complete
   compound admission.
-- Owner review must resolve a cross-record conflict before suite compatibility:
-  accepted Projects effects v1 names `add_dependency` for Effect B, while
-  Proposed MCP RFC-0011 names `set_field_value(status)`. Neither record may be
-  silently reinterpreted.
+- Accepted autonomous maintainer mandate RFC-0007 at
+  `nomed/nomed.github.io@bb8628edf7a07c2af56f07e4f9140f58c851ef47`
+  resolves the cross-record conflict: Accepted RFC-0005 and Projects effects v1
+  preserve `projects.add-dependency.v1` and exactly one
+  `add_dependency(201 blocks 202)`. Proposed MCP RFC-0011 is nonconforming and
+  must be revised later in its owning repository.
 
 ## Next
 
-1. Obtain explicit owner review and acceptance or revision of the Proposed
-   approval-bridge v2 and immutable MCP-safe controlled-apply wrapper contract
+1. Obtain a distinct independent read-only Class B review of the exact Proposed
+   approval-bridge v2 and immutable MCP-safe controlled-apply wrapper commit
    under [#150](https://github.com/nomed/yukh-projects/issues/150).
-2. Select the separately reviewed supersession or upstream-RFC revision path
-   that makes the Effect B operation exact across components.
-3. Stop before any implementation.
-4. Keep any later synthetic implementation or live sandbox mutation behind
+2. Require a later distinct executor/merger to verify that review and the exact
+   green check snapshot; the author performs neither role.
+3. Revise Proposed MCP RFC-0011 separately in its owning repository.
+4. Stop before any implementation.
+5. Keep any later synthetic implementation or live sandbox mutation behind
    separately accepted contracts, a fresh exact plan,
    approval, protected host, and separate operational authorization.
 
@@ -76,9 +79,9 @@ without implementing or authorizing either preview effect.
   preview-envelope bindings.
 - The Proposed MCP-safe wrapper exposes one closed function, fixes native mode,
   target profile, policy, producer and wrapper releases, and exactly one
-  `set_field_value(status)` operation. It accepts no caller-selected transport,
-  URL, query, document, credential, provider identifier, target, policy, or
-  operation.
+  `add_dependency(201 blocks 202)` operation. It accepts no caller-selected
+  transport, URL, query, document, credential, provider identifier, target,
+  policy, or operation.
 - MCP Approval `B-MCP` and Projects Approval `B-Projects` bind the same
   canonical Effect B postcondition. Their verifier identities, evidence, and
   authority scopes remain distinct.
@@ -91,4 +94,5 @@ without implementing or authorizing either preview effect.
 - Accepted Projects contracts still forbid destructive restore; the proposed
   preview uses a separately governed teardown boundary.
 - No live apply is authorized.
-- Proposal review grants no implementation or release authority.
+- The RFC-0007 Class B author decision and proposal review grant no
+  implementation, acceptance, merge, or release authority.

@@ -236,7 +236,7 @@ test("the accepted preview contract keeps RFC-0003 effects independently authori
   assert.match(index, /specification-only/);
   assert.match(
     current,
-    /approval bridge\s+and wrapper contract proposed for owner review/,
+    /approval bridge\s+and wrapper contract proposed for independent review/,
   );
   assert.match(current, /No live apply is authorized/);
 });
@@ -264,12 +264,33 @@ test("the proposed MCP bridge and wrapper preserve compound authority", async ()
     /Projects v1 `subjectRef` remains the opaque host-attested GitHub\s+installation or principal reference/,
   );
   assert.match(contract, /The bridge is evidence, not authorization/);
-  assert.match(contract, /Compatibility conflict requiring owner decision/);
+  assert.match(contract, /Autonomous Class B author decision/);
+  assert.match(
+    contract,
+    /nomed\/nomed\.github\.io@bb8628edf7a07c2af56f07e4f9140f58c851ef47/,
+  );
   assert.match(contract, /`projects\.add-dependency\.v1`/);
   assert.match(contract, /`github\.projects\.item\.status\.set@1\.0\.0`/);
   assert.match(
     contract,
-    /cannot exact-match and\s+cannot be treated as two names for one effect/,
+    /operation cannot exact-match the Accepted dependency plan and must not be\s+treated as another name for it/,
+  );
+  for (const tieBreak of [
+    "Least authority expansion",
+    "Already-Accepted semantics — decisive",
+    "Compatibility",
+    "Reversibility",
+    "Smallest diff",
+  ]) {
+    assert.match(contract, new RegExp(tieBreak));
+  }
+  assert.match(
+    contract,
+    /MCP RFC-0011 must be revised later in its owning repository; no MCP\s+supersession is bundled into issue #150/,
+  );
+  assert.match(
+    contract,
+    /complete record Proposed for a distinct independent\s+read-only review and a later distinct executor\/merger/,
   );
   assert.match(contract, /Every field is required/);
   assert.match(contract, /Unknown fields, missing fields/);
@@ -315,7 +336,14 @@ test("the proposed MCP bridge and wrapper preserve compound authority", async ()
     /runMcpEffectBControlledApplyV1/,
   );
   assert.match(contract, /reconciliation mode `native-v1`/);
-  assert.match(contract, /exactly one `set_field_value` operation for logical field `status`/);
+  assert.match(contract, /profile `yukh-mcp\/suite-preview-effect-b-dependency-v1`/);
+  assert.match(contract, /exactly one `add_dependency`/);
+  assert.match(contract, /direction `201 blocks 202`/);
+  assert.match(contract, /approved kind\s+`add_blocked_by`/);
+  assert.doesNotMatch(
+    contract,
+    /exactly one `set_field_value` operation for logical field `status`/,
+  );
   assert.match(
     contract,
     /cannot contain or select a repository, Project, issue, item,\s+field, option, provider identifier, target, policy, environment, mode/,
@@ -369,12 +397,15 @@ test("the proposed MCP bridge and wrapper preserve compound authority", async ()
   assert.match(threatModel, /MCP compound approval and wrapper confusion/);
   assert.match(
     threatModel,
-    /different Effect B operation kinds \(`add_dependency` and\s+`set_field_value\(status\)`\)/,
+    /resolves the Accepted Projects effects v1 versus Proposed MCP\s+RFC-0011 conflict in favor of the already-Accepted `add_dependency\(201 blocks\s+202\)` semantics/,
   );
   assert.match(threatModel, /durable `completion_unknown`/);
   assert.match(index, /MCP compound approval bridge and wrapper v1/);
-  assert.match(index, /remains blocked on explicit\s+owner acceptance/);
-  assert.match(current, /wrapper contract proposed for owner review/);
-  assert.match(current, /cross-record conflict before suite compatibility/);
-  assert.match(current, /Proposal review grants no implementation or release authority/);
+  assert.match(index, /blocked on\s+role-separated independent review and later execution under Accepted RFC-0007/);
+  assert.match(current, /wrapper contract proposed for independent review/);
+  assert.match(current, /Proposed MCP RFC-0011 is nonconforming/);
+  assert.match(
+    current,
+    /Class B author decision and proposal review grant no\s+implementation, acceptance, merge, or release authority/,
+  );
 });
