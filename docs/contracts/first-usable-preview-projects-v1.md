@@ -3,7 +3,8 @@
 - **Status:** Proposed
 - **Proposed:** 2026-08-09
 - **Governing issue:** [#147](https://github.com/nomed/yukh-projects/issues/147)
-- **Suite decision:** [RFC-0005 at `b23f47f2`](https://github.com/nomed/nomed.github.io/blob/b23f47f2/docs/rfcs/RFC-0005-first-usable-yukh-preview.md)
+- **Suite decision:** RFC-0005 in
+  `nomed/nomed.github.io@12d9215f10c4b7fb1762a5025367e3e81543800f`
 - **Decision gate:** explicit owner acceptance is required before implementation
 - **Authority:** proposal and review only; no provider access or mutation
 

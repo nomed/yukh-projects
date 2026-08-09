@@ -12,7 +12,8 @@ without implementing or authorizing either preview effect.
 
 ## Now
 
-- Suite RFC-0005 is accepted at `b23f47f2` and requires two independent
+- Suite RFC-0005 is authoritative on `nomed.github.io` `main` at
+  `12d9215f10c4b7fb1762a5025367e3e81543800f` and requires two independent
   consequential effects for RFC-0003 steps 8 and 9.
 - [#147](https://github.com/nomed/yukh-projects/issues/147) governs the
   Projects-owned proposal.

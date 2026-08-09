@@ -90,7 +90,10 @@ test("the proposed preview contract keeps RFC-0003 effects independently authori
   const current = await read(".context/current.md");
 
   assert.match(contract, /\*\*Status:\*\* Proposed/);
-  assert.match(contract, /RFC-0005 at `b23f47f2`/);
+  assert.match(
+    contract,
+    /nomed\/nomed\.github\.io@12d9215f10c4b7fb1762a5025367e3e81543800f/,
+  );
   assert.match(contract, /exactly one `set_field_value`/);
   assert.match(contract, /exactly one `add_dependency`/);
   assert.match(contract, /`projects\.add-dependency\.v1`/);
