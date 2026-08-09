@@ -59,6 +59,7 @@ interface FixtureOptions{
  bridgeClaims?:(claims:ProjectsApprovalBridgeV2Claims)=>ProjectsApprovalBridgeV2Claims;
  profile?:(profile:McpEffectBFixedProfile)=>McpEffectBFixedProfile;
  equalNonce?:boolean;
+ mismatchedBridgeTrust?:boolean;
  sameCredentials?:boolean;
  aborted?:boolean;
  writeFailure?:boolean;
@@ -279,8 +280,13 @@ function fixture(options:FixtureOptions={}){
   trustRootFingerprint
  };
  if(options.bridgeClaims)bridgeClaims=options.bridgeClaims(bridgeClaims);
- const bridgeUnsigned={schema:"yukh-projects-approval-bridge-v2" as const,algorithm:"Ed25519" as const,keyFingerprint:approval.keyFingerprint,claims:bridgeClaims};
- let bridge:ProjectsApprovalBridgeV2Envelope={...bridgeUnsigned,signature:sign(null,projectsApprovalBridgeV2SigningInputForTest(bridgeUnsigned),projectPair.privateKey).toString("base64url")};
+ const bridgePair=options.mismatchedBridgeTrust?generateKeyPairSync("ed25519"):projectPair;
+ const bridgeKeyFingerprint=digest(bridgePair.publicKey.export({type:"spki",format:"der"}));
+ const bridgeTrustRootFingerprint=projectsApprovalTrustFingerprintForTest(bridgeKeyFingerprint,[ISSUER]);
+ if(options.mismatchedBridgeTrust)bridgeClaims={...bridgeClaims,trustRootFingerprint:bridgeTrustRootFingerprint};
+ const bridgeTrust={publicKey:bridgePair.publicKey.export({type:"spki",format:"pem"}),allowedIssuerRefs:[ISSUER],trustRootFingerprint:bridgeTrustRootFingerprint};
+ const bridgeUnsigned={schema:"yukh-projects-approval-bridge-v2" as const,algorithm:"Ed25519" as const,keyFingerprint:bridgeKeyFingerprint,claims:bridgeClaims};
+ let bridge:ProjectsApprovalBridgeV2Envelope={...bridgeUnsigned,signature:sign(null,projectsApprovalBridgeV2SigningInputForTest(bridgeUnsigned),bridgePair.privateKey).toString("base64url")};
  if(options.invalidBridge)bridge={...bridge,signature:`${bridge.signature.startsWith("A")?"B":"A"}${bridge.signature.slice(1)}`};
  let dependencyPresent=false,readCalls=0,writeCalls=0,coordinationCalls=0,closed=0;
  const items=()=>[201,202].map(number=>({id:number+1000,node_id:`PVTI_${number}`,content:issue(number as 201|202,dependencyPresent),fields:[{name:"Area",value:{name:{raw:"Bridge"}}},{name:"Work Type",value:{name:{raw:"Task"}}}]}));
@@ -324,7 +330,7 @@ function fixture(options:FixtureOptions={}){
   projectsApprovalBytes:options.invalidApproval?canonical({...approval.envelope,signature:"A".repeat(86)}):approval.bytes,
   projectsTrust,
   bridgeBytes:canonical(bridge),
-  bridgeTrust:projectsTrust,
+  bridgeTrust,
   hostCapsule:{
    source:hostCapsule(fixed),
    profile:fixed,
@@ -438,6 +444,19 @@ test("keeps every compound admission denial before all provider calls",async()=>
   assert.deepEqual({...value.calls(),closed:undefined},{read:0,write:0,coordination:0,closed:undefined},name);
   assert.equal(value.calls().closed,9,name);
  }
+});
+
+test("rejects mismatched v1 and bridge trust profiles before every provider call",async()=>{
+ const value=fixture({mismatchedBridgeTrust:true});
+ const result=await runMcpEffectBControlledApplyV1(value.invocation);
+ assert.deepEqual(result,{
+  schema:"yukh-projects-mcp-effect-b-result-v1",
+  status:"rejected",
+  effectBoundaryEntered:false,
+  mutationRequestCount:0,
+  code:"YKP-MCP-WRAPPER-005"
+ });
+ assert.deepEqual(value.calls(),{read:0,write:0,coordination:0,closed:9});
 });
 
 test("rejects open invocation schemas and ordinary objects without touching a provider",async()=>{

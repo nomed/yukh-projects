@@ -80,7 +80,8 @@ The deterministic corpus proves:
   objects;
 - malformed, oversized, noncanonical, stale, replayed, substituted, future,
   incomparable, cross-profile, nonce-equal, subject-mismatched, producer, plan,
-  target, postcondition, lease, and trust failures;
+  target, postcondition, lease, trust, and paired v1/bridge trust-profile
+  mismatch failures;
 - zero provider and Coordination calls for complete admission failures;
 - the unchanged Projects v1 verifier runs before factory construction;
 - one exact mutation request, no hidden retry, fresh convergence, and
