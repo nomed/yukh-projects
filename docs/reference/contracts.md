@@ -1,7 +1,8 @@
 # Contracts
 
-These accepted records define the public behavior. Use them for exact schemas,
-limits, diagnostics, and compatibility rules.
+Accepted records define public behavior. Use them for exact schemas, limits,
+diagnostics, and compatibility rules. Proposed records are review material only
+and authorize no implementation or provider access.
 
 | Concern | Contract |
 | --- | --- |
@@ -22,3 +23,12 @@ Unknown versions and fields fail closed. A plan or credential alone never
 authorizes apply. For dry-run and legacy-shadow, read permissions are the
 functional minimum and least privilege is recommended; excess write permissions
 on an existing supplied credential are not an eligibility failure.
+
+## Proposed records
+
+| Concern | Proposed contract | Required decision |
+| --- | --- | --- |
+| First usable suite preview | [Projects effects v1](../contracts/first-usable-preview-projects-v1.md) | Accept or revise the exact synthetic targets, disjoint operation allowlists, two plans, two approvals, teardown boundary, and evidence contract |
+
+Proposed records are non-executable and cannot authorize implementation, live
+apply, credential creation, release, deployment, or consumer migration.

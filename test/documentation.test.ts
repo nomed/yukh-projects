@@ -81,3 +81,39 @@ test("dry-run credential eligibility is structural rather than scope-exclusive",
     assert.match(source, /apply\s+authority|controlled-apply\s+authority/iu);
   }
 });
+
+test("the proposed preview contract keeps RFC-0003 effects independently authorized", async () => {
+  const contract = await read(
+    "docs/contracts/first-usable-preview-projects-v1.md",
+  );
+  const index = await read("docs/reference/contracts.md");
+  const current = await read(".context/current.md");
+
+  assert.match(contract, /\*\*Status:\*\* Proposed/);
+  assert.match(contract, /RFC-0005 at `b23f47f2`/);
+  assert.match(contract, /exactly one `set_field_value`/);
+  assert.match(contract, /exactly one `add_dependency`/);
+  assert.match(contract, /`projects\.add-dependency\.v1`/);
+  assert.match(contract, /exactly two consequential plans and two independently\s+issued approvals/);
+
+  for (const binding of [
+    "plan ID",
+    "operation-set digest",
+    "nonce",
+    "credential",
+    "lease",
+    "idempotency key",
+    "verifier identity",
+    "audit chain",
+  ]) {
+    assert.match(contract, new RegExp(binding));
+  }
+
+  assert.match(contract, /denied MCP admission performs zero Projects provider\s+calls/);
+  assert.match(contract, /teardown, rather than reverse reconciliation/);
+  assert.match(contract, /authorizes no implementation, merge, provider access/);
+  assert.match(index, /Projects effects v1/);
+  assert.match(index, /Proposed records are non-executable/);
+  assert.match(current, /owner acceptance\s+pending/);
+  assert.match(current, /No live apply is authorized/);
+});
