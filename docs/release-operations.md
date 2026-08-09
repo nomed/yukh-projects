@@ -51,7 +51,7 @@ head/tree, merged release commit/tree, version/tag, workflow blob, manifest,
 checksum index, and these exact effects:
 
 ```json
-["create-immutable-tag","create-github-release","upload-17-assets"]
+["attest-17-assets","create-immutable-tag","create-github-release","upload-17-assets"]
 ```
 
 The record's `statement` value must be exactly:
@@ -83,9 +83,10 @@ The workflow has three jobs:
    runs all checks, and passes only the verified immutable assets, manifest,
    and receipt forward.
 3. `publish` has no checkout, dependency installation, build, test, repository
-   script, OIDC, npm token, or long-lived secret. It starts only after the
+   script, npm token, or long-lived secret. It starts only after the
    protected `release` environment's required owner review. Only this job has
-   the short-lived job-scoped `contents: write` token.
+   the short-lived job-scoped `contents: write`, `id-token: write`, and
+   `attestations: write` permissions required by the accepted release contract.
 
 Immediately before its first mutation, the inline reviewed publisher rechecks
 the authorization body digest and immutability, `main` commit/tree, workflow
@@ -97,9 +98,11 @@ The publisher creates one draft bound to the exact commit, uploads each asset
 once, verifies the provider-reported name, size, and SHA-256 digest and the
 complete allowlist, then publishes the draft. Success requires GitHub to report
 the Release immutable and its tag to resolve directly to the exact authorized
-commit. There is no retry, resume, tag movement, overwrite, deletion, or
-automatic cleanup. A failure after the first mutation leaves observable partial
-state and blocks every rerun for private owner investigation.
+commit. A pinned GitHub action then attests the exact verified 17-file asset
+directory. There is no retry, resume, tag movement, overwrite, deletion, or
+automatic cleanup. A failure after the first mutation, including attestation
+failure after an otherwise immutable Release, leaves observable partial state
+and blocks every rerun for private owner investigation and a corrective release.
 
 Repository immutable releases must be enabled before publication. Unavailable,
 malformed, stale, ambiguous, or disabled policy or authorization state fails

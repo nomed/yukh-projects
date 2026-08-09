@@ -18,7 +18,7 @@ test("the reviewed publisher rejects tag and draft partial state before mutation
   await copyFile("release/1.8.0/release-manifest.json",join(input,"release-manifest.json"));
   const manifestBytes=await readFile("release/1.8.0/release-manifest.json"),manifest=JSON.parse(manifestBytes.toString("utf8"));
   const releaseCommit="c".repeat(40),releaseTree="b".repeat(40),workflowBlobSha="d".repeat(40),authorizationCommentId=1003;
-  const effects=["create-immutable-tag","create-github-release","upload-17-assets"];
+  const effects=["attest-17-assets","create-immutable-tag","create-github-release","upload-17-assets"];
   const authorizationBody=JSON.stringify({releaseCommit,releaseTree,version:"1.8.0",tag:"v1.8.0",assetManifestSha256:sha256(manifestBytes),checksumIndexSha256:manifest.checksum.sha256,workflowBlobSha,effects});
   const receipt={schema:"yukh-projects-release-authorization-receipt-v1",authorizationCommentId,authorizationBodySha256:sha256(authorizationBody),releaseCommit,releaseTree,reviewedHead:"a".repeat(40),reviewedTree:releaseTree,version:"1.8.0",tag:"v1.8.0",assetManifestSha256:sha256(manifestBytes),checksumIndexSha256:manifest.checksum.sha256,workflowBlobSha,effects,publication:"authorized"};
   await writeFile(join(input,"authorization-receipt.json"),`${JSON.stringify(receipt)}\n`);

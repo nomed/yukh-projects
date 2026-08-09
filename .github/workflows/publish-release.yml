@@ -122,6 +122,8 @@ jobs:
     environment: release
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -149,7 +151,7 @@ jobs:
           const manifestBytes=await readFile("release-input/release-manifest.json");
           const manifest=JSON.parse(manifestBytes);
           const receipt=JSON.parse(await readFile("release-input/authorization-receipt.json"));
-          if(hash(manifestBytes)!==process.env.ASSET_MANIFEST_SHA256||manifest.publication!=="disabled"||manifest.assets.length!==16||manifest.checksum.sha256!==process.env.CHECKSUM_INDEX_SHA256||receipt.schema!=="yukh-projects-release-authorization-receipt-v1"||receipt.publication!=="authorized"||JSON.stringify(receipt.effects)!==JSON.stringify(["create-immutable-tag","create-github-release","upload-17-assets"])||receipt.releaseCommit!==process.env.RELEASE_COMMIT||receipt.releaseTree!==process.env.RELEASE_TREE||receipt.assetManifestSha256!==process.env.ASSET_MANIFEST_SHA256||receipt.checksumIndexSha256!==process.env.CHECKSUM_INDEX_SHA256)throw new Error("publication input binding mismatch");
+          if(hash(manifestBytes)!==process.env.ASSET_MANIFEST_SHA256||manifest.publication!=="disabled"||manifest.assets.length!==16||manifest.checksum.sha256!==process.env.CHECKSUM_INDEX_SHA256||receipt.schema!=="yukh-projects-release-authorization-receipt-v1"||receipt.publication!=="authorized"||JSON.stringify(receipt.effects)!==JSON.stringify(["attest-17-assets","create-immutable-tag","create-github-release","upload-17-assets"])||receipt.releaseCommit!==process.env.RELEASE_COMMIT||receipt.releaseTree!==process.env.RELEASE_TREE||receipt.assetManifestSha256!==process.env.ASSET_MANIFEST_SHA256||receipt.checksumIndexSha256!==process.env.CHECKSUM_INDEX_SHA256)throw new Error("publication input binding mismatch");
           const expected=[...manifest.assets.map(asset=>asset.name),manifest.checksum.name].sort();
           const actual=(await readdir("release-input/assets")).sort();
           if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error("publication asset set mismatch");
@@ -186,7 +188,7 @@ jobs:
           }
           const manifestBytes=await readFile("release-input/release-manifest.json"),manifest=JSON.parse(manifestBytes);
           const receiptBytes=await readFile("release-input/authorization-receipt.json"),receipt=JSON.parse(receiptBytes);
-          if(hash(manifestBytes)!==process.env.ASSET_MANIFEST_SHA256||manifest.publication!=="disabled"||manifest.assets.length!==16||manifest.version!==process.env.RELEASE_VERSION||manifest.tag!==process.env.RELEASE_TAG||manifest.checksum.sha256!==process.env.CHECKSUM_INDEX_SHA256||receipt.schema!=="yukh-projects-release-authorization-receipt-v1"||receipt.publication!=="authorized"||JSON.stringify(receipt.effects)!==JSON.stringify(["create-immutable-tag","create-github-release","upload-17-assets"])||receipt.releaseCommit!==process.env.RELEASE_COMMIT||receipt.releaseTree!==process.env.RELEASE_TREE||receipt.workflowBlobSha!==process.env.WORKFLOW_BLOB_SHA||receipt.authorizationCommentId!==Number(process.env.AUTHORIZATION_COMMENT_ID)||receipt.authorizationBodySha256!==process.env.AUTHORIZATION_BODY_SHA256)throw new Error("publication receipt binding mismatch");
+          if(hash(manifestBytes)!==process.env.ASSET_MANIFEST_SHA256||manifest.publication!=="disabled"||manifest.assets.length!==16||manifest.version!==process.env.RELEASE_VERSION||manifest.tag!==process.env.RELEASE_TAG||manifest.checksum.sha256!==process.env.CHECKSUM_INDEX_SHA256||receipt.schema!=="yukh-projects-release-authorization-receipt-v1"||receipt.publication!=="authorized"||JSON.stringify(receipt.effects)!==JSON.stringify(["attest-17-assets","create-immutable-tag","create-github-release","upload-17-assets"])||receipt.releaseCommit!==process.env.RELEASE_COMMIT||receipt.releaseTree!==process.env.RELEASE_TREE||receipt.workflowBlobSha!==process.env.WORKFLOW_BLOB_SHA||receipt.authorizationCommentId!==Number(process.env.AUTHORIZATION_COMMENT_ID)||receipt.authorizationBodySha256!==process.env.AUTHORIZATION_BODY_SHA256)throw new Error("publication receipt binding mismatch");
           const expected=[...manifest.assets,manifest.checksum].sort((a,b)=>a.name.localeCompare(b.name));
           const names=(await readdir("release-input/assets")).sort();
           if(JSON.stringify(names)!==JSON.stringify(expected.map(asset=>asset.name)))throw new Error("publication assets are missing or extra");
@@ -224,3 +226,7 @@ jobs:
           const finalTag=await request(`/repos/${repository}/git/ref/tags/${encodeURIComponent(receipt.tag)}`);
           if(published.draft!==false||finalRelease.draft!==false||finalRelease.immutable!==true||finalTag.object?.type!=="commit"||finalTag.object?.sha!==receipt.releaseCommit)throw new Error("immutable release verification failed");
           NODE
+      - name: Attest exact release assets
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: release-input/assets/yukh-projects-*

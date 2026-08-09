@@ -404,12 +404,14 @@ Controls:
   missing, extra, symbolic-linked, and substituted files;
 - place publication in a protected `release` environment and grant only its
   no-checkout, no-install, no-repository-script job a short-lived
-  `contents: write` token;
+  `contents: write` token plus the accepted `id-token: write` and
+  `attestations: write` permissions;
 - immediately recheck the authorization body, main commit/tree, workflow blob,
   immutable-release policy, tag absence, Release absence, and every local asset
   before the first mutation;
 - upload once to a single draft, require provider-reported SHA-256 digests, and
-  publish only after the complete exact set is present;
+  publish only after the complete exact set is present, then use a pinned
+  GitHub action to attest the exact verified 17-file directory;
 - fail closed on any existing tag, draft, Release, changed binding, partial
   state, rerun, or verification failure; never retry, resume, delete, move,
   overwrite, or automatically compensate release state;
