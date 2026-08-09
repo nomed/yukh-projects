@@ -247,6 +247,23 @@ Coordination service, provider, or runtime. This Accepted specification assumes
 none of those operational risks and authorizes no implementation, provider
 credentials, or live use.
 
+The local implementation candidate under issue #154 now makes these controls
+executable only through `runMcpEffectBControlledApplyV1`. Its bridge parser
+enforces the closed canonical schema and host-selected Ed25519 trust profile;
+its sealed single-use handles keep raw approvals, trust keys, credentials,
+capsules, and abort state outside the public schema; and its unchanged Projects
+v1 verification completes before any provider-backed factory creation. Tests
+exercise zero-call admission denial, exact subject/plan/producer/postcondition/
+nonce/lease binding, one mutation request, no hidden retry, terminal
+`completion_unknown`, redacted results, and cleanup separation with injected
+synthetic transports only.
+
+This candidate does not supply an operational handle minter, credential source,
+provider endpoint, network configuration, deployment, or activation path.
+Compromise of a future protected handle authority or fixed runtime remains an
+operational risk requiring distinct normal and security review before merge and
+again before any release or activation.
+
 Accepted Projects effects v1 and Proposed MCP RFC-0011 currently select
 different Effect B operation kinds (`add_dependency` and
 `set_field_value(status)`). Treating them as equivalent would substitute a plan

@@ -6,6 +6,7 @@
     "rootDir": ".",
     "outDir": "dist",
     "declaration": true,
+    "stripInternal": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true

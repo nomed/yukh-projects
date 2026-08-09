@@ -13,3 +13,4 @@ export { parseDeferredReceiptV1, createGovernedHandoffReceipt } from "./deferred
 export { createRestProjectSnapshotReader, snapshotInvalidationForMutation } from "./github-rest-snapshot.js";
 export { createGitHubMutationTransport } from "./github-mutation-transport.js";
 export { normalizeGitHubApplyFailure } from "./github-apply-failure.js";
+export { runMcpEffectBControlledApplyV1 } from "./mcp-effect-b-controlled-apply.js";

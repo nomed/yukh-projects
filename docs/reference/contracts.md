@@ -20,14 +20,16 @@ and authorize no implementation or provider access.
 | Resumable rate deferral | [Resumable rate-limit deferral v1](../contracts/resumable-rate-deferral-v1.md) |
 | First usable suite preview | [Projects effects v1](../contracts/first-usable-preview-projects-v1.md) |
 | MCP compound approval and bounded apply entrypoint | [MCP compound approval bridge and wrapper v1](../contracts/mcp-compound-approval-wrapper-v1.md) |
+| MCP compound approval implementation candidate | [Bridge and wrapper implementation v1](../contracts/mcp-compound-approval-wrapper-implementation-v1.md) |
 
 Unknown versions and fields fail closed. A plan or credential alone never
 authorizes apply. For dry-run and legacy-shadow, read permissions are the
 functional minimum and least privilege is recommended; excess write permissions
 on an existing supplied credential are not an eligibility failure.
 
-The accepted preview and approval-bridge records are specification-only. The
-bridge and wrapper were substantively reviewed and merged through PR #152 as
+The accepted preview and approval-bridge records remain the semantic authority.
+The bridge and wrapper contract was substantively reviewed and merged through PR #152 as
 `nomed/yukh-projects@56118de6760b5b582c9a2cf84640e22e3eaaac83`. They preserve
-the Accepted Projects `add_dependency` Effect B and grant no implementation,
-provider, credential, mutation, live-effect, deployment, or release authority.
+the Accepted Projects `add_dependency` Effect B. The unreviewed implementation
+candidate under #154 adds no provider, credential, live-effect, deployment,
+activation, or release authority.

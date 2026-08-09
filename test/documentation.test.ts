@@ -233,10 +233,10 @@ test("the accepted preview contract keeps RFC-0003 effects independently authori
   );
   assert.match(contract, /Acceptance authorizes no implementation, provider access/);
   assert.match(index, /Projects effects v1/);
-  assert.match(index, /specification-only/);
+  assert.match(index, /semantic authority/);
   assert.match(
     current,
-    /approval bridge\/wrapper\s+contract accepted; implementation remains unauthorized/,
+    /bridge\/wrapper\s+implementation candidate is open for distinct normal and security review/,
   );
   assert.match(current, /No live apply is authorized/);
 });
@@ -248,6 +248,12 @@ test("the accepted MCP bridge and wrapper preserve compound authority", async ()
   const threatModel = await read("docs/security/threat-model.md");
   const index = await read("docs/reference/contracts.md");
   const current = await read(".context/current.md");
+  const implementation = await read(
+    "docs/contracts/mcp-compound-approval-wrapper-implementation-v1.md",
+  );
+  const validation = await read(
+    "docs/validation/mcp-effect-b-controlled-apply-candidate.md",
+  );
 
   assert.match(contract, /\*\*Status:\*\* Accepted/);
   assert.match(contract, /\*\*Accepted:\*\* 2026-08-09/);
@@ -452,17 +458,28 @@ test("the accepted MCP bridge and wrapper preserve compound authority", async ()
     /Accepted specification assumes\s+none of those operational risks and authorizes no implementation, provider\s+credentials, or live use/,
   );
   assert.match(index, /MCP compound approval bridge and wrapper v1/);
+  assert.match(index, /Bridge and wrapper implementation v1/);
   assert.match(
     index,
     /substantively reviewed and merged through PR #152 as\s+`nomed\/yukh-projects@56118de6760b5b582c9a2cf84640e22e3eaaac83`/,
   );
   assert.match(current, /is Accepted under #150 after independent review of PR #152/);
+  assert.match(current, /#154[\s\S]*runMcpEffectBControlledApplyV1/);
   assert.match(
     current,
     /conflict rule resolves the cross-record mismatch in favor of the\s+already-Accepted Projects `add_dependency` Effect B/,
   );
   assert.match(
     current,
-    /Class B acceptance and merge records grant no implementation,\s+provider, credential, live-effect, deployment, or release authority/,
+    /Class B-X author record for #154 grants no review, acceptance,\s+merge, provider, credential, live-effect, deployment, activation, or release\s+authority/,
   );
+  assert.match(implementation, /Unreviewed implementation candidate/);
+  assert.match(implementation, /dist\/mcp-effect-b\/index\.js` exports only that function/);
+  assert.match(implementation, /Steps 1 through 6 perform no provider call/);
+  assert.match(implementation, /`verifySignedApproval` completes before the provider-backed factory/);
+  assert.match(implementation, /add_dependency\(201 blocks 202\)/);
+  assert.match(implementation, /terminal `completion_unknown`/);
+  assert.match(validation, /Publication is fixed to `disabled`/);
+  assert.match(validation, /npm sbom --sbom-format spdx/);
+  assert.match(validation, /distinct normal and security review/i);
 });

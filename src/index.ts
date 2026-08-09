@@ -29,3 +29,18 @@ export * from "./release-plan.js";
 export * from "./protected-publisher.js";
 export * from "./aggregate-migration.js";
 export * from "./work-type-provider.js";
+export {
+ runMcpEffectBControlledApplyV1,
+ type McpEffectBControlledApplyInvocationV1,
+ type McpEffectBControlledApplyResultV1,
+ type McpWrapperFailureCode,
+ type PrivateAbortHandle,
+ type PrivateSingleUseArtifactHandle,
+ type PrivateSingleUseMcpVerificationHandle,
+ type PrivateSingleUseSecretHandle,
+ type PrivateSingleUseTrustHandle,
+ type ProducerRelease,
+ type ProjectsApprovalBridgeV2Claims,
+ type ProjectsApprovalBridgeV2Envelope,
+ type WrapperRelease
+} from "./mcp-effect-b-controlled-apply.js";

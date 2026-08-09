@@ -7753,7 +7753,7 @@ function createRestProjectSnapshotReader(options) {
 async function readRestProjectSnapshot(input, options) {
   return createRestProjectSnapshotReader(options).read(input);
 }
-function createGitHubRestSnapshotReadTransportFromReader(reader) {
+function createGitHubRestSnapshotReadTransportFromReader(reader, relatedIssueNumbers = []) {
   let snapshotPromise;
   let bound;
   return { execute: async (operation, variables) => {
@@ -7761,7 +7761,7 @@ function createGitHubRestSnapshotReadTransportFromReader(reader) {
     const projectOwnerLogin = typeof variables.projectOwnerLogin === "string" ? text(variables.projectOwnerLogin) : ownerLogin, key = `${ownerLogin}/${repositoryName}/${projectOwnerLogin}/${projectNumber}/${issueNumber2}`;
     if (bound && bound !== key) throw new GitHubTransportError("YKP-SNAPSHOT-001");
     bound = key;
-    snapshotPromise ??= reader.read({ ownerLogin, repositoryName, projectOwnerLogin, projectNumber, issueNumbers: [issueNumber2] });
+    snapshotPromise ??= reader.read({ ownerLogin, repositoryName, projectOwnerLogin, projectNumber, issueNumbers: [issueNumber2, ...relatedIssueNumbers] });
     const snapshot = await snapshotPromise, issue = snapshot.issues.get(issueNumber2);
     if (!issue) throw new GitHubTransportError("YKP-SNAPSHOT-001");
     let data;
@@ -7769,8 +7769,23 @@ function createGitHubRestSnapshotReadTransportFromReader(reader) {
     else if (operation === "read_project_fields") data = { projectRef: snapshot.projectRef, nodes: snapshot.fields, pageInfo: { hasNextPage: false, endCursor: null } };
     else if (operation === "read_project_item") data = { projectRef: snapshot.projectRef, issueRef: issue.issueRef, itemRef: issue.itemRef, fingerprint: issue.fingerprint, nodes: Object.entries(issue.values).map(([key2, value2]) => ({ key: key2, value: value2 })), pageInfo: { hasNextPage: false, endCursor: null } };
     else {
-      const nodes = /* @__PURE__ */ new Set([issueNumber2, ...issue.blockedBy, ...issue.blocking, ...issue.parent ? [issue.parent] : []]);
-      data = { repositoryRef: snapshot.repositoryRef, issueRef: issue.issueRef, nodes: [...nodes].sort((a, b) => a - b).map((issueNumber3) => ({ issueNumber: issueNumber3 })), parent: issue.parent ? [{ from: issueNumber2, to: issue.parent }] : [], blocks: [...issue.blockedBy.map((from) => ({ from, to: issueNumber2 })), ...issue.blocking.map((to) => ({ from: issueNumber2, to }))], pageInfo: { hasNextPage: false, endCursor: null } };
+      const nodes = new Set(snapshot.issues.keys()), parent = [], blocks = [];
+      for (const [number, entry] of snapshot.issues) {
+        if (entry.parent) {
+          nodes.add(entry.parent);
+          parent.push({ from: number, to: entry.parent });
+        }
+        for (const from of entry.blockedBy) {
+          nodes.add(from);
+          blocks.push({ from, to: number });
+        }
+        for (const to of entry.blocking) {
+          nodes.add(to);
+          blocks.push({ from: number, to });
+        }
+      }
+      const unique = (edges) => [...new Map(edges.map((edge) => [`${edge.from}->${edge.to}`, edge])).values()].sort((a, b) => a.from - b.from || a.to - b.to);
+      data = { repositoryRef: snapshot.repositoryRef, issueRef: issue.issueRef, nodes: [...nodes].sort((a, b) => a - b).map((issueNumber3) => ({ issueNumber: issueNumber3 })), parent: unique(parent), blocks: unique(blocks), pageInfo: { hasNextPage: false, endCursor: null } };
     }
     return { byteCount: Buffer.byteLength(JSON.stringify(data)), data };
   } };

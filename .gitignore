@@ -12,9 +12,13 @@ site/
 dist/*
 !dist/action/
 !dist/cli/
+!dist/mcp-effect-b/
 dist/action/*
 dist/cli/*
+dist/mcp-effect-b/*
 !dist/action/index.js
 !dist/cli/index.js
+!dist/mcp-effect-b/index.js
+!dist/mcp-effect-b/manifest.json
 coverage/
 *.log
