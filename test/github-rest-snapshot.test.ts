@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createGitHubRestSnapshotReadTransport, createRestProjectSnapshotReader, readRestProjectSnapshot } from "../src/github-rest-snapshot.js";
+import { createGitHubRestSnapshotReadTransport, createGitHubRestSnapshotReadTransportFromReader, createRestProjectSnapshotReader, readRestProjectSnapshot } from "../src/github-rest-snapshot.js";
 import { GitHubTransportError } from "../src/github-transport.js";
 import { createGitHubRateLedger } from "../src/github-rate-ledger.js";
 
@@ -17,6 +17,17 @@ for(const count of [1,10,100])test(`reuses one Issue Type catalog for ${count} o
 test("resolves Project ownership independently from repository ownership",async()=>{const data=fixtures(1);let calls=0;const fetch:typeof globalThis.fetch=async input=>{calls++;const url=String(input);if(url.endsWith("/repos/example/atlas"))return response({node_id:"R_1",owner:{type:"Organization"}});if(url.endsWith("/users/project-owner"))return response({type:"User"});if(url.endsWith("/users/project-owner/projectsV2/7"))return response({node_id:"P_7",number:7});if(url.includes("/fields?"))return response([{id:10,node_id:"F_10",name:"Work Type",data_type:"single_select",options:[{id:"task",name:{raw:"Task"}}]}]);if(url.includes("/items?"))return response(data.items);throw new Error(`unexpected request: ${url}`);};const snapshot=await readRestProjectSnapshot({ownerLogin:"example",repositoryName:"atlas",projectOwnerLogin:"project-owner",projectNumber:7,issueNumbers:[1]},{token:"synthetic-token",fetch,graphqlRemaining:0});assert.equal(snapshot.repositoryOwnerKind,"orgs");assert.equal(snapshot.projectOwnerKind,"users");assert.equal(snapshot.projectOwnerLogin,"project-owner");assert.equal(calls,5);});
 
 test("coalesces concurrent operation reads into one snapshot",async()=>{const mock=fetcher(1,{delay:true});const transport=createGitHubRestSnapshotReadTransport({token:"synthetic-token",fetch:mock.fetch,graphqlRemaining:0});const variables={ownerLogin:"example",repositoryName:"atlas",projectNumber:7,issueNumber:1};await Promise.all([transport.execute("resolve_scope",variables),transport.execute("read_project_fields",variables),transport.execute("read_project_item",variables),transport.execute("read_issue_relationships",variables)]);assert.equal(mock.calls(),4);});
+
+test("resolves declared dependency endpoints from the same synthetic Project",async()=>{
+ const data=fixtures(2);
+ data.issues[0]!.body="<!-- yukh:issue:v1\nschema: 1\nwork_type: task\narea: runtime\nrelationships:\n  blocks: [2]\n-->";
+ data.items[0]!.content=data.issues[0]!;
+ const fetch:typeof globalThis.fetch=async input=>{const url=String(input);if(url.endsWith("/repos/example/atlas"))return response({node_id:"R_1",owner:{type:"Organization"}});if(url.endsWith("/orgs/example/projectsV2/7"))return response({node_id:"P_7",number:7});if(url.includes("/fields?"))return response([{id:10,node_id:"F_10",name:"Priority",data_type:"single_select",options:[{id:"p1",name:{raw:"P1"}}]}]);if(url.includes("/items?"))return response(data.items);throw new Error(`unexpected request: ${url}`);};
+ const reader=createRestProjectSnapshotReader({token:"synthetic-token",fetch,graphqlRemaining:0});
+ const transport=createGitHubRestSnapshotReadTransportFromReader(reader,[2]);
+ const result=await transport.execute("read_issue_relationships",{ownerLogin:"example",repositoryName:"atlas",projectNumber:7,issueNumber:1});
+ assert.deepEqual((result.data as {nodes:{issueNumber:number}[]}).nodes,[{issueNumber:1},{issueNumber:2}]);
+});
 
 test("revalidates stale entries conditionally and accepts exact 304",async()=>{let now=0;const mock=fetcher(1,{etag:true});const reader=createRestProjectSnapshotReader({token:"synthetic-token",fetch:mock.fetch,graphqlRemaining:0,cacheTtlMs:10,now:()=>now});const input={ownerLogin:"example",repositoryName:"atlas",projectNumber:7,issueNumbers:[1]};await reader.read(input);now=20;const second=await reader.read(input);assert.equal(second.issues.size,1);assert.equal(second.evidence.conditionalRequests,4);assert.equal(mock.calls(),8);});
 

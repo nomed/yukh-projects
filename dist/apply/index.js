@@ -318,8 +318,8 @@ var require_directives = __commonJS({
               if (parts.length < 2)
                 return false;
             }
-            const [handle, prefix] = parts;
-            this.tags[handle] = prefix;
+            const [handle2, prefix] = parts;
+            this.tags[handle2] = prefix;
             return true;
           }
           case "%YAML": {
@@ -366,10 +366,10 @@ var require_directives = __commonJS({
             onError("Verbatim tags must end with a >");
           return verbatim;
         }
-        const [, handle, suffix] = source.match(/^(.*!)([^!]*)$/s);
+        const [, handle2, suffix] = source.match(/^(.*!)([^!]*)$/s);
         if (!suffix)
           onError(`The ${source} tag has no suffix`);
-        const prefix = this.tags[handle];
+        const prefix = this.tags[handle2];
         if (prefix) {
           try {
             return prefix + decodeURIComponent(suffix);
@@ -378,7 +378,7 @@ var require_directives = __commonJS({
             return null;
           }
         }
-        if (handle === "!")
+        if (handle2 === "!")
           return source;
         onError(`Could not resolve tag: ${source}`);
         return null;
@@ -388,9 +388,9 @@ var require_directives = __commonJS({
        * taking into account current tag prefixes and defaults.
        */
       tagString(tag) {
-        for (const [handle, prefix] of Object.entries(this.tags)) {
+        for (const [handle2, prefix] of Object.entries(this.tags)) {
           if (tag.startsWith(prefix))
-            return handle + escapeTagName(tag.substring(prefix.length));
+            return handle2 + escapeTagName(tag.substring(prefix.length));
         }
         return tag[0] === "!" ? tag : `!<${tag}>`;
       }
@@ -407,11 +407,11 @@ var require_directives = __commonJS({
           tagNames = Object.keys(tags);
         } else
           tagNames = [];
-        for (const [handle, prefix] of tagEntries) {
-          if (handle === "!!" && prefix === "tag:yaml.org,2002:")
+        for (const [handle2, prefix] of tagEntries) {
+          if (handle2 === "!!" && prefix === "tag:yaml.org,2002:")
             continue;
           if (!doc || tagNames.some((tn) => tn.startsWith(prefix)))
-            lines.push(`%TAG ${handle} ${prefix}`);
+            lines.push(`%TAG ${handle2} ${prefix}`);
         }
         return lines.join("\n");
       }
@@ -7456,15 +7456,15 @@ async function readExclusiveWorkspaceFile(workspace, filePath, maxBytes = 64 * 1
   if (!bounded(filePath, 1024) || isAbsolute2(filePath) || filePath.split(/[\\/]/u).includes("..") || maxBytes < 1 || maxBytes > 1024 * 1024) throw new TypeError("invalid protected file");
   const root = await realpath2(workspace), candidate = resolve2(root, filePath), parent = await realpath2(dirname2(candidate)), rel = relative2(root, parent);
   if (rel === ".." || rel.startsWith(`..${sep2}`) || isAbsolute2(rel)) throw new TypeError("invalid protected file");
-  const resolved = resolve2(parent, basename(candidate)), handle = await open2(resolved, constants.O_RDONLY | constants.O_NOFOLLOW);
+  const resolved = resolve2(parent, basename(candidate)), handle2 = await open2(resolved, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
-    const metadata = await handle.stat();
+    const metadata = await handle2.stat();
     if (!metadata.isFile() || metadata.size < 1 || metadata.size > maxBytes) throw new TypeError("invalid protected file");
-    const value2 = await handle.readFile();
+    const value2 = await handle2.readFile();
     if (value2.length < 1 || value2.length > maxBytes) throw new TypeError("invalid protected file");
     return value2;
   } finally {
-    await handle.close();
+    await handle2.close();
   }
 }
 async function readApprovalArtifact(workspace, filePath) {
@@ -7812,8 +7812,8 @@ function portCode(error, fallback) {
   const codes = { authentication: "YKP-APPLY-013", authorization: "YKP-APPLY-014", deferred_rate_budget: "YKP-APPLY-015", provider: "YKP-APPLY-016", invariant: "YKP-APPLY-017" };
   return codes[error.failureClass];
 }
-function claimsValid(c, request, now, scopeDigest) {
-  return !!c && c.schema === 1 && bounded3(c.issuerRef) && c.subjectRef === request.scope.subjectRef && c.repositoryRef === request.scope.repositoryRef && c.projectRef === request.scope.projectRef && c.issueRef === request.scope.issueRef && c.issueNumber === request.scope.issueNumber && c.scopeDigest === scopeDigest && c.planId === request.approvedPlanId && /^[a-f0-9]{64}$/u.test(c.operationDigest) && c.environment === "apply" && bounded3(c.protectedEnvironment) && c.protectedEnvironment === request.protectedEnvironment && Number.isSafeInteger(c.issuedAtMs) && Number.isSafeInteger(c.expiresAtMs) && c.issuedAtMs <= now && c.expiresAtMs >= now && c.expiresAtMs - c.issuedAtMs <= 15 * 60 * 1e3 && bounded3(c.nonce) && [...c.nonce].length >= 22 && /^[a-f0-9]{64}$/u.test(c.keyFingerprint) && c.contractVersion === "controlled-apply-v1" && c.plannerVersion === "reconciliation-plan-v1" && c.snapshotVersion === "rest-project-snapshot-v2" && c.entrypointVersion === "apply-entrypoint-v1";
+function claimsValid(c, request, now, scopeDigest2) {
+  return !!c && c.schema === 1 && bounded3(c.issuerRef) && c.subjectRef === request.scope.subjectRef && c.repositoryRef === request.scope.repositoryRef && c.projectRef === request.scope.projectRef && c.issueRef === request.scope.issueRef && c.issueNumber === request.scope.issueNumber && c.scopeDigest === scopeDigest2 && c.planId === request.approvedPlanId && /^[a-f0-9]{64}$/u.test(c.operationDigest) && c.environment === "apply" && bounded3(c.protectedEnvironment) && c.protectedEnvironment === request.protectedEnvironment && Number.isSafeInteger(c.issuedAtMs) && Number.isSafeInteger(c.expiresAtMs) && c.issuedAtMs <= now && c.expiresAtMs >= now && c.expiresAtMs - c.issuedAtMs <= 15 * 60 * 1e3 && bounded3(c.nonce) && [...c.nonce].length >= 22 && /^[a-f0-9]{64}$/u.test(c.keyFingerprint) && c.contractVersion === "controlled-apply-v1" && c.plannerVersion === "reconciliation-plan-v1" && c.snapshotVersion === "rest-project-snapshot-v2" && c.entrypointVersion === "apply-entrypoint-v1";
 }
 function dependenciesValid(ops) {
   const prior = /* @__PURE__ */ new Set();
@@ -7831,7 +7831,7 @@ async function executeControlledPlan(request, ports) {
   let operations = [];
   if (!validScope(request?.scope) || !/^[a-f0-9]{64}$/u.test(planId2) || !bounded3(request?.protectedEnvironment)) return result(planId2, operations, states, "YKP-APPLY-001");
   if (request.enablement !== "apply-explicitly-enabled") return result(planId2, operations, states, "YKP-APPLY-002");
-  const scopeDigest = hash(request.scope);
+  const scopeDigest2 = hash(request.scope);
   let approval;
   try {
     approval = await ports.verifyApproval(request.approval);
@@ -7839,11 +7839,11 @@ async function executeControlledPlan(request, ports) {
     return result(planId2, operations, states, "YKP-APPLY-003");
   }
   const now = ports.nowMs();
-  if (!claimsValid(approval, request, now, scopeDigest)) return result(planId2, operations, states, approval && approval.expiresAtMs < now ? "YKP-APPLY-004" : "YKP-APPLY-003");
+  if (!claimsValid(approval, request, now, scopeDigest2)) return result(planId2, operations, states, approval && approval.expiresAtMs < now ? "YKP-APPLY-004" : "YKP-APPLY-003");
   let lease = null;
   try {
     try {
-      lease = await ports.acquireLease(scopeDigest);
+      lease = await ports.acquireLease(scopeDigest2);
     } catch (error) {
       return result(planId2, operations, states, portCode(error, "YKP-APPLY-006"));
     }
@@ -7964,10 +7964,10 @@ function bindApplyCoordination(base, store, options) {
     } catch (error) {
       return portFailure(error);
     }
-  }, acquireLease: async (scopeDigest) => {
+  }, acquireLease: async (scopeDigest2) => {
     let lease;
     try {
-      lease = await store.acquireLease({ keyDigest: digest(`lease-key\0${scopeDigest}`), holderDigest: options.holderDigest, expiresAtMs: options.expiresAtMs, epoch: options.epoch });
+      lease = await store.acquireLease({ keyDigest: digest(`lease-key\0${scopeDigest2}`), holderDigest: options.holderDigest, expiresAtMs: options.expiresAtMs, epoch: options.epoch });
     } catch (error) {
       return portFailure(error);
     }
@@ -8830,16 +8830,16 @@ function calculateEffectiveSchema(policy, observed) {
   for (const fieldKey of Object.keys(policy.fields).sort()) {
     const desired = policy.fields[fieldKey];
     managedNames.add(desired.name);
-    const exact5 = observed.fields.filter((field2) => field2.name === desired.name);
+    const exact6 = observed.fields.filter((field2) => field2.name === desired.name);
     const folded = observed.fields.filter((field2) => comparisonFold(field2.name) === comparisonFold(desired.name));
     const path = `$.fields.${fieldKey}`;
-    if (exact5.length === 0) {
+    if (exact6.length === 0) {
       if (folded.length > 0) add3(internal, "YKP-SCHEMA-005", `${path}.name`);
       else if (desired.mode === "observed") add3(internal, "YKP-SCHEMA-003", path);
       else operations.push({ type: "create_field", fieldKey, name: desired.name, kind: desired.kind, options: Object.entries(desired.options ?? {}).sort(([a], [b]) => a.localeCompare(b)).map(([optionKey, name]) => ({ optionKey, name })) });
       continue;
     }
-    const current = exact5[0];
+    const current = exact6[0];
     if (current.kind !== desired.kind) {
       add3(internal, "YKP-SCHEMA-004", `${path}.kind`);
       continue;
@@ -9449,7 +9449,7 @@ function createRestProjectSnapshotReader(options) {
   const client = new RestSnapshotClient(options);
   return { read: (input3) => readWithClient(input3, options, client), invalidate: (input3, effect) => client.invalidate(input3, effect) };
 }
-function createGitHubRestSnapshotReadTransportFromReader(reader) {
+function createGitHubRestSnapshotReadTransportFromReader(reader, relatedIssueNumbers = []) {
   let snapshotPromise;
   let bound;
   return { execute: async (operation, variables2) => {
@@ -9457,7 +9457,7 @@ function createGitHubRestSnapshotReadTransportFromReader(reader) {
     const projectOwnerLogin = typeof variables2.projectOwnerLogin === "string" ? text3(variables2.projectOwnerLogin) : ownerLogin, key = `${ownerLogin}/${repositoryName}/${projectOwnerLogin}/${projectNumber}/${issueNumber2}`;
     if (bound && bound !== key) throw new GitHubTransportError("YKP-SNAPSHOT-001");
     bound = key;
-    snapshotPromise ??= reader.read({ ownerLogin, repositoryName, projectOwnerLogin, projectNumber, issueNumbers: [issueNumber2] });
+    snapshotPromise ??= reader.read({ ownerLogin, repositoryName, projectOwnerLogin, projectNumber, issueNumbers: [issueNumber2, ...relatedIssueNumbers] });
     const snapshot = await snapshotPromise, issue = snapshot.issues.get(issueNumber2);
     if (!issue) throw new GitHubTransportError("YKP-SNAPSHOT-001");
     let data;
@@ -9465,8 +9465,23 @@ function createGitHubRestSnapshotReadTransportFromReader(reader) {
     else if (operation === "read_project_fields") data = { projectRef: snapshot.projectRef, nodes: snapshot.fields, pageInfo: { hasNextPage: false, endCursor: null } };
     else if (operation === "read_project_item") data = { projectRef: snapshot.projectRef, issueRef: issue.issueRef, itemRef: issue.itemRef, fingerprint: issue.fingerprint, nodes: Object.entries(issue.values).map(([key2, value2]) => ({ key: key2, value: value2 })), pageInfo: { hasNextPage: false, endCursor: null } };
     else {
-      const nodes = /* @__PURE__ */ new Set([issueNumber2, ...issue.blockedBy, ...issue.blocking, ...issue.parent ? [issue.parent] : []]);
-      data = { repositoryRef: snapshot.repositoryRef, issueRef: issue.issueRef, nodes: [...nodes].sort((a, b) => a - b).map((issueNumber3) => ({ issueNumber: issueNumber3 })), parent: issue.parent ? [{ from: issueNumber2, to: issue.parent }] : [], blocks: [...issue.blockedBy.map((from) => ({ from, to: issueNumber2 })), ...issue.blocking.map((to) => ({ from: issueNumber2, to }))], pageInfo: { hasNextPage: false, endCursor: null } };
+      const nodes = new Set(snapshot.issues.keys()), parent = [], blocks = [];
+      for (const [number, entry] of snapshot.issues) {
+        if (entry.parent) {
+          nodes.add(entry.parent);
+          parent.push({ from: number, to: entry.parent });
+        }
+        for (const from of entry.blockedBy) {
+          nodes.add(from);
+          blocks.push({ from, to: number });
+        }
+        for (const to of entry.blocking) {
+          nodes.add(to);
+          blocks.push({ from: number, to });
+        }
+      }
+      const unique = (edges) => [...new Map(edges.map((edge) => [`${edge.from}->${edge.to}`, edge])).values()].sort((a, b) => a.from - b.from || a.to - b.to);
+      data = { repositoryRef: snapshot.repositoryRef, issueRef: issue.issueRef, nodes: [...nodes].sort((a, b) => a - b).map((issueNumber3) => ({ issueNumber: issueNumber3 })), parent: unique(parent), blocks: unique(blocks), pageInfo: { hasNextPage: false, endCursor: null } };
     }
     return { byteCount: Buffer.byteLength(JSON.stringify(data)), data };
   } };
@@ -9800,7 +9815,7 @@ function createNativeControlledApplyHostFactory(options) {
     const ledger = createGitHubRateLedger(options.rate), reader = createRestProjectSnapshotReader({ token: input3.readToken, fetch: options.readFetch, rateLedger: ledger, graphqlRemaining: options.rate.graphqlRemaining }), snapshotInput = { ownerLogin: input3.requestedScope.ownerLogin, repositoryName: input3.requestedScope.repositoryName, projectNumber: input3.requestedScope.projectNumber, issueNumbers: [input3.requestedScope.issueNumber] }, mutation = createGitHubMutationTransport({ token: input3.writeToken, permissions: options.permissions, approvedKinds: options.approvedKinds, fetch: options.writeFetch, rateLedger: ledger });
     let latest;
     const replan = async () => {
-      const prepared = await prepareReconciliation({ scope: input3.requestedScope, policySource: input3.policySource, transport: createGitHubRestSnapshotReadTransportFromReader(reader) });
+      const prepared = await prepareReconciliation({ scope: input3.requestedScope, policySource: input3.policySource, transport: createGitHubRestSnapshotReadTransportFromReader(reader, options.relatedIssueNumbers) });
       if (prepared.status !== "success") return failure4(prepared);
       latest = prepared;
       return prepared.plan;
@@ -9940,6 +9955,557 @@ function createResumableDeferralHost(port, nowMs = Date.now) {
     }
   };
 }
+
+// src/mcp-effect-b-controlled-apply.ts
+import { createHash as createHash10, createPublicKey as createPublicKey2, verify as verify2 } from "node:crypto";
+var privateHandles = /* @__PURE__ */ new WeakMap();
+var terminalResults = /* @__PURE__ */ new WeakMap();
+var DIGEST7 = /^[a-f0-9]{64}$/u;
+var COMMIT = /^[a-f0-9]{40}$/u;
+var SIGNATURE2 = /^[A-Za-z0-9_-]{86}$/u;
+var BRIDGE_KEYS = ["schema", "algorithm", "keyFingerprint", "claims", "signature"];
+var PRODUCER_KEYS = ["sourceCommit", "applyArtifactSha256", "entrypointVersion"];
+var WRAPPER_KEYS = ["sourceCommit", "artifactSha256", "entrypointVersion"];
+var CLAIM_KEYS2 = [
+  "profile",
+  "approvalV1Digest",
+  "previewPlanEnvelopeDigest",
+  "projectsPlanId",
+  "projectsOperationDigest",
+  "projectsTargetBindingDigest",
+  "projectsPostconditionBindingDigest",
+  "projectsProducerRelease",
+  "mcpApprovalDigest",
+  "mcpPlanId",
+  "mcpOperationDigest",
+  "mcpSubjectBindingDigest",
+  "mcpAuthenticationContextDigest",
+  "mcpCapabilityDefinitionDigest",
+  "mcpProviderImplementationDigest",
+  "mcpPolicyCommit",
+  "mcpNonceBindingDigest",
+  "wrapperRelease",
+  "wrapperProfileDigest",
+  "issuerRef",
+  "subjectRef",
+  "scopeDigest",
+  "environment",
+  "protectedEnvironment",
+  "issuedAtMs",
+  "expiresAtMs",
+  "nonce",
+  "projectsNonceBindingDigest",
+  "projectsLeaseScopeDigest",
+  "projectsLeaseHolderDigest",
+  "coordinationEpoch",
+  "trustRootFingerprint"
+];
+var INVOCATION_KEYS = [
+  "schema",
+  "attempt",
+  "mcpVerifiedAdmissionHandle",
+  "projectsApprovalHandle",
+  "projectsTrustHandle",
+  "bridgeHandle",
+  "bridgeTrustHandle",
+  "hostCapsuleHandle",
+  "readCredentialHandle",
+  "writeCredentialHandle",
+  "abortHandle"
+];
+var MCP_KEYS = [
+  "artifactDigest",
+  "mcpPlanId",
+  "mcpOperationDigest",
+  "mcpSubjectBindingDigest",
+  "mcpAuthenticationContextDigest",
+  "mcpCapabilityDefinitionDigest",
+  "mcpProviderImplementationDigest",
+  "mcpPolicyCommit",
+  "mcpNonceBindingDigest",
+  "mcpNonceComparisonDigest",
+  "projectsPrincipalRef",
+  "previewPlanEnvelopeDigest",
+  "projectsPlanId",
+  "projectsOperationDigest",
+  "projectsTargetBindingDigest",
+  "projectsPostconditionBindingDigest",
+  "projectsProducerRelease",
+  "wrapperRelease",
+  "wrapperProfileDigest",
+  "mcpVerifierRelease",
+  "projectsLeaseScopeDigest",
+  "projectsLeaseHolderDigest",
+  "coordinationEpoch",
+  "issuedAtMs",
+  "expiresAtMs"
+];
+var PROFILE_KEYS = [
+  "schema",
+  "profile",
+  "capability",
+  "externalMode",
+  "reconciliationMode",
+  "protectedEnvironment",
+  "target",
+  "targetProfileDigest",
+  "policySource",
+  "policyCommit",
+  "policyArtifactSha256",
+  "previewPlanEnvelopeDigest",
+  "projectsPlanId",
+  "projectsOperationDigest",
+  "projectsPostcondition",
+  "projectsPostconditionBindingDigest",
+  "projectsProducerRelease",
+  "wrapperRelease",
+  "wrapperProfileDigest",
+  "mcpVerifierRelease",
+  "mcpCapabilityDefinitionDigest",
+  "mcpProviderImplementationDigest",
+  "projectsLeaseScopeDigest",
+  "projectsLeaseHolderDigest",
+  "coordinationEpoch"
+];
+var TARGET_KEYS = ["requestedScope", "expectedScope", "blockedIssueRef"];
+var REQUESTED_SCOPE_KEYS = ["ownerLogin", "repositoryName", "projectNumber", "issueNumber"];
+var BOUND_SCOPE_KEYS = ["subjectRef", "repositoryRef", "projectRef", "issueRef", "issueNumber"];
+var POSTCONDITION_KEYS = ["schema", "capability", "relationship", "blockingIssueNumber", "blockedIssueNumber", "expected", "targetProfileDigest"];
+var MCP_VERIFIER_RELEASE_KEYS = ["sourceCommit", "artifactSha256"];
+var TRUST_KEYS = ["publicKey", "allowedIssuerRefs", "trustRootFingerprint"];
+var HOST_CAPSULE_KEYS = ["source", "profile", "readFetch", "writeFetch", "coordinationFetch", "nowMs", "jti"];
+var ABORT_KEYS = ["aborted"];
+function rec6(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function exact5(value2, keys2) {
+  return rec6(value2) && Object.keys(value2).length === keys2.length && Object.keys(value2).every((key) => keys2.includes(key));
+}
+function digest5(value2) {
+  return createHash10("sha256").update(value2).digest("hex");
+}
+function bounded5(value2, max = 256) {
+  return typeof value2 === "string" && Buffer.byteLength(value2, "utf8") > 0 && Buffer.byteLength(value2, "utf8") <= max && !/[\u0000-\u001f\u007f]/u.test(value2) && validUnicode(value2);
+}
+function safeInteger(value2) {
+  return Number.isSafeInteger(value2) && Number(value2) >= 0;
+}
+function validUnicode(value2) {
+  for (let index = 0; index < value2.length; index++) {
+    const code = value2.charCodeAt(index);
+    if (code >= 55296 && code <= 56319) {
+      const next = value2.charCodeAt(++index);
+      if (!(next >= 56320 && next <= 57343)) return false;
+    } else if (code >= 56320 && code <= 57343) return false;
+  }
+  return true;
+}
+function unicodeTree(value2, depth = 0) {
+  if (depth > 6) return false;
+  if (typeof value2 === "string") return validUnicode(value2);
+  if (typeof value2 === "number") return Number.isSafeInteger(value2);
+  if (!rec6(value2)) return false;
+  return Object.entries(value2).every(([key, item]) => validUnicode(key) && unicodeTree(item, depth + 1));
+}
+function canonicalObject(source, maxBytes) {
+  if (typeof source !== "string" || Buffer.byteLength(source, "utf8") > maxBytes) return null;
+  let value2;
+  try {
+    value2 = JSON.parse(source);
+  } catch {
+    return null;
+  }
+  return rec6(value2) && unicodeTree(value2) && canonicalJson(value2) === source ? value2 : null;
+}
+function publicKey2(value2) {
+  try {
+    const key = createPublicKey2(value2);
+    if (key.asymmetricKeyType !== "ed25519") return null;
+    return { key, fingerprint: digest5(key.export({ type: "spki", format: "der" })) };
+  } catch {
+    return null;
+  }
+}
+function producer(value2) {
+  return exact5(value2, PRODUCER_KEYS) && COMMIT.test(String(value2.sourceCommit)) && DIGEST7.test(String(value2.applyArtifactSha256)) && value2.entrypointVersion === "apply-entrypoint-v1";
+}
+function wrapper(value2) {
+  return exact5(value2, WRAPPER_KEYS) && COMMIT.test(String(value2.sourceCommit)) && DIGEST7.test(String(value2.artifactSha256)) && value2.entrypointVersion === "mcp-effect-b-controlled-apply-v1";
+}
+function sameProducer(a, b) {
+  return canonicalJson(a) === canonicalJson(b);
+}
+function sameWrapper(a, b) {
+  return canonicalJson(a) === canonicalJson(b);
+}
+function validBridgeClaims(value2) {
+  if (!exact5(value2, CLAIM_KEYS2)) return false;
+  const claims = value2;
+  const digests = [
+    claims.approvalV1Digest,
+    claims.previewPlanEnvelopeDigest,
+    claims.projectsPlanId,
+    claims.projectsOperationDigest,
+    claims.projectsTargetBindingDigest,
+    claims.projectsPostconditionBindingDigest,
+    claims.mcpApprovalDigest,
+    claims.mcpPlanId,
+    claims.mcpOperationDigest,
+    claims.mcpSubjectBindingDigest,
+    claims.mcpAuthenticationContextDigest,
+    claims.mcpCapabilityDefinitionDigest,
+    claims.mcpProviderImplementationDigest,
+    claims.mcpNonceBindingDigest,
+    claims.wrapperProfileDigest,
+    claims.scopeDigest,
+    claims.projectsNonceBindingDigest,
+    claims.projectsLeaseScopeDigest,
+    claims.projectsLeaseHolderDigest,
+    claims.trustRootFingerprint
+  ];
+  return claims.profile === "suite-preview-effect-b-v1" && digests.every((item) => DIGEST7.test(item)) && COMMIT.test(claims.mcpPolicyCommit) && producer(claims.projectsProducerRelease) && wrapper(claims.wrapperRelease) && bounded5(claims.issuerRef) && bounded5(claims.subjectRef) && bounded5(claims.protectedEnvironment) && bounded5(claims.nonce) && claims.environment === "apply" && safeInteger(claims.issuedAtMs) && safeInteger(claims.expiresAtMs) && safeInteger(claims.coordinationEpoch) && claims.coordinationEpoch > 0;
+}
+function bridgeSigningInput(envelope) {
+  return Buffer.from(`yukh-projects-approval-bridge-v2\0${canonicalJson(envelope)}`, "utf8");
+}
+function trustProfileFingerprint(keyFingerprint, issuerRefs) {
+  return digest5(canonicalJson({ profile: "yukh-projects-approval-trust-v1", keyFingerprint, issuerRefs }));
+}
+function verifyBridge(source, trust) {
+  const value2 = canonicalObject(source, 32 * 1024);
+  if (!exact5(value2, BRIDGE_KEYS) || value2.schema !== "yukh-projects-approval-bridge-v2" || value2.algorithm !== "Ed25519" || !DIGEST7.test(String(value2.keyFingerprint)) || !SIGNATURE2.test(String(value2.signature)) || !validBridgeClaims(value2.claims)) return null;
+  const envelope = value2, trusted = publicKey2(trust.publicKey);
+  if (!trusted || trusted.fingerprint !== envelope.keyFingerprint || !trust.allowedIssuerRefs.includes(envelope.claims.issuerRef) || trust.trustRootFingerprint !== trustProfileFingerprint(trusted.fingerprint, trust.allowedIssuerRefs) || envelope.claims.trustRootFingerprint !== trust.trustRootFingerprint) return null;
+  let signature;
+  try {
+    signature = Buffer.from(envelope.signature, "base64url");
+  } catch {
+    return null;
+  }
+  if (signature.length !== 64 || !verify2(null, bridgeSigningInput({ schema: envelope.schema, algorithm: envelope.algorithm, keyFingerprint: envelope.keyFingerprint, claims: envelope.claims }), trusted.key, signature)) return null;
+  return Object.freeze({ claims: Object.freeze({ ...envelope.claims }), digest: digest5(source), keyFingerprint: envelope.keyFingerprint });
+}
+function rejected(code) {
+  return { schema: "yukh-projects-mcp-effect-b-result-v1", status: "rejected", effectBoundaryEntered: false, mutationRequestCount: 0, code };
+}
+function unknown(count) {
+  return { schema: "yukh-projects-mcp-effect-b-result-v1", status: "completion_unknown", effectBoundaryEntered: true, mutationRequestCount: count === 1 ? 1 : 0, code: "YKP-MCP-WRAPPER-009" };
+}
+function exactPlanOperation(value2, profile) {
+  const expected = {
+    operationKey: "relationship.dependency.201.202.add",
+    type: "add_dependency",
+    subject: { ref: profile.target.expectedScope.subjectRef },
+    resource: { kind: "issue_dependency", logicalKey: "201->202", scopeRef: profile.target.expectedScope.repositoryRef },
+    action: "add",
+    environment: "dry-run",
+    reason: "relationship.dependency.missing",
+    preconditions: [{ kind: "dependency_absent", logicalKey: "201->202", expected: true }],
+    dependsOn: [],
+    desired: 202
+  };
+  return canonicalJson(value2) === canonicalJson(expected);
+}
+function scopeDigest(scope) {
+  return digest5(canonicalJson(scope));
+}
+function projectNonceDigest(nonce) {
+  return digest5(`yukh-projects-approval-nonce-v1\0${nonce}`);
+}
+function nonceComparisonDigest(nonce) {
+  return digest5(`yukh-compound-approval-nonce-equality-v1\0${nonce}`);
+}
+function leaseScopeDigest(scope) {
+  return digest5(`lease-key\0${scopeDigest(scope)}`);
+}
+function targetDigest(target) {
+  return digest5(canonicalJson(target));
+}
+function postconditionDigest(value2) {
+  return digest5(canonicalJson(value2));
+}
+function policyDigest(value2) {
+  return digest5(Buffer.from(value2, "utf8"));
+}
+function profileBinding(profile) {
+  return {
+    schema: profile.schema,
+    profile: profile.profile,
+    capability: profile.capability,
+    externalMode: profile.externalMode,
+    reconciliationMode: profile.reconciliationMode,
+    protectedEnvironment: profile.protectedEnvironment,
+    targetProfileDigest: profile.targetProfileDigest,
+    policyCommit: profile.policyCommit,
+    policyArtifactSha256: profile.policyArtifactSha256,
+    previewPlanEnvelopeDigest: profile.previewPlanEnvelopeDigest,
+    projectsPlanId: profile.projectsPlanId,
+    projectsOperationDigest: profile.projectsOperationDigest,
+    projectsPostconditionBindingDigest: profile.projectsPostconditionBindingDigest,
+    projectsProducerRelease: profile.projectsProducerRelease,
+    wrapperRelease: profile.wrapperRelease,
+    mcpVerifierRelease: profile.mcpVerifierRelease,
+    mcpCapabilityDefinitionDigest: profile.mcpCapabilityDefinitionDigest,
+    mcpProviderImplementationDigest: profile.mcpProviderImplementationDigest,
+    projectsLeaseScopeDigest: profile.projectsLeaseScopeDigest,
+    projectsLeaseHolderDigest: profile.projectsLeaseHolderDigest,
+    coordinationEpoch: profile.coordinationEpoch
+  };
+}
+function profileValid(profile) {
+  if (!exact5(profile, PROFILE_KEYS) || profile.schema !== "yukh-projects-mcp-effect-b-profile-v1" || profile.profile !== "yukh-mcp/suite-preview-effect-b-add-dependency-v1" || profile.capability !== "projects.add-dependency.v1" || profile.externalMode !== "apply" || profile.reconciliationMode !== "native-v1" || !bounded5(profile.protectedEnvironment, 64)) return false;
+  const requested = profile.target?.requestedScope, expected = profile.target?.expectedScope;
+  if (!exact5(profile.target, TARGET_KEYS) || !exact5(requested, REQUESTED_SCOPE_KEYS) || requested.ownerLogin !== "example-org" || requested.repositoryName !== "example-repo" || requested.projectNumber !== 7 || requested.issueNumber !== 201 || !exact5(expected, BOUND_SCOPE_KEYS) || expected.issueNumber !== 201 || !bounded5(expected.subjectRef) || !bounded5(expected.repositoryRef) || !bounded5(expected.projectRef) || !bounded5(expected.issueRef) || !bounded5(profile.target.blockedIssueRef) || profile.target.blockedIssueRef === expected.issueRef) return false;
+  if (profile.targetProfileDigest !== targetDigest(profile.target) || profile.policyArtifactSha256 !== policyDigest(profile.policySource) || !COMMIT.test(profile.policyCommit) || !DIGEST7.test(profile.previewPlanEnvelopeDigest) || !DIGEST7.test(profile.projectsPlanId) || !DIGEST7.test(profile.projectsOperationDigest) || !producer(profile.projectsProducerRelease) || !wrapper(profile.wrapperRelease)) return false;
+  const post = profile.projectsPostcondition;
+  if (!exact5(post, POSTCONDITION_KEYS) || post.schema !== "yukh-projects-effect-b-postcondition-v1" || post.capability !== "projects.add-dependency.v1" || post.relationship !== "blocks" || post.blockingIssueNumber !== 201 || post.blockedIssueNumber !== 202 || post.expected !== "present" || post.targetProfileDigest !== profile.targetProfileDigest || profile.projectsPostconditionBindingDigest !== postconditionDigest(post)) return false;
+  if (!exact5(profile.mcpVerifierRelease, MCP_VERIFIER_RELEASE_KEYS) || !COMMIT.test(profile.mcpVerifierRelease.sourceCommit) || !DIGEST7.test(profile.mcpVerifierRelease.artifactSha256) || !DIGEST7.test(profile.mcpCapabilityDefinitionDigest) || !DIGEST7.test(profile.mcpProviderImplementationDigest) || profile.projectsLeaseScopeDigest !== leaseScopeDigest(expected) || !DIGEST7.test(profile.projectsLeaseHolderDigest) || !safeInteger(profile.coordinationEpoch) || profile.coordinationEpoch < 1) return false;
+  return profile.wrapperProfileDigest === digest5(canonicalJson(profileBinding(profile)));
+}
+function mcpValid(value2) {
+  if (!exact5(value2, MCP_KEYS)) return false;
+  const item = value2;
+  const digests = [
+    item.artifactDigest,
+    item.mcpPlanId,
+    item.mcpOperationDigest,
+    item.mcpSubjectBindingDigest,
+    item.mcpAuthenticationContextDigest,
+    item.mcpCapabilityDefinitionDigest,
+    item.mcpProviderImplementationDigest,
+    item.mcpNonceBindingDigest,
+    item.mcpNonceComparisonDigest,
+    item.previewPlanEnvelopeDigest,
+    item.projectsPlanId,
+    item.projectsOperationDigest,
+    item.projectsTargetBindingDigest,
+    item.projectsPostconditionBindingDigest,
+    item.wrapperProfileDigest,
+    item.projectsLeaseScopeDigest,
+    item.projectsLeaseHolderDigest
+  ];
+  return digests.every((entry) => DIGEST7.test(entry)) && COMMIT.test(item.mcpPolicyCommit) && bounded5(item.projectsPrincipalRef) && producer(item.projectsProducerRelease) && wrapper(item.wrapperRelease) && COMMIT.test(item.mcpVerifierRelease.sourceCommit) && DIGEST7.test(item.mcpVerifierRelease.artifactSha256) && safeInteger(item.coordinationEpoch) && item.coordinationEpoch > 0 && safeInteger(item.issuedAtMs) && safeInteger(item.expiresAtMs) && item.issuedAtMs <= item.expiresAtMs;
+}
+function trustValid(value2) {
+  return exact5(value2, TRUST_KEYS) && (typeof value2.publicKey === "string" || Buffer.isBuffer(value2.publicKey)) && Array.isArray(value2.allowedIssuerRefs) && value2.allowedIssuerRefs.length > 0 && value2.allowedIssuerRefs.length <= 16 && value2.allowedIssuerRefs.every((item) => bounded5(item)) && new Set(value2.allowedIssuerRefs).size === value2.allowedIssuerRefs.length && DIGEST7.test(String(value2.trustRootFingerprint));
+}
+function hostCapsuleValue(value2) {
+  return exact5(value2, HOST_CAPSULE_KEYS) && typeof value2.source === "string" && rec6(value2.profile) && typeof value2.readFetch === "function" && typeof value2.writeFetch === "function" && typeof value2.coordinationFetch === "function" && typeof value2.nowMs === "function" && typeof value2.jti === "function";
+}
+function abortValue(value2) {
+  return exact5(value2, ABORT_KEYS) && typeof value2.aborted === "function";
+}
+function isAborted(value2) {
+  try {
+    return value2.aborted() !== false;
+  } catch {
+    return true;
+  }
+}
+function guardedFetch(fetcher, abort) {
+  return async (input3, init) => {
+    if (isAborted(abort)) throw new TypeError("effect B aborted");
+    return fetcher(input3, init);
+  };
+}
+function approvalBytes(value2) {
+  if (typeof value2 !== "string") return null;
+  const parsed = canonicalObject(value2, 32 * 1024);
+  return parsed ? { bytes: value2, artifact: parsed } : null;
+}
+function handle(value2, kind2) {
+  if (!rec6(value2)) return null;
+  const found = privateHandles.get(value2);
+  return found?.kind === kind2 && !found.consumed ? found : null;
+}
+function consume(records) {
+  records.forEach((record2) => {
+    record2.consumed = true;
+  });
+}
+async function close(records) {
+  for (const record2 of records) {
+    if (record2.close) try {
+      await record2.close();
+    } catch {
+    }
+  }
+}
+function invocationRecords(invocation) {
+  if (!exact5(invocation, INVOCATION_KEYS) || invocation.schema !== "yukh-projects-mcp-effect-b-invocation-v1" || invocation.attempt !== 1) return null;
+  const typed = invocation;
+  const requested = [
+    [typed.mcpVerifiedAdmissionHandle, "mcp"],
+    [typed.projectsApprovalHandle, "projects-approval"],
+    [typed.projectsTrustHandle, "projects-trust"],
+    [typed.bridgeHandle, "bridge"],
+    [typed.bridgeTrustHandle, "bridge-trust"],
+    [typed.hostCapsuleHandle, "capsule"],
+    [typed.readCredentialHandle, "read-secret"],
+    [typed.writeCredentialHandle, "write-secret"],
+    [typed.abortHandle, "abort"]
+  ];
+  const records = requested.map(([value2, kind2]) => handle(value2, kind2));
+  if (records.some((record2) => !record2)) return null;
+  const found = records, bundle = found[0].bundle;
+  if (found.some((record2) => record2.bundle !== bundle) || new Set(requested.map(([value2]) => value2)).size !== requested.length) return null;
+  return { invocation: typed, records: found };
+}
+function pairMatches(claims, verified, approvalDigest, trust, now) {
+  const bridge = verified.claims;
+  return bridge.approvalV1Digest === approvalDigest && bridge.projectsPlanId === claims.planId && bridge.projectsOperationDigest === claims.operationDigest && bridge.issuerRef === claims.issuerRef && bridge.subjectRef === claims.subjectRef && bridge.scopeDigest === claims.scopeDigest && bridge.environment === claims.environment && bridge.protectedEnvironment === claims.protectedEnvironment && bridge.issuedAtMs === claims.issuedAtMs && bridge.expiresAtMs === claims.expiresAtMs && bridge.nonce === claims.nonce && bridge.projectsNonceBindingDigest === projectNonceDigest(claims.nonce) && bridge.trustRootFingerprint === trust.trustRootFingerprint && claims.keyFingerprint === verified.keyFingerprint && claims.issuedAtMs <= now && claims.expiresAtMs >= now && claims.expiresAtMs - claims.issuedAtMs <= 15 * 60 * 1e3;
+}
+function profileMatches(profile, bridge, mcp) {
+  return bridge.previewPlanEnvelopeDigest === profile.previewPlanEnvelopeDigest && bridge.projectsPlanId === profile.projectsPlanId && bridge.projectsOperationDigest === profile.projectsOperationDigest && bridge.projectsTargetBindingDigest === profile.targetProfileDigest && bridge.projectsPostconditionBindingDigest === profile.projectsPostconditionBindingDigest && sameProducer(bridge.projectsProducerRelease, profile.projectsProducerRelease) && sameWrapper(bridge.wrapperRelease, profile.wrapperRelease) && bridge.wrapperProfileDigest === profile.wrapperProfileDigest && bridge.protectedEnvironment === profile.protectedEnvironment && bridge.projectsLeaseScopeDigest === profile.projectsLeaseScopeDigest && bridge.projectsLeaseHolderDigest === profile.projectsLeaseHolderDigest && bridge.coordinationEpoch === profile.coordinationEpoch && mcp.previewPlanEnvelopeDigest === profile.previewPlanEnvelopeDigest && mcp.projectsPlanId === profile.projectsPlanId && mcp.projectsOperationDigest === profile.projectsOperationDigest && mcp.projectsTargetBindingDigest === profile.targetProfileDigest && mcp.projectsPostconditionBindingDigest === profile.projectsPostconditionBindingDigest && sameProducer(mcp.projectsProducerRelease, profile.projectsProducerRelease) && sameWrapper(mcp.wrapperRelease, profile.wrapperRelease) && mcp.wrapperProfileDigest === profile.wrapperProfileDigest && canonicalJson(mcp.mcpVerifierRelease) === canonicalJson(profile.mcpVerifierRelease) && mcp.mcpCapabilityDefinitionDigest === profile.mcpCapabilityDefinitionDigest && mcp.mcpProviderImplementationDigest === profile.mcpProviderImplementationDigest && mcp.mcpPolicyCommit === profile.policyCommit && mcp.projectsLeaseScopeDigest === profile.projectsLeaseScopeDigest && mcp.projectsLeaseHolderDigest === profile.projectsLeaseHolderDigest && mcp.coordinationEpoch === profile.coordinationEpoch;
+}
+function compoundMatches(bridge, mcp, now) {
+  return bridge.mcpApprovalDigest === mcp.artifactDigest && bridge.mcpPlanId === mcp.mcpPlanId && bridge.mcpOperationDigest === mcp.mcpOperationDigest && bridge.mcpSubjectBindingDigest === mcp.mcpSubjectBindingDigest && bridge.mcpAuthenticationContextDigest === mcp.mcpAuthenticationContextDigest && bridge.mcpCapabilityDefinitionDigest === mcp.mcpCapabilityDefinitionDigest && bridge.mcpProviderImplementationDigest === mcp.mcpProviderImplementationDigest && bridge.mcpPolicyCommit === mcp.mcpPolicyCommit && bridge.mcpNonceBindingDigest === mcp.mcpNonceBindingDigest && bridge.subjectRef === mcp.projectsPrincipalRef && bridge.issuedAtMs >= mcp.issuedAtMs && bridge.expiresAtMs <= mcp.expiresAtMs && bridge.issuedAtMs <= now && bridge.expiresAtMs >= now && bridge.expiresAtMs - bridge.issuedAtMs <= 15 * 60 * 1e3 && bridge.projectsNonceBindingDigest !== bridge.mcpNonceBindingDigest && nonceComparisonDigest(bridge.nonce) !== mcp.mcpNonceComparisonDigest;
+}
+function planMatches(plan, profile) {
+  return plan.planId === profile.projectsPlanId && plan.operations.length === 1 && digest5(canonicalJson(plan.operations)) === profile.projectsOperationDigest && exactPlanOperation(plan.operations[0], profile);
+}
+function reportObserved(report, count) {
+  return report.schema === 1 && report.status === "success" && report.remaining === 0 && count === 1 && report.counts.verified === 1 && report.counts.already_converged === 0 && report.counts.failed === 0 && report.counts.not_attempted === 0 && report.diagnostics.length === 0;
+}
+function fixedWriteFetch(value2, counter, abort) {
+  return async (input3, init) => {
+    if (isAborted(abort)) throw new TypeError("effect B aborted");
+    if (counter.mutations !== 0 || String(input3) !== "https://api.github.com/graphql" || init?.method !== "POST" || typeof init.body !== "string") throw new TypeError("invalid fixed mutation request");
+    let body;
+    try {
+      body = JSON.parse(init.body);
+    } catch {
+      throw new TypeError("invalid fixed mutation request");
+    }
+    const variables2 = rec6(body) && rec6(body.variables) && rec6(body.variables.input) ? body.variables.input : null;
+    if (!variables2 || variables2.issueId !== value2.profile.target.blockedIssueRef || variables2.blockingIssueId !== value2.profile.target.expectedScope.issueRef) throw new TypeError("invalid fixed mutation request");
+    counter.mutations = 1;
+    return value2.writeFetch(input3, init);
+  };
+}
+function capsuleValid(value2, trust, readSecret, writeSecret) {
+  let parsed;
+  try {
+    parsed = parseProtectedHostCapsule(value2.source, { scope: value2.profile.target.requestedScope, environment: value2.profile.protectedEnvironment }, { nowMs: value2.nowMs, jti: value2.jti });
+  } catch {
+    return null;
+  }
+  const options = parsed.options;
+  if (options.enablement !== "apply-explicitly-enabled" || canonicalJson(options.allowedIssuerRefs) !== canonicalJson(trust.allowedIssuerRefs) || options.holderDigest !== value2.profile.projectsLeaseHolderDigest || options.coordinationEpoch !== value2.profile.coordinationEpoch || options.permissions.projects !== "none" || options.permissions.issues !== "write" || options.permissions.extraPermissions.length !== 0 || canonicalJson(options.approvedKinds) !== canonicalJson(["add_blocked_by"]) || (options.rate.maxRestRequests ?? Number.POSITIVE_INFINITY) > 32 || (options.rate.maxGraphqlRequests ?? Number.POSITIVE_INFINITY) > 4 || (options.rate.maxGraphqlPoints ?? Number.POSITIVE_INFINITY) > 500 || (options.rate.restReserve ?? 0) < 500 || (options.rate.graphqlReserve ?? 0) < 500 || readSecret === writeSecret) return null;
+  return parsed;
+}
+async function runMcpEffectBControlledApplyV1(invocation) {
+  const resolved = invocationRecords(invocation);
+  if (!resolved) return rejected("YKP-MCP-WRAPPER-001");
+  const [mcpRecord, approvalRecord, projectsTrustRecord, bridgeRecord, bridgeTrustRecord, capsuleRecord, readRecord, writeRecord, abortRecord] = resolved.records;
+  consume(resolved.records);
+  const bundle = mcpRecord.bundle;
+  let result2 = rejected("YKP-MCP-WRAPPER-001");
+  try {
+    const mcp = mcpRecord.value;
+    if (!mcpValid(mcp)) {
+      result2 = rejected("YKP-MCP-WRAPPER-002");
+      return result2;
+    }
+    const approval = approvalBytes(approvalRecord.value), projectsTrust = projectsTrustRecord.value, bridgeSource = bridgeRecord.value, bridgeTrust = bridgeTrustRecord.value, capsule = capsuleRecord.value, readSecret = readRecord.value, writeSecret = writeRecord.value, abort = abortRecord.value;
+    if (!approval || !trustValid(projectsTrust) || typeof bridgeSource !== "string" || !trustValid(bridgeTrust) || !hostCapsuleValue(capsule) || typeof readSecret !== "string" || typeof writeSecret !== "string" || !abortValue(abort)) {
+      result2 = rejected("YKP-MCP-WRAPPER-001");
+      return result2;
+    }
+    const projectKey = publicKey2(projectsTrust.publicKey), bridgeKey = publicKey2(bridgeTrust.publicKey);
+    if (!projectKey || !bridgeKey || projectKey.fingerprint !== bridgeKey.fingerprint || canonicalJson(projectsTrust.allowedIssuerRefs) !== canonicalJson(bridgeTrust.allowedIssuerRefs) || projectsTrust.trustRootFingerprint !== bridgeTrust.trustRootFingerprint) {
+      result2 = rejected("YKP-MCP-WRAPPER-005");
+      return result2;
+    }
+    const projectsClaims = verifySignedApproval(approval.artifact, projectsTrust);
+    if (!projectsClaims) {
+      result2 = rejected("YKP-MCP-WRAPPER-003");
+      return result2;
+    }
+    const bridge = verifyBridge(bridgeSource, bridgeTrust);
+    if (!bridge) {
+      result2 = rejected("YKP-MCP-WRAPPER-004");
+      return result2;
+    }
+    const hostValue = capsule;
+    let now;
+    try {
+      now = hostValue.nowMs();
+    } catch {
+      result2 = rejected("YKP-MCP-WRAPPER-006");
+      return result2;
+    }
+    if (!safeInteger(now) || !pairMatches(projectsClaims, bridge, digest5(approval.bytes), projectsTrust, now)) {
+      result2 = rejected("YKP-MCP-WRAPPER-005");
+      return result2;
+    }
+    if (!compoundMatches(bridge.claims, mcp, now)) {
+      result2 = rejected("YKP-MCP-WRAPPER-005");
+      return result2;
+    }
+    if (!profileValid(hostValue.profile) || !profileMatches(hostValue.profile, bridge.claims, mcp)) {
+      result2 = rejected("YKP-MCP-WRAPPER-006");
+      return result2;
+    }
+    if (projectsClaims.subjectRef !== hostValue.profile.target.expectedScope.subjectRef || projectsClaims.scopeDigest !== scopeDigest(hostValue.profile.target.expectedScope) || projectsClaims.planId !== hostValue.profile.projectsPlanId || projectsClaims.operationDigest !== hostValue.profile.projectsOperationDigest) {
+      result2 = rejected("YKP-MCP-WRAPPER-005");
+      return result2;
+    }
+    if (!bounded5(readSecret, 4096) || !bounded5(writeSecret, 4096) || isAborted(abort)) {
+      result2 = rejected("YKP-MCP-WRAPPER-007");
+      return result2;
+    }
+    const parsedCapsule = capsuleValid(hostValue, projectsTrust, readSecret, writeSecret);
+    if (!parsedCapsule) {
+      result2 = rejected("YKP-MCP-WRAPPER-007");
+      return result2;
+    }
+    const counter = { mutations: 0 };
+    const options = { ...parsedCapsule.options, relatedIssueNumbers: [202], coordination: { ...parsedCapsule.options.coordination, fetch: guardedFetch(hostValue.coordinationFetch, abort) }, readFetch: guardedFetch(hostValue.readFetch, abort), writeFetch: fixedWriteFetch(hostValue, counter, abort), nowMs: hostValue.nowMs };
+    let runtime;
+    try {
+      runtime = await createControlledApplyHostFactory(options).create({ reconciliationMode: "native-v1", requestedScope: hostValue.profile.target.requestedScope, policySource: hostValue.profile.policySource, readToken: readSecret, writeToken: writeSecret });
+    } catch {
+      result2 = rejected("YKP-MCP-WRAPPER-008");
+      return result2;
+    }
+    if (isAborted(abort)) {
+      result2 = rejected("YKP-MCP-WRAPPER-008");
+      return result2;
+    }
+    if (canonicalJson(runtime.scope) !== canonicalJson(hostValue.profile.target.expectedScope)) {
+      result2 = rejected("YKP-MCP-WRAPPER-006");
+      return result2;
+    }
+    let freshPlan;
+    try {
+      freshPlan = await runtime.host.ports.replan();
+    } catch {
+      result2 = rejected("YKP-MCP-WRAPPER-008");
+      return result2;
+    }
+    if (!planMatches(freshPlan, hostValue.profile)) {
+      result2 = rejected("YKP-MCP-WRAPPER-006");
+      return result2;
+    }
+    let report;
+    try {
+      report = await runApplyEntrypoint({ approvedPlanId: hostValue.profile.projectsPlanId, protectedEnvironment: hostValue.profile.protectedEnvironment, scope: runtime.scope, approvalArtifact: approval.artifact, approvalPublicKey: projectsTrust.publicKey }, runtime.host);
+    } catch {
+      result2 = counter.mutations === 0 ? rejected("YKP-MCP-WRAPPER-008") : unknown(counter.mutations);
+      return result2;
+    }
+    if (reportObserved(report, counter.mutations)) {
+      result2 = { schema: "yukh-projects-mcp-effect-b-result-v1", status: "effect_observed", effectBoundaryEntered: true, mutationRequestCount: 1, changed: true, remaining: 0 };
+      return result2;
+    }
+    result2 = counter.mutations === 0 ? rejected(report.schema === 1 ? "YKP-MCP-WRAPPER-008" : "YKP-MCP-WRAPPER-010") : unknown(counter.mutations);
+    return result2;
+  } finally {
+    terminalResults.set(bundle, result2);
+    await close(resolved.records);
+  }
+}
 export {
   applyActionMain,
   applyCliMain,
@@ -9957,6 +10523,7 @@ export {
   parseProtectedHostCapsule,
   renderPublicApplyReport,
   runApplyEntrypoint,
+  runMcpEffectBControlledApplyV1,
   snapshotInvalidationForMutation,
   verifySignedApproval
 };

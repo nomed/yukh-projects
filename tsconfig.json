@@ -6,9 +6,14 @@
     "rootDir": ".",
     "outDir": "dist",
     "declaration": true,
+    "stripInternal": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "exclude": [
+    "test/mcp-effect-b-controlled-apply.test.ts",
+    "test/support/**"
+  ]
 }
