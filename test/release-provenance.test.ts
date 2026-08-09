@@ -44,5 +44,5 @@ test("normalizes the SPDX SBOM to the exact implementation source",async()=>{
  const document=JSON.parse(first.stdout);
  assert.equal(document.spdxVersion,"SPDX-2.3");
  assert.equal(document.documentNamespace,"https://github.com/nomed/yukh-projects/releases/tag/v1.8.0#spdx-a4f05f673bb0a03f66fc9864372cee7839ed78d1");
- assert.deepEqual(document.creationInfo.creators,["Tool: npm/cli","Tool: yukh-projects/create-release-sbom-v1"]);
+ assert.deepEqual(document.creationInfo.creators,["Tool: yukh-projects/create-release-sbom-v2"]);
 });

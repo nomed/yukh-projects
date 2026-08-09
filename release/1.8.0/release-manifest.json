@@ -17,8 +17,8 @@
     {
       "name": "yukh-projects-1.8.0.spdx.json",
       "source": "release/1.8.0/spdx.json",
-      "sha256": "ef428f29592ff22e7d5adb02ff8539c39883f10263eca84f3b33ceeedcfc7034",
-      "bytes": 9050
+      "sha256": "ec761d5096f4053969d0df18e111e5b46ce35411c245326fcd8e6408635a89f9",
+      "bytes": 33502
     },
     {
       "name": "yukh-projects-action-1.8.0.js",
@@ -108,7 +108,7 @@
   "checksum": {
     "name": "yukh-projects-1.8.0.sha256",
     "source": "release/1.8.0/checksums.sha256",
-    "sha256": "f97955474646022ba663e060208cc7ad734854e2d601afed979226126f7a6cb6",
+    "sha256": "1936dd0a622459921d810c57c635d646a75f9b84782699ee22db6614c84f5f9d",
     "bytes": 1630,
     "covers": 16
   },
