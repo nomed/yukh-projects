@@ -1,6 +1,7 @@
 # MCP Effect B controlled-apply candidate
 
-- **Status:** local, unpublished, unreviewed candidate
+- **Status:** local, unpublished, author-remediated candidate; fresh review
+  required
 - **Governing issue:** [#154](https://github.com/nomed/yukh-projects/issues/154)
 - **Source baseline:**
   `nomed/yukh-projects@521be0d0ef1297579e84a6322dea29f80c2549dc`
@@ -35,14 +36,34 @@ npm ci
 npm run build
 npm test
 npm run verify:bundles
+npm pack --dry-run --json
 npm audit --audit-level=moderate
 npm sbom --sbom-format spdx
 ~~~
 
 `verify:bundles` rebuilds the candidate, verifies both manifest checksums,
-asserts the one-function export surface, rejects test minting helpers and
-authority-bearing environment surfaces, and requires byte-for-byte equality
-with the committed files.
+asserts the one-function candidate and production-runtime export surfaces,
+rejects test minting helpers and authority-bearing environment surfaces from
+JavaScript, declarations, manifests, and bundles, and requires byte-for-byte
+equality with the committed files.
+
+## Package and test boundary
+
+The package manifest exports only `.` and includes only `dist/src/` in its
+explicit file allowlist. No source, test, test output, build script, candidate
+bundle, or source map enters the tarball. Package qualification creates and
+extracts the real tarball in a bounded temporary directory, scans every
+JavaScript, declaration, JSON, and source-map candidate for test authority, and
+requires every MCP Effect B package subpath to fail with
+`ERR_PACKAGE_PATH_NOT_EXPORTED`.
+
+The MCP Effect B test host lives only in
+`test/support/mcp-effect-b-private-test-host.inject.ts`. Production TypeScript
+compilation excludes it and the MCP test that consumes it. `npm test` injects
+that source into one temporary esbuild test bundle, runs the complete suite,
+and deletes the temporary directory unconditionally. Neither production
+`dist/src`, the committed candidate bundle, declarations, manifests, nor the
+package contains a handle constructor or test helper.
 
 The author session also produces local-only checksum, provenance, and SPDX
 candidate files after the final implementation commit. Those files bind the
@@ -67,8 +88,13 @@ The deterministic corpus proves:
 - durable `completion_unknown` for ambiguous request or verification outcomes;
 - invocation replay denial, static redacted results, and cleanup that cannot
   rewrite the outcome; and
+- a root-only package export map, closed package file allowlist, blocked deep
+  imports, one-function runtime and bundle surfaces, absence of test authority
+  from packed files, and rejection of forged handle substitutions; and
 - complete local teardown with no provider state to restore.
 
-This evidence is a review input, not an acceptance, security review, release, or
-activation decision. Distinct normal and security review sessions must evaluate
-the same exact candidate head before a separate executor may merge it.
+The first candidate head was security-blocked because a packed deep module
+retained a runtime test minter. This remediation evidence is an Author input,
+not acceptance, security review, release, or activation. Distinct normal and
+fresh security review sessions must evaluate the same remediated exact head
+before a separate executor may merge it.

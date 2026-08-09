@@ -236,7 +236,7 @@ test("the accepted preview contract keeps RFC-0003 effects independently authori
   assert.match(index, /semantic authority/);
   assert.match(
     current,
-    /bridge\/wrapper\s+implementation candidate is open for distinct normal and security review/,
+    /bridge\/wrapper\s+implementation candidate is author-remediated after a security block and awaits\s+distinct normal review plus fresh security review/,
   );
   assert.match(current, /No live apply is authorized/);
 });
@@ -457,6 +457,14 @@ test("the accepted MCP bridge and wrapper preserve compound authority", async ()
     threatModel,
     /Accepted specification assumes\s+none of those operational risks and authorizes no implementation, provider\s+credentials, or live use/,
   );
+  assert.match(
+    threatModel,
+    /security review blocked the first candidate head because a\s+declaration-stripped test helper remained a runtime JavaScript export/,
+  );
+  assert.match(
+    threatModel,
+    /closes package exports to the root\s+entrypoint with a package file allowlist/,
+  );
   assert.match(index, /MCP compound approval bridge and wrapper v1/);
   assert.match(index, /Bridge and wrapper implementation v1/);
   assert.match(
@@ -474,12 +482,20 @@ test("the accepted MCP bridge and wrapper preserve compound authority", async ()
     /Class B-X author record for #154 grants no review, acceptance,\s+merge, provider, credential, live-effect, deployment, activation, or release\s+authority/,
   );
   assert.match(implementation, /Unreviewed implementation candidate/);
-  assert.match(implementation, /dist\/mcp-effect-b\/index\.js` exports only that function/);
+  assert.match(
+    implementation,
+    /dist\/mcp-effect-b\/index\.js` and the compiled production deep module each export\s+only that runtime function/,
+  );
+  assert.match(
+    implementation,
+    /Synthetic qualification injects its private host\s+adapter from excluded test-only source into a temporary bundle/,
+  );
   assert.match(implementation, /Steps 1 through 6 perform no provider call/);
   assert.match(implementation, /`verifySignedApproval` completes before the provider-backed factory/);
   assert.match(implementation, /add_dependency\(201 blocks 202\)/);
   assert.match(implementation, /terminal `completion_unknown`/);
   assert.match(validation, /Publication is fixed to `disabled`/);
   assert.match(validation, /npm sbom --sbom-format spdx/);
-  assert.match(validation, /distinct normal and security review/i);
+  assert.match(validation, /ERR_PACKAGE_PATH_NOT_EXPORTED/);
+  assert.match(validation, /distinct normal and\s+fresh security review/i);
 });

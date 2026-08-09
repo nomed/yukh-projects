@@ -22,9 +22,10 @@ runMcpEffectBControlledApplyV1(
 ): Promise<McpEffectBControlledApplyResultV1>
 ~~~
 
-`dist/mcp-effect-b/index.js` exports only that function. There is no public
-constructor, transport, verifier override, credential callback, endpoint, CLI,
-Action, workflow dispatch, dynamic module, or generic apply surface.
+`dist/mcp-effect-b/index.js` and the compiled production deep module each export
+only that runtime function. There is no public constructor, transport, verifier
+override, credential callback, endpoint, CLI, Action, workflow dispatch,
+dynamic module, or generic apply surface.
 
 The invocation has the exact accepted schema and contains only nonenumerable,
 nonserializable, single-use private handles. Every handle must be minted by one
@@ -32,6 +33,14 @@ host bundle, have the exact expected kind, be distinct, and remain unused.
 Ordinary objects, mixed bundles, duplicated handles, reused handles, unknown
 fields, and a value other than `attempt: 1` return
 `YKP-MCP-WRAPPER-001`.
+
+The package exports only its root entrypoint and uses an explicit production
+file allowlist. MCP Effect B subpath imports are unavailable, and the packed
+JavaScript, declarations, manifests, and bundles contain no handle minter or
+test construction helper. Synthetic qualification injects its private host
+adapter from excluded test-only source into a temporary bundle that is deleted
+after the test process. It is not production output, a package file, or a
+candidate artifact.
 
 ## Bridge verifier
 
@@ -97,10 +106,10 @@ unconditional and cannot rewrite the recorded terminal result.
 ## Compatibility, rollback, and teardown
 
 The unchanged Projects v1 verifier, approval schema, CLI, Action, dry-run, and
-existing apply entrypoints retain their current behavior. Bridge v2 is reachable
-only through the new wrapper candidate. Removing the root and bundle exports
-and deleting the bridge/wrapper module disables the candidate without changing
-v1 behavior. Source rollback is not provider restore authority.
+existing apply entrypoints retain their current behavior. Bridge v2 is
+reachable only through the new wrapper candidate. Removing the root and bundle
+exports and deleting the bridge/wrapper module disables the candidate without
+changing v1 behavior. Source rollback is not provider restore authority.
 
 This candidate creates no infrastructure or provider state. Its Class B-X
 teardown is therefore deletion of local generated candidate files and the

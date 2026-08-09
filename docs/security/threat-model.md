@@ -247,7 +247,7 @@ Coordination service, provider, or runtime. This Accepted specification assumes
 none of those operational risks and authorizes no implementation, provider
 credentials, or live use.
 
-The local implementation candidate under issue #154 now makes these controls
+The local implementation candidate under issue #154 makes these controls
 executable only through `runMcpEffectBControlledApplyV1`. Its bridge parser
 enforces the closed canonical schema and host-selected Ed25519 trust profile;
 its sealed single-use handles keep raw approvals, trust keys, credentials,
@@ -258,11 +258,28 @@ nonce/lease binding, one mutation request, no hidden retry, terminal
 `completion_unknown`, redacted results, and cleanup separation with injected
 synthetic transports only.
 
-This candidate does not supply an operational handle minter, credential source,
-provider endpoint, network configuration, deployment, or activation path.
-Compromise of a future protected handle authority or fixed runtime remains an
-operational risk requiring distinct normal and security review before merge and
-again before any release or activation.
+Independent security review blocked the first candidate head because a
+declaration-stripped test helper remained a runtime JavaScript export in the
+packed deep module and could register caller-selected values in the private
+handle store. The remediated candidate removes every MCP Effect B test helper
+from production source exports, emits no helper in JavaScript, declarations,
+source maps, manifests, or bundles, and closes package exports to the root
+entrypoint with a package file allowlist. The production deep module and
+dedicated candidate bundle each have exactly one runtime export:
+`runMcpEffectBControlledApplyV1`.
+
+Valid-handle construction for synthetic qualification is injected from
+test-only source into a temporary esbuild bundle. That source is excluded from
+TypeScript production output and the package, and the temporary bundle is
+deleted after the test process. Deterministic tests create the package tarball,
+scan its complete file set, reject MCP Effect B subpath imports, inspect both
+runtime export surfaces, and prove ordinary substituted handles fail closed.
+
+This candidate therefore supplies no operational handle minter, credential
+source, provider endpoint, network configuration, deployment, or activation
+path. Compromise of a future protected handle authority or fixed runtime
+remains an operational risk requiring distinct normal and fresh security
+review before merge and again before any release or activation.
 
 Accepted Projects effects v1 and Proposed MCP RFC-0011 currently select
 different Effect B operation kinds (`add_dependency` and

@@ -5,13 +5,13 @@ import test from "node:test";
 import { APPLY_VERSIONS, approvalSigningInputForTest, type SignedApprovalEnvelope } from "../src/apply-approval.js";
 import type { ApprovalClaims } from "../src/executor.js";
 import {
+ createMcpEffectBTestInvocation,
  mcpEffectBDigestForTest,
  mcpEffectBLeaseScopeDigestForTest,
  mcpEffectBNonceComparisonDigestForTest,
  mcpEffectBProfileDigestForTest,
  mcpEffectBProjectNonceDigestForTest,
  mcpEffectBTerminalResultForTest,
- mintMcpEffectBPrivateInvocationForTest,
  projectsApprovalBridgeV2SigningInputForTest,
  projectsApprovalTrustFingerprintForTest,
  runMcpEffectBControlledApplyV1,
@@ -319,7 +319,7 @@ function fixture(options:FixtureOptions={}){
      :{outcome:"released",specversion:"1"};
   return new Response(canonical(body),{status:200,headers:{"content-type":COORDINATION_MEDIA}});
  };
- const invocation=mintMcpEffectBPrivateInvocationForTest({
+ const invocation=createMcpEffectBTestInvocation({
   mcpAdmission,
   projectsApprovalBytes:options.invalidApproval?canonical({...approval.envelope,signature:"A".repeat(86)}):approval.bytes,
   projectsTrust,

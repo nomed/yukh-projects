@@ -1,7 +1,8 @@
 # Current context
 
 **Status:** first usable preview Projects contract accepted; bridge/wrapper
-implementation candidate is open for distinct normal and security review
+implementation candidate is author-remediated after a security block and awaits
+distinct normal review plus fresh security review
 **Project:** Yukh Projects
 **Visibility:** public
 
@@ -43,13 +44,18 @@ without implementing or authorizing either preview effect.
   verifier, the sole MCP-facing `runMcpEffectBControlledApplyV1` export,
   deterministic conformance vectors, and an unpublished reproducible bundle.
   Qualification uses injected synthetic transports only and performs zero live
-  provider calls.
+  provider calls. Independent security review blocked the first candidate head
+  because a packed deep module exported test handle-minting authority. The
+  Author remediation removes production test helpers, closes package exports
+  and files, and adds deterministic tarball, deep-import, declaration, bundle,
+  and forged-handle negative tests; fresh review of the remediated head remains
+  mandatory.
 
 ## Next
 
-1. Obtain a distinct read-only normal review of the exact #154 implementation
-   head.
-2. Obtain a separate security-focused review of the same exact head.
+1. Obtain a distinct read-only normal review of the exact remediated #154
+   implementation head.
+2. Obtain a fresh security-focused review of the same exact remediated head.
 3. Keep merge/execution in a third session and keep release, activation,
    credentials, and every live provider effect separately unauthorized.
 4. Require Proposed MCP RFC-0011 to conform to the Accepted Projects
