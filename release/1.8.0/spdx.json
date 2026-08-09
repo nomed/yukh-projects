@@ -1,0 +1,248 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "@nomed/yukh-projects@1.8.0",
+  "documentNamespace": "https://github.com/nomed/yukh-projects/releases/tag/v1.8.0#spdx-a4f05f673bb0a03f66fc9864372cee7839ed78d1",
+  "creationInfo": {
+    "created": "2026-08-09T18:00:26.000Z",
+    "creators": [
+      "Tool: npm/cli",
+      "Tool: yukh-projects/create-release-sbom-v1"
+    ]
+  },
+  "documentDescribes": [
+    "SPDXRef-Package-nomed.yukh-projects-1.8.0"
+  ],
+  "packages": [
+    {
+      "name": "@nomed/yukh-projects",
+      "SPDXID": "SPDXRef-Package-nomed.yukh-projects-1.8.0",
+      "versionInfo": "1.8.0",
+      "packageFileName": "",
+      "description": "Declarative, secure, and consumer-neutral reconciliation for GitHub Projects",
+      "primaryPackagePurpose": "LIBRARY",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/nomed/yukh-projects#readme",
+      "licenseDeclared": "Apache-2.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40nomed/yukh-projects@1.8.0"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/darwin-arm64",
+      "SPDXID": "SPDXRef-Package-esbuild.darwin-arm64-0.28.1",
+      "versionInfo": "0.28.1",
+      "packageFileName": "node_modules/@esbuild/darwin-arm64",
+      "description": "The macOS ARM 64-bit binary for esbuild, a JavaScript bundler.",
+      "downloadLocation": "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.28.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/evanw/esbuild#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40esbuild/darwin-arm64@0.28.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "4d96d691063b92f4c05db5d44fbb9500247970c1ec0e24b3f73ed92805ff453abf589124dd0c91af4c19a4d8410d7fbfd02b5da9420994e8a875072d6bab58dd"
+        }
+      ]
+    },
+    {
+      "name": "@types/node",
+      "SPDXID": "SPDXRef-Package-types.node-24.5.2",
+      "versionInfo": "24.5.2",
+      "packageFileName": "node_modules/@types/node",
+      "description": "TypeScript definitions for node",
+      "downloadLocation": "https://registry.npmjs.org/@types/node/-/node-24.5.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40types/node@24.5.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "158c64d48ef03efdcad9705aa321f67139e871012ef00399eb484f6eccae90c3cbbf9ff9aabed5d62f0f2c7765e997fcec8fb165716f3c25d88e24c5abe6120d"
+        }
+      ]
+    },
+    {
+      "name": "esbuild",
+      "SPDXID": "SPDXRef-Package-esbuild-0.28.1",
+      "versionInfo": "0.28.1",
+      "packageFileName": "node_modules/esbuild",
+      "description": "An extremely fast JavaScript and CSS bundler and minifier.",
+      "downloadLocation": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/evanw/esbuild#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/esbuild@0.28.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "1eb26bbd9bf96b2c41ccf7f0a613a837393338822589fce4d0a26b18ad9cf11e3e2caa4cb6960b41e51d8e7c235affcb665907da569993ee30efca62f7d0f857"
+        }
+      ]
+    },
+    {
+      "name": "graphql",
+      "SPDXID": "SPDXRef-Package-graphql-17.0.2",
+      "versionInfo": "17.0.2",
+      "packageFileName": "node_modules/graphql",
+      "description": "A Query Language and Runtime which can target any service.",
+      "downloadLocation": "https://registry.npmjs.org/graphql/-/graphql-17.0.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/graphql/graphql-js",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/graphql@17.0.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "15159b75d3317e48e207bcfe6900d6211f84df8c68f48f1cf66b4ad913eff0f98ccca46faddb2b7872ff522fd39b01c97e11c2844b6c14fc8c1ca23ec6e6ab41"
+        }
+      ]
+    },
+    {
+      "name": "typescript",
+      "SPDXID": "SPDXRef-Package-typescript-5.9.3",
+      "versionInfo": "5.9.3",
+      "packageFileName": "node_modules/typescript",
+      "description": "TypeScript is a language for application scale JavaScript development",
+      "downloadLocation": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://www.typescriptlang.org/",
+      "licenseDeclared": "Apache-2.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/typescript@5.9.3"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "8e5d6f6733c38a72ebf5e52ddc9feded5e8580d130f508ef04f772b33f4a7d00c3e357d0ac2d98e2f290762694a454f86d795bd511e12e9a7cc2d9ba3394e04b"
+        }
+      ]
+    },
+    {
+      "name": "undici-types",
+      "SPDXID": "SPDXRef-Package-undici-types-7.12.0",
+      "versionInfo": "7.12.0",
+      "packageFileName": "node_modules/undici-types",
+      "description": "A stand-alone types package for Undici",
+      "downloadLocation": "https://registry.npmjs.org/undici-types/-/undici-types-7.12.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://undici.nodejs.org",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/undici-types@7.12.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "82839a72a304d8663239965f6f92e0b6efb520398094012ee719c3dfec53cd2d74853d2fce97f448f8e45f0030f499bee27fe64060cfdcb3bc08f6d844e7817d"
+        }
+      ]
+    },
+    {
+      "name": "yaml",
+      "SPDXID": "SPDXRef-Package-yaml-2.9.0",
+      "versionInfo": "2.9.0",
+      "packageFileName": "node_modules/yaml",
+      "description": "JavaScript parser and stringifier for YAML",
+      "downloadLocation": "https://registry.npmjs.org/yaml/-/yaml-2.9.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://eemeli.org/yaml/",
+      "licenseDeclared": "ISC",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/yaml@2.9.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "d80be1357de66fccdde99cbb20d4ed4a9975175e475ba5a7aa3d2cad696428b729625fe03083098b2b86ab629e236605c543e376507edcb735d2c78c2ed2f870"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relatedSpdxElement": "SPDXRef-Package-nomed.yukh-projects-1.8.0",
+      "relationshipType": "DESCRIBES"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-yaml-2.9.0",
+      "relatedSpdxElement": "SPDXRef-Package-nomed.yukh-projects-1.8.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-types.node-24.5.2",
+      "relatedSpdxElement": "SPDXRef-Package-nomed.yukh-projects-1.8.0",
+      "relationshipType": "DEV_DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-esbuild-0.28.1",
+      "relatedSpdxElement": "SPDXRef-Package-nomed.yukh-projects-1.8.0",
+      "relationshipType": "DEV_DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-graphql-17.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-nomed.yukh-projects-1.8.0",
+      "relationshipType": "DEV_DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-typescript-5.9.3",
+      "relatedSpdxElement": "SPDXRef-Package-nomed.yukh-projects-1.8.0",
+      "relationshipType": "DEV_DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-undici-types-7.12.0",
+      "relatedSpdxElement": "SPDXRef-Package-types.node-24.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-esbuild.darwin-arm64-0.28.1",
+      "relatedSpdxElement": "SPDXRef-Package-esbuild-0.28.1",
+      "relationshipType": "OPTIONAL_DEPENDENCY_OF"
+    }
+  ]
+}

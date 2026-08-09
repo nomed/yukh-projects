@@ -1,0 +1,6 @@
+schema: yukh-projects-context-manifest-v1
+navigation:
+  readme: README.md
+  current: current.md
+durable_memory_root: .context
+consumer_neutral: true

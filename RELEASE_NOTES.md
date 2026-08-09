@@ -32,10 +32,11 @@ MCP Effect B controlled-apply wrapper from
 ## Integrity and qualification
 
 Clean builds must reproduce the committed bundles and the package tarball
-byte-for-byte. The protected preflight verifies the exact version, main commit,
-tree-derived provenance, complete asset allowlist, byte sizes, SHA-256 digests,
-root-only package exports, dependency audit, and deterministic synthetic test
-suite before any publication permission is available.
+byte-for-byte. The canonical committed release manifest binds all 17 final
+assets, sources, byte sizes, and SHA-256 digests. The read-only preflight
+recreates that exact directory without network access or release authority and
+verifies root-only package exports, the dependency audit, and the deterministic
+synthetic test suite before any publication permission is available.
 
 The bridge conformance corpus uses invented identities and injected transports.
 Qualification performs zero live provider calls and has expected cloud cost
@@ -44,11 +45,15 @@ EUR 0.
 ## Publication and activation boundary
 
 The local candidate, package manifest, MCP artifact manifest, provenance
-descriptor, and would-publish manifest all retain `publication: disabled`.
-Separately authorized publication may transition only repository state from no
-tag or Release, through one draft with the complete verified assets, to immutable
-`v1.8.0`. It does not activate a provider, create credentials, grant apply
-approval, publish to npm, or authorize a live effect.
+descriptor, and canonical release manifest all retain `publication: disabled`.
+Publication requires immutable normal and security review receipts plus an
+authenticated repository-owner Class C record bound to the exact reviewed
+head/tree, merged commit/tree, workflow, version/tag, manifest, checksum index,
+and three publication effects. A protected no-checkout job may then transition
+only repository state from no tag or Release, through one draft with the
+complete verified assets, to immutable `v1.8.0`. It has no npm credential and
+does not activate a provider, create credentials, grant apply approval, or
+authorize a live effect.
 
 ## Compatibility
 
@@ -60,7 +65,10 @@ approval binding change requires fresh artifacts and fresh governance.
 ## Rollback
 
 Before publication, rollback is closing the release PR and deleting local
-candidate assets. After publication, consumers may separately pin immutable
+candidate assets or withdrawing the exact owner authorization before the
+protected environment starts. Any partial tag, draft, or Release blocks rerun
+and requires private owner investigation rather than automated continuation.
+After publication, consumers may separately pin immutable
 `v1.7.0` at `71784218366805922e5a12903eef9073f715f59f` or a later corrective
 release. Tags and immutable Releases are never moved, deleted, or overwritten.
 Rollback grants no provider restore, live mutation, credential, deployment, or

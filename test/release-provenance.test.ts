@@ -24,20 +24,23 @@ test("builds a root-only package and deterministic disabled provenance",async()=
   assert.equal(provenance.projectsProducerRelease.sourceCommit,"71784218366805922e5a12903eef9073f715f59f");
   assert.equal(provenance.wrapper.entrypoint,"mcp-effect-b-controlled-apply-v1");
   const packageBytes=await readFile(packagePath);
+  assert.deepEqual(packageBytes,await readFile("release/1.8.0/package.tgz"));
   const packageArtifact=provenance.artifacts.find((item:{path:string})=>item.path==="release-package.tgz");
   assert.equal(packageArtifact.bytes,packageBytes.byteLength);
   assert.equal(packageArtifact.sha256,createHash("sha256").update(packageBytes).digest("hex"));
+  assert.equal(generated.stdout,await readFile("release/1.8.0/provenance.json","utf8"));
  }finally{
   await rm(temporary,{recursive:true,force:true});
  }
 });
 
-test("normalizes the SPDX SBOM to the exact implementation source",()=>{
+test("normalizes the SPDX SBOM to the exact implementation source",async()=>{
  const first=spawnSync(process.execPath,["scripts/create-release-sbom.mjs","1.8.0","a4f05f673bb0a03f66fc9864372cee7839ed78d1"],{encoding:"utf8"});
  const second=spawnSync(process.execPath,["scripts/create-release-sbom.mjs","1.8.0","a4f05f673bb0a03f66fc9864372cee7839ed78d1"],{encoding:"utf8"});
  assert.equal(first.status,0,first.stderr);
  assert.equal(second.status,0,second.stderr);
  assert.equal(first.stdout,second.stdout);
+ assert.equal(first.stdout,await readFile("release/1.8.0/spdx.json","utf8"));
  const document=JSON.parse(first.stdout);
  assert.equal(document.spdxVersion,"SPDX-2.3");
  assert.equal(document.documentNamespace,"https://github.com/nomed/yukh-projects/releases/tag/v1.8.0#spdx-a4f05f673bb0a03f66fc9864372cee7839ed78d1");

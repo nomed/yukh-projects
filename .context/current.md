@@ -53,16 +53,20 @@ activation, credentials, or either preview effect.
   local assets, checksums, SPDX SBOM, provenance, and reproducibility evidence.
   Release publication, tag creation or movement, asset upload, package
   publication, and permission changes remain RFC-0007 Class C owner-only.
+- Security review blocked PR #157 at `509a539610f2f66fd349112626c9f88d7217a95a`.
+  Remediation replaces the automatic push publisher with authenticated exact
+  owner authorization, a secret-free preflight, committed reproducible
+  descriptors, and a protected no-checkout one-shot publication job.
 
 ## Next
 
-1. Complete the exact `v1.8.0` dry-run asset manifest and RFC-0007 Author record
-   under #156.
+1. Complete and independently review the remediated exact `v1.8.0` canonical
+   17-asset manifest and RFC-0007 Author record under #156.
 2. Obtain distinct read-only normal and security-focused reviews of the exact
    release PR head, tree, workflow, and asset manifest.
-3. Require the owner to state exact Class C publication authorization before a
-   distinct executor may merge the release PR; merge is the protected
-   publication trigger and is not implied by review or authentication.
+3. Require a distinct executor to merge the exact reviewed tree without
+   publishing, then require the owner to post an authenticated Class C record
+   bound to that merge before a distinct manual protected publication dispatch.
 4. Keep wrapper activation, credentials, provider access, consumer migration,
    and every live effect separately unauthorized.
 5. Require Proposed MCP RFC-0011 to conform to the Accepted Projects

@@ -1,124 +1,226 @@
 name: Release publication
 
 on:
-  push:
-    branches: [main]
-    paths: [.release-please-manifest.json]
+  workflow_dispatch:
+    inputs:
+      authorization-comment-id:
+        description: Exact issue comment containing the canonical owner Class C authorization record
+        required: true
+        type: string
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
-  group: release-${{ github.sha }}
+  group: release-publication-v1.8.0
   cancel-in-progress: false
 
 jobs:
-  preflight:
+  authorize:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     outputs:
-      version: ${{ steps.release.outputs.version }}
+      release_commit: ${{ steps.authorization.outputs.release_commit }}
+      release_tree: ${{ steps.authorization.outputs.release_tree }}
+      reviewed_head: ${{ steps.authorization.outputs.reviewed_head }}
+      reviewed_tree: ${{ steps.authorization.outputs.reviewed_tree }}
+      version: ${{ steps.authorization.outputs.version }}
+      tag: ${{ steps.authorization.outputs.tag }}
+      asset_manifest_sha256: ${{ steps.authorization.outputs.asset_manifest_sha256 }}
+      checksum_index_sha256: ${{ steps.authorization.outputs.checksum_index_sha256 }}
+      workflow_blob_sha: ${{ steps.authorization.outputs.workflow_blob_sha }}
+      authorization_body_sha256: ${{ steps.authorization.outputs.authorization_body_sha256 }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          fetch-depth: 0
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify authenticated immutable authorization
+        id: authorization
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          AUTHORIZATION_COMMENT_ID: ${{ inputs.authorization-comment-id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main"
+          case "$AUTHORIZATION_COMMENT_ID" in ''|*[!0-9]*) exit 1 ;; esac
+          node scripts/verify-release-authorization.mjs \
+            --comment-id "$AUTHORIZATION_COMMENT_ID" \
+            --receipt authorization-receipt.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-authorization-${{ github.run_id }}
+          path: authorization-receipt.json
+          if-no-files-found: error
+          retention-days: 1
+
+  preflight:
+    needs: authorize
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: ${{ needs.authorize.outputs.release_commit }}
+          fetch-depth: 1
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm
-      - name: Bind merged Release Please candidate
-        id: release
-        shell: bash
-        run: |
-          set -euo pipefail
-          version="$(jq -er '.["."]' .release-please-manifest.json)"
-          case "$version" in ''|*[!0-9.]*) exit 1 ;; esac
-          test "$(printf '%s' "$version" | awk -F. 'NF == 3 && $1 ~ /^(0|[1-9][0-9]*)$/ && $2 ~ /^(0|[1-9][0-9]*)$/ && $3 ~ /^(0|[1-9][0-9]*)$/ { print "ok" }')" = ok
-          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
-      - name: Build exact candidate
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-authorization-${{ github.run_id }}
+          path: authorization
+      - name: Qualify exact candidate without publication authority
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          RELEASE_VERSION: ${{ steps.release.outputs.version }}
-          RELEASE_COMMIT: ${{ github.sha }}
-          MCP_IMPLEMENTATION_COMMIT: a4f05f673bb0a03f66fc9864372cee7839ed78d1
+          RELEASE_COMMIT: ${{ needs.authorize.outputs.release_commit }}
+          RELEASE_TREE: ${{ needs.authorize.outputs.release_tree }}
         shell: bash
         run: |
           set -euo pipefail
-          test "$GITHUB_REF" = "refs/heads/main"
-          test "${#RELEASE_COMMIT}" -eq 40
-          case "$RELEASE_COMMIT" in *[!0-9a-f]*) exit 1 ;; esac
-          git merge-base --is-ancestor "$RELEASE_COMMIT" origin/main
-          git checkout --detach "$RELEASE_COMMIT"
+          test -z "${GITHUB_TOKEN:-}"
+          test -z "${GH_TOKEN:-}"
+          test -z "${RELEASE_TOKEN:-}"
+          test -z "${IMMUTABLE_RELEASES_READ_TOKEN:-}"
+          test -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}"
+          test -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}"
           test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
-          node scripts/check-immutable-releases.mjs
-          npm ci
+          test "$(git rev-parse 'HEAD^{tree}')" = "$RELEASE_TREE"
+          npm ci --ignore-scripts
           npm test
           npm run verify:bundles
           npm audit --audit-level=moderate
-          node scripts/create-release-sbom.mjs "$RELEASE_VERSION" "$MCP_IMPLEMENTATION_COMMIT" > release.spdx.json
-          node scripts/create-release-package.mjs "$RELEASE_VERSION" release-package.tgz
-          node scripts/release-provenance.mjs "$RELEASE_VERSION" "$MCP_IMPLEMENTATION_COMMIT" release-package.tgz > release-provenance.json
-          node scripts/release-preflight.mjs "$RELEASE_VERSION" "$RELEASE_COMMIT" > would-publish.json
-          mkdir release-assets
-          cp RELEASE_NOTES.md "release-assets/yukh-projects-release-notes-${RELEASE_VERSION}.md"
-          cp action.yml "release-assets/yukh-projects-action-${RELEASE_VERSION}.yml"
-          cp apply-action.yml "release-assets/yukh-projects-apply-action-${RELEASE_VERSION}.yml"
-          cp dist/action/index.js "release-assets/yukh-projects-action-${RELEASE_VERSION}.js"
-          cp dist/apply/action.js "release-assets/yukh-projects-apply-action-${RELEASE_VERSION}.js"
-          cp dist/apply/cli.js "release-assets/yukh-projects-apply-cli-${RELEASE_VERSION}.js"
-          cp dist/apply/index.js "release-assets/yukh-projects-apply-library-${RELEASE_VERSION}.js"
-          cp dist/apply/manifest.json "release-assets/yukh-projects-apply-manifest-${RELEASE_VERSION}.json"
-          cp dist/cli/index.js "release-assets/yukh-projects-cli-${RELEASE_VERSION}.js"
-          cp dist/mcp-effect-b/index.js "release-assets/yukh-projects-mcp-effect-b-${RELEASE_VERSION}.js"
-          cp dist/mcp-effect-b/manifest.json "release-assets/yukh-projects-mcp-effect-b-manifest-${RELEASE_VERSION}.json"
-          cp test/fixtures/mcp-effect-b-bridge-v2-vector.json "release-assets/yukh-projects-mcp-effect-b-bridge-v2-vector-${RELEASE_VERSION}.json"
-          cp package-lock.json "release-assets/yukh-projects-lock-${RELEASE_VERSION}.json"
-          cp release-package.tgz "release-assets/yukh-projects-package-${RELEASE_VERSION}.tgz"
-          cp release-provenance.json "release-assets/yukh-projects-${RELEASE_VERSION}.provenance.json"
-          cp release.spdx.json "release-assets/yukh-projects-${RELEASE_VERSION}.spdx.json"
-          cp would-publish.json release-assets/would-publish.json
-          (cd release-assets && sha256sum yukh-projects-* > "yukh-projects-${RELEASE_VERSION}.sha256")
+          mkdir -p release-input/assets
+          node scripts/assemble-release-assets.mjs release-input/assets
+          cp release/1.8.0/release-manifest.json release-input/release-manifest.json
+          cp authorization/authorization-receipt.json release-input/authorization-receipt.json
+          node scripts/verify-publish-input.mjs \
+            release-input \
+            release-input/authorization-receipt.json \
+            publish-input.json
+          test "$(node -p "require('./publish-input.json').releaseCommit")" = "$RELEASE_COMMIT"
+          rm publish-input.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: release-candidate-${{ github.sha }}
-          path: release-assets/
+          name: release-publication-input-${{ github.run_id }}
+          path: release-input/
           if-no-files-found: error
           retention-days: 1
 
   publish:
-    needs: preflight
+    needs: [authorize, preflight]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment: release
     permissions:
       contents: write
-      id-token: write
-      attestations: write
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: release-candidate-${{ github.sha }}
-          path: release-assets
-      - name: Recheck binding and publish once
+          name: release-publication-input-${{ github.run_id }}
+          path: release-input
+      - name: Verify immutable local publication input
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          IMMUTABLE_RELEASES_READ_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          RELEASE_VERSION: ${{ needs.preflight.outputs.version }}
-          RELEASE_COMMIT: ${{ github.sha }}
+          RELEASE_COMMIT: ${{ needs.authorize.outputs.release_commit }}
+          RELEASE_TREE: ${{ needs.authorize.outputs.release_tree }}
+          ASSET_MANIFEST_SHA256: ${{ needs.authorize.outputs.asset_manifest_sha256 }}
+          CHECKSUM_INDEX_SHA256: ${{ needs.authorize.outputs.checksum_index_sha256 }}
         shell: bash
         run: |
           set -euo pipefail
-          test "$GITHUB_REF" = "refs/heads/main"
-          test "${#RELEASE_COMMIT}" -eq 40
-          case "$RELEASE_COMMIT" in *[!0-9a-f]*) exit 1 ;; esac
-          git merge-base --is-ancestor "$RELEASE_COMMIT" origin/main
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          node scripts/publish-release.mjs "$RELEASE_VERSION" "$RELEASE_COMMIT" release-assets
-      - name: Attest release assets
-        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
-        with:
-          subject-path: release-assets/yukh-projects-*
+          test -z "${GITHUB_TOKEN:-}"
+          test -z "${GH_TOKEN:-}"
+          test -z "${RELEASE_TOKEN:-}"
+          test -z "${IMMUTABLE_RELEASES_READ_TOKEN:-}"
+          test -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}"
+          test -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}"
+          node --input-type=module <<'NODE'
+          import {createHash} from "node:crypto";
+          import {readFile,readdir,lstat} from "node:fs/promises";
+          const hash=value=>createHash("sha256").update(value).digest("hex");
+          const manifestBytes=await readFile("release-input/release-manifest.json");
+          const manifest=JSON.parse(manifestBytes);
+          const receipt=JSON.parse(await readFile("release-input/authorization-receipt.json"));
+          if(hash(manifestBytes)!==process.env.ASSET_MANIFEST_SHA256||manifest.publication!=="disabled"||manifest.assets.length!==16||manifest.checksum.sha256!==process.env.CHECKSUM_INDEX_SHA256||receipt.schema!=="yukh-projects-release-authorization-receipt-v1"||receipt.publication!=="authorized"||JSON.stringify(receipt.effects)!==JSON.stringify(["create-immutable-tag","create-github-release","upload-17-assets"])||receipt.releaseCommit!==process.env.RELEASE_COMMIT||receipt.releaseTree!==process.env.RELEASE_TREE||receipt.assetManifestSha256!==process.env.ASSET_MANIFEST_SHA256||receipt.checksumIndexSha256!==process.env.CHECKSUM_INDEX_SHA256)throw new Error("publication input binding mismatch");
+          const expected=[...manifest.assets.map(asset=>asset.name),manifest.checksum.name].sort();
+          const actual=(await readdir("release-input/assets")).sort();
+          if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error("publication asset set mismatch");
+          for(const asset of [...manifest.assets,manifest.checksum]){
+            const path=`release-input/assets/${asset.name}`,info=await lstat(path),bytes=await readFile(path);
+            if(!info.isFile()||info.isSymbolicLink()||bytes.byteLength!==asset.bytes||hash(bytes)!==asset.sha256)throw new Error("publication asset digest mismatch");
+          }
+          NODE
+      - name: Publish authorized immutable release once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ needs.authorize.outputs.release_commit }}
+          RELEASE_TREE: ${{ needs.authorize.outputs.release_tree }}
+          RELEASE_VERSION: ${{ needs.authorize.outputs.version }}
+          RELEASE_TAG: ${{ needs.authorize.outputs.tag }}
+          WORKFLOW_BLOB_SHA: ${{ needs.authorize.outputs.workflow_blob_sha }}
+          AUTHORIZATION_COMMENT_ID: ${{ inputs.authorization-comment-id }}
+          AUTHORIZATION_BODY_SHA256: ${{ needs.authorize.outputs.authorization_body_sha256 }}
+          ASSET_MANIFEST_SHA256: ${{ needs.authorize.outputs.asset_manifest_sha256 }}
+          CHECKSUM_INDEX_SHA256: ${{ needs.authorize.outputs.checksum_index_sha256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import {createHash} from "node:crypto";
+          import {readFile,readdir,lstat} from "node:fs/promises";
+          const repository="nomed/yukh-projects",apiRoot="https://api.github.com",uploadRoot="https://uploads.github.com";
+          const hash=value=>createHash("sha256").update(value).digest("hex");
+          const headers={Accept:"application/vnd.github+json",Authorization:`Bearer ${process.env.GH_TOKEN}`,"X-GitHub-Api-Version":"2026-03-10"};
+          async function request(path,init={},statuses=[200]){
+            const response=await fetch(`${apiRoot}${path}`,{...init,headers:{...headers,...init.headers},redirect:"error"});
+            if(!statuses.includes(response.status))throw new Error(`GitHub publication request failed with status ${response.status}`);
+            return response.status===204?null:response.json();
+          }
+          const manifestBytes=await readFile("release-input/release-manifest.json"),manifest=JSON.parse(manifestBytes);
+          const receiptBytes=await readFile("release-input/authorization-receipt.json"),receipt=JSON.parse(receiptBytes);
+          if(hash(manifestBytes)!==process.env.ASSET_MANIFEST_SHA256||manifest.publication!=="disabled"||manifest.assets.length!==16||manifest.version!==process.env.RELEASE_VERSION||manifest.tag!==process.env.RELEASE_TAG||manifest.checksum.sha256!==process.env.CHECKSUM_INDEX_SHA256||receipt.schema!=="yukh-projects-release-authorization-receipt-v1"||receipt.publication!=="authorized"||JSON.stringify(receipt.effects)!==JSON.stringify(["create-immutable-tag","create-github-release","upload-17-assets"])||receipt.releaseCommit!==process.env.RELEASE_COMMIT||receipt.releaseTree!==process.env.RELEASE_TREE||receipt.workflowBlobSha!==process.env.WORKFLOW_BLOB_SHA||receipt.authorizationCommentId!==Number(process.env.AUTHORIZATION_COMMENT_ID)||receipt.authorizationBodySha256!==process.env.AUTHORIZATION_BODY_SHA256)throw new Error("publication receipt binding mismatch");
+          const expected=[...manifest.assets,manifest.checksum].sort((a,b)=>a.name.localeCompare(b.name));
+          const names=(await readdir("release-input/assets")).sort();
+          if(JSON.stringify(names)!==JSON.stringify(expected.map(asset=>asset.name)))throw new Error("publication assets are missing or extra");
+          for(const asset of expected){
+            const path=`release-input/assets/${asset.name}`,info=await lstat(path),bytes=await readFile(path);
+            if(!info.isFile()||info.isSymbolicLink()||bytes.byteLength!==asset.bytes||hash(bytes)!==asset.sha256)throw new Error("publication asset was substituted");
+          }
+          const [repositoryState,comment,branch,commit,workflow,policy,releases,tagResponse]=await Promise.all([
+            request(`/repos/${repository}`),
+            request(`/repos/${repository}/issues/comments/${receipt.authorizationCommentId}`),
+            request(`/repos/${repository}/branches/main`),
+            request(`/repos/${repository}/git/commits/${receipt.releaseCommit}`),
+            request(`/repos/${repository}/contents/.github/workflows/publish-release.yml?ref=${receipt.releaseCommit}`),
+            request(`/repos/${repository}/immutable-releases`),
+            request(`/repos/${repository}/releases?per_page=100`),
+            fetch(`${apiRoot}/repos/${repository}/git/ref/tags/${encodeURIComponent(receipt.tag)}`,{headers,redirect:"error"})
+          ]);
+          const authorization=JSON.parse(comment.body);
+          if(comment.id!==receipt.authorizationCommentId||!comment.issue_url.endsWith("/issues/156")||comment.user?.login!==repositoryState.owner?.login||comment.author_association!=="OWNER"||hash(Buffer.from(comment.body,"utf8"))!==receipt.authorizationBodySha256||comment.created_at!==comment.updated_at||authorization.releaseCommit!==receipt.releaseCommit||authorization.releaseTree!==receipt.releaseTree||authorization.version!==receipt.version||authorization.tag!==receipt.tag||authorization.assetManifestSha256!==receipt.assetManifestSha256||authorization.checksumIndexSha256!==receipt.checksumIndexSha256||authorization.workflowBlobSha!==receipt.workflowBlobSha||JSON.stringify(authorization.effects)!==JSON.stringify(receipt.effects)||branch.commit?.sha!==receipt.releaseCommit||commit.tree?.sha!==receipt.releaseTree||workflow.sha!==receipt.workflowBlobSha||policy.enabled!==true)throw new Error("fresh publication authority check failed");
+          if(tagResponse.status!==404||releases.some(release=>release.tag_name===receipt.tag))throw new Error("release rerun or partial state detected");
+          const notesName=`yukh-projects-release-notes-${receipt.version}.md`,notes=await readFile(`release-input/assets/${notesName}`,"utf8");
+          const draft=await request(`/repos/${repository}/releases`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tag_name:receipt.tag,target_commitish:receipt.releaseCommit,name:`Yukh Projects ${receipt.version}`,body:notes,draft:true,prerelease:false})},[201]);
+          if(!Number.isSafeInteger(draft.id)||draft.tag_name!==receipt.tag||draft.draft!==true)throw new Error("draft release receipt is invalid");
+          for(const asset of expected){
+            const bytes=await readFile(`release-input/assets/${asset.name}`);
+            const response=await fetch(`${uploadRoot}/repos/${repository}/releases/${draft.id}/assets?name=${encodeURIComponent(asset.name)}`,{method:"POST",headers:{...headers,"Content-Type":"application/octet-stream","Content-Length":String(bytes.byteLength)},body:bytes,redirect:"error"});
+            if(response.status!==201)throw new Error(`release asset upload failed with status ${response.status}`);
+            const uploaded=await response.json();
+            if(uploaded.name!==asset.name||uploaded.size!==asset.bytes||uploaded.digest!==`sha256:${asset.sha256}`)throw new Error("release asset upload receipt mismatch");
+          }
+          const uploaded=await request(`/repos/${repository}/releases/${draft.id}/assets?per_page=100`);
+          if(uploaded.length!==expected.length||expected.some(asset=>{const value=uploaded.find(item=>item.name===asset.name);return !value||value.size!==asset.bytes||value.digest!==`sha256:${asset.sha256}`;}))throw new Error("draft release asset verification failed");
+          const published=await request(`/repos/${repository}/releases/${draft.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({draft:false})});
+          const finalRelease=await request(`/repos/${repository}/releases/${draft.id}`);
+          const finalTag=await request(`/repos/${repository}/git/ref/tags/${encodeURIComponent(receipt.tag)}`);
+          if(published.draft!==false||finalRelease.draft!==false||finalRelease.immutable!==true||finalTag.object?.type!=="commit"||finalTag.object?.sha!==receipt.releaseCommit)throw new Error("immutable release verification failed");
+          NODE

@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
@@ -6,9 +5,7 @@ const [version,implementationCommit,packagePath="release-package.tgz"]=process.a
 const COMMIT=/^[0-9a-f]{40}$/u;
 const DIGEST=/^[0-9a-f]{64}$/u;
 if(!/^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$/u.test(version??"")||!COMMIT.test(implementationCommit??""))throw new Error("release provenance arguments are invalid");
-const git=(...args)=>{const result=spawnSync("git",args,{encoding:"utf8",maxBuffer:1024*1024});if(result.error||result.signal||result.status!==0)throw new Error("release provenance git binding failed");return result.stdout.trim();};
 const bytes=async path=>{const value=await readFile(path);return{path,sha256:createHash("sha256").update(value).digest("hex"),bytes:value.byteLength};};
-const candidateTree=git("rev-parse","HEAD^{tree}");
 if(implementationCommit!=="a4f05f673bb0a03f66fc9864372cee7839ed78d1")throw new Error("release implementation source mismatch");
 const implementationTree="16969542925e35ebf669cc9e9e27ce758dfe5585";
 const acceptedContractCommit="521be0d0ef1297579e84a6322dea29f80c2549dc";
@@ -33,7 +30,6 @@ const provenance={
  source:{
   implementationCommit,
   implementationTree,
-  candidateTree,
   acceptedContractCommit,
   acceptedRfc0007Commit:"bb8628edf7a07c2af56f07e4f9140f58c851ef47"
  },
@@ -62,7 +58,7 @@ const provenance={
   lockfileVersion:3,
   typescript:packageDocument.devDependencies?.typescript,
   esbuild:packageDocument.devDependencies?.esbuild,
-  commands:["npm ci","npm test","npm run verify:bundles","npm audit --audit-level=moderate","node scripts/create-release-sbom.mjs","npm pack --ignore-scripts"]
+  commands:["npm ci --ignore-scripts","npm test","npm run verify:bundles","npm audit --audit-level=moderate","node scripts/create-release-sbom.mjs","npm pack --ignore-scripts","node scripts/assemble-release-assets.mjs"]
  },
  qualification:{providerCalls:0,expectedCostEur:0,fixtures:"synthetic"},
  activation:{status:"not-authorized",requiredBindings:"separately-governed"},
