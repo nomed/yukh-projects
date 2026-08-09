@@ -51,7 +51,7 @@ jobs:
           case "$AUTHORIZATION_COMMENT_ID" in ''|*[!0-9]*) exit 1 ;; esac
           node scripts/verify-release-authorization.mjs \
             --comment-id "$AUTHORIZATION_COMMENT_ID" \
-            --receipt authorization-receipt.json
+            > authorization-receipt.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-authorization-${{ github.run_id }}

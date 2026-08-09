@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { lstat, readFile, readdir, realpath } from "node:fs/promises";
+import { constants } from "node:fs";
+import { open, readFile, readdir, realpath } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 
 export const RELEASE_MANIFEST_PATH="release/1.8.0/release-manifest.json";
@@ -37,6 +38,15 @@ export function sha256(bytes){
  return createHash("sha256").update(bytes).digest("hex");
 }
 
+async function readRegularNoFollow(path){
+ const handle=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW);
+ try{
+  const info=await handle.stat();
+  if(!info.isFile())throw new Error("release asset is not a regular file");
+  return await handle.readFile();
+ }finally{await handle.close();}
+}
+
 function exact(value,keys){
  return value!==null&&typeof value==="object"&&!Array.isArray(value)&&Object.keys(value).join("\0")===keys.join("\0");
 }
@@ -65,12 +75,10 @@ export async function readReleaseManifest(path=RELEASE_MANIFEST_PATH){
 
 export async function readVerifiedSource(root,entry){
  const rootReal=await realpath(root);
- const path=resolve(root,entry.source);
+ const path=resolve(rootReal,entry.source);
  const pathReal=await realpath(path);
- if(pathReal!==rootReal&&!pathReal.startsWith(`${rootReal}${sep}`))throw new Error("release asset source escapes repository");
- const info=await lstat(path);
- if(!info.isFile()||info.isSymbolicLink())throw new Error("release asset source is not a regular file");
- const bytes=await readFile(path);
+ if((pathReal!==rootReal&&!pathReal.startsWith(`${rootReal}${sep}`))||pathReal!==path)throw new Error("release asset source escapes repository");
+ const bytes=await readRegularNoFollow(pathReal);
  if(bytes.byteLength!==entry.bytes||sha256(bytes)!==entry.sha256)throw new Error("release asset source digest mismatch");
  return bytes;
 }
@@ -92,9 +100,11 @@ export async function verifyReleaseAssetDirectory(manifest,directory){
  const expected=[...RELEASE_ASSET_NAMES,RELEASE_CHECKSUM_NAME].sort();
  if(names.join("\0")!==expected.join("\0")||entries.some(entry=>!entry.isFile()||entry.isSymbolicLink()))throw new Error("release asset directory is incomplete");
  for(const asset of manifest.assets){
-  const bytes=await readFile(resolve(directory,asset.name));
+  const bytes=await readRegularNoFollow(resolve(directory,asset.name));
   if(bytes.byteLength!==asset.bytes||sha256(bytes)!==asset.sha256)throw new Error("release asset directory digest mismatch");
  }
- const checksumBytes=await readFile(resolve(directory,manifest.checksum.name));
+ const checksumBytes=await readRegularNoFollow(resolve(directory,manifest.checksum.name));
  if(checksumBytes.byteLength!==manifest.checksum.bytes||sha256(checksumBytes)!==manifest.checksum.sha256||new TextDecoder("utf-8",{fatal:true}).decode(checksumBytes)!==expectedChecksum(manifest))throw new Error("release asset directory checksum mismatch");
+ const finalNames=(await readdir(directory,{withFileTypes:true})).map(entry=>entry.name).sort();
+ if(finalNames.join("\0")!==expected.join("\0"))throw new Error("release asset directory changed during verification");
 }

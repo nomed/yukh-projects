@@ -1,4 +1,4 @@
-import { appendFile, readFile, writeFile } from "node:fs/promises";
+import { appendFile, readFile } from "node:fs/promises";
 import { readReleaseManifest, RELEASE_REPOSITORY, RELEASE_TAG, RELEASE_VERSION, sha256, validateReleaseManifest } from "./release-candidate-lib.mjs";
 
 const COMMIT=/^[0-9a-f]{40}$/u;
@@ -108,17 +108,16 @@ async function verify(snapshot){
  return{schema:"yukh-projects-release-authorization-receipt-v1",authorizationCommentId:snapshot.commentId,authorizationBodySha256:sha256(Buffer.from(snapshot.ownerComment.body,"utf8")),releaseCommit:authorization.releaseCommit,releaseTree:authorization.releaseTree,reviewedHead:authorization.reviewedHead,reviewedTree:authorization.reviewedTree,version:authorization.version,tag:authorization.tag,assetManifestSha256:authorization.assetManifestSha256,checksumIndexSha256:authorization.checksumIndexSha256,workflowBlobSha:authorization.workflowBlobSha,effects:authorization.effects,publication:"authorized"};
 }
 
-let fixture,commentId,receiptPath="authorization-receipt.json";
+let fixture,commentId;
 for(let index=2;index<process.argv.length;index+=2){
  const flag=process.argv[index],value=process.argv[index+1];
  if(flag==="--fixture")fixture=value;
  else if(flag==="--comment-id")commentId=Number(value);
- else if(flag==="--receipt")receiptPath=value;
  else throw new Error("authorization verifier arguments are invalid");
 }
 if(fixture&&commentId)throw new Error("authorization verifier mode is ambiguous");
 if(!fixture&&!integer(commentId))throw new Error("authorization comment identifier is invalid");
 const snapshot=fixture?await fixtureSnapshot(fixture):await remoteSnapshot(commentId,process.env.GITHUB_SHA,process.env.GITHUB_REF);
 const receipt=await verify(snapshot);
-await writeFile(receiptPath,`${JSON.stringify(receipt)}\n`,{encoding:"utf8",mode:0o600});
+process.stdout.write(`${JSON.stringify(receipt)}\n`);
 if(process.env.GITHUB_OUTPUT)await appendFile(process.env.GITHUB_OUTPUT,Object.entries({release_commit:receipt.releaseCommit,release_tree:receipt.releaseTree,reviewed_head:receipt.reviewedHead,reviewed_tree:receipt.reviewedTree,version:receipt.version,tag:receipt.tag,asset_manifest_sha256:receipt.assetManifestSha256,checksum_index_sha256:receipt.checksumIndexSha256,workflow_blob_sha:receipt.workflowBlobSha,authorization_body_sha256:receipt.authorizationBodySha256}).map(([key,value])=>`${key}=${value}\n`).join(""),"utf8");

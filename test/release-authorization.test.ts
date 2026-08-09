@@ -22,11 +22,11 @@ async function fixture(){
 test("verifies an authenticated exact owner Class C authorization receipt",async()=>{
  const temporary=await mkdtemp(join(tmpdir(),"yukh-projects-release-authorization-"));
  try{
-  const snapshot=await fixture(),fixturePath=join(temporary,"fixture.json"),receiptPath=join(temporary,"receipt.json");
+  const snapshot=await fixture(),fixturePath=join(temporary,"fixture.json");
   await writeFile(fixturePath,JSON.stringify(snapshot));
-  const result=spawnSync(process.execPath,["scripts/verify-release-authorization.mjs","--fixture",fixturePath,"--receipt",receiptPath],{encoding:"utf8"});
+  const result=spawnSync(process.execPath,["scripts/verify-release-authorization.mjs","--fixture",fixturePath],{encoding:"utf8"});
   assert.equal(result.status,0,result.stderr);
-  const receipt=JSON.parse(await readFile(receiptPath,"utf8"));
+  const receipt=JSON.parse(result.stdout);
   assert.equal(receipt.schema,"yukh-projects-release-authorization-receipt-v1");
   assert.equal(receipt.releaseCommit,snapshot.eventSha);
   assert.equal(receipt.releaseTree,snapshot.reviewedTree);
@@ -45,7 +45,7 @@ test("rejects authorization, review, head, tree, workflow, main, and edit substi
    mutate(value);
    const path=join(temporary,`${name}.json`);
    await writeFile(path,JSON.stringify(value));
-   const result=spawnSync(process.execPath,["scripts/verify-release-authorization.mjs","--fixture",path,"--receipt",join(temporary,`${name}.receipt.json`)],{encoding:"utf8"});
+   const result=spawnSync(process.execPath,["scripts/verify-release-authorization.mjs","--fixture",path],{encoding:"utf8"});
    assert.notEqual(result.status,0,name);
    assert.equal(result.stdout,"",name);
   };
