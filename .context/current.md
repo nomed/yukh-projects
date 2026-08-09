@@ -51,6 +51,10 @@ without implementing or authorizing either preview effect.
   verifiers, and audit chains remain distinct between effects.
 - MCP admission cannot imply Projects approval, and Projects approval cannot
   bypass MCP admission.
+- Effect A and nested Effect B Projects plans and approvals independently bind
+  an exact immutable Projects producer commit, apply-artifact digest, and
+  entrypoint version. Equal release values do not share authority; any change
+  requires a fresh plan and every applicable fresh approval.
 - Dry-run remains structurally separated from mutation.
 - GitHub read permissions are the functional minimum for non-mutating
   qualification. A supplied credential with additional write permissions

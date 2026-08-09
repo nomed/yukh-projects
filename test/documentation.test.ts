@@ -131,9 +131,35 @@ test("the proposed preview contract keeps RFC-0003 effects independently authori
   );
   assert.match(
     contract,
-    /Neither approval authorizes,\s+derives, modifies, substitutes for, or implies the other/,
+    /Neither approval authorizes,\s+derives, modifies,\s+substitutes for, or implies the other/,
   );
   assert.match(contract, /form a compound\s+admission bridge/);
+  for (const releaseBinding of [
+    "projectsProducerReleaseA",
+    "projectsProducerReleaseBProjects",
+  ]) {
+    assert.match(contract, new RegExp(releaseBinding));
+  }
+  assert.match(
+    contract,
+    /producer release bindings are independently authority-bound\s+values, but they are not required to differ/,
+  );
+  assert.match(
+    contract,
+    /Byte\s+equality does not make either plan, approval, or release binding shared or\s+reusable/,
+  );
+  assert.match(
+    contract,
+    /Changing either producer release commit, artifact digest, or entrypoint version\s+invalidates that complete effect plan and every approval that binds it/,
+  );
+  assert.match(
+    contract,
+    /requires a fresh observation, fresh plan envelope, and every applicable\s+fresh approval/,
+  );
+  assert.doesNotMatch(
+    contract,
+    /Shared release commits,[\s\S]{0,120}descriptive bindings only/,
+  );
 
   for (const binding of [
     "plan ID",

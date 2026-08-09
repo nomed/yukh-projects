@@ -38,6 +38,7 @@ The version-1 corpus uses this invented logical sandbox:
 | Suite effect plan | Projects plan `A` | MCP plan `B-MCP` |
 | Nested provider plan | none | Projects plan `B-Projects` with exactly one `add_dependency` |
 | Approval assertions | Projects Approval `A` | MCP Approval `B-MCP` and Projects Approval `B-Projects` |
+| Projects producer release | binding `projectsProducerReleaseA` | binding `projectsProducerReleaseBProjects` |
 | Projects operation | exactly one `set_field_value` | exactly one `add_dependency` |
 | Logical intent | set managed `status` from `backlog` to `ready` | add `201 blocks 202` |
 | MCP capability | none | `projects.add-dependency.v1` |
@@ -50,6 +51,13 @@ The immutable corpus supplies provider-neutral synthetic references for every
 subject, item, field, option, fingerprint, and relationship. Tests MUST reject
 any caller substitution of repository, Project, issue, logical field,
 relationship direction, desired value, or operation count.
+
+Each Projects producer release binding is a canonical tuple containing the
+immutable lowercase 40-hex source commit, lowercase 64-hex apply-artifact
+SHA-256 digest, and exact controlled-apply entrypoint version. A preview effect
+plan envelope includes the complete tuple in its canonical digest; a display
+version, tag, compatibility-matrix entry, or shared suite metadata cannot
+substitute for it.
 
 ## Disjoint operation allowlists
 
@@ -110,14 +118,16 @@ ordered operation-set digest.
 The preview therefore requires exactly three independently verifiable approval
 assertions and artifacts:
 
-1. **Projects Approval `A`** binds Projects plan `A`, its operation set, and the
-   authenticated GitHub principal for Effect A.
+1. **Projects Approval `A`** binds Projects plan `A`, its operation set,
+   `projectsProducerReleaseA`, and the authenticated GitHub principal for
+   Effect A.
 2. **MCP Approval `B-MCP`** binds MCP plan `B-MCP`, the MCP subject, capability
    definition, provider implementation, verifier, and the digest of nested
-   Projects plan `B-Projects`.
+   Projects plan `B-Projects`, including
+   `projectsProducerReleaseBProjects`.
 3. **Projects Approval `B-Projects`** binds Projects plan `B-Projects`, its
-   ordered operation set, and the authenticated GitHub principal for the
-   provider-owned mutation.
+   ordered operation set, `projectsProducerReleaseBProjects`, and the
+   authenticated GitHub principal for the provider-owned mutation.
 
 Projects Approval `B-Projects` uses the accepted Projects approval envelope.
 Its `subjectRef` remains the opaque host-attested GitHub installation or
@@ -134,6 +144,7 @@ binds:
 - MCP plan `B-MCP` ID, subject, and ordered operation-set digest;
 - Effect B target and exact `add_dependency` operation;
 - nested Projects plan `B-Projects` ID and ordered operation-set digest;
+- exact `projectsProducerReleaseBProjects` tuple;
 - the same host-attested GitHub principal reference carried by the Projects
   scope and approval; and
 - MCP policy, expiry, nonce, idempotency, and audit bindings.
@@ -141,11 +152,12 @@ binds:
 MCP Approval `B-MCP` and Projects Approval `B-Projects` form a compound
 admission bridge: both must authenticate and exact-match the shared target,
 nested Projects plan ID, Projects operation-set digest, GitHub principal, and
-declared postcondition before provider invocation. MCP independently verifies
-`B-MCP`; Projects independently verifies `B-Projects`, its authenticated
-principal, plan, and controlled-apply gates. Neither approval authorizes,
-derives, modifies, substitutes for, or implies the other. Any missing artifact
-or mismatch denies before provider invocation.
+`projectsProducerReleaseBProjects` tuple, and declared postcondition before
+provider invocation. MCP independently verifies `B-MCP`; Projects independently
+verifies `B-Projects`, its authenticated principal, producer release, plan, and
+controlled-apply gates. Neither approval authorizes, derives, modifies,
+substitutes for, or implies the other. Any missing artifact or mismatch denies
+before provider invocation.
 
 The following values MUST be distinct across Projects Approval `A`, MCP
 Approval `B-MCP`, and Projects Approval `B-Projects`, where the value applies:
@@ -160,23 +172,40 @@ Approval `B-MCP`, and Projects Approval `B-Projects`, where the value applies:
 - verifier identity and declared postconditions; and
 - private audit chain and terminal receipt.
 
+The two Projects producer release bindings are independently authority-bound
+values, but they are not required to differ. They may resolve to the same
+immutable commit, artifact digest, and entrypoint version only when plan `A`
+and Projects Approval `A` separately carry `projectsProducerReleaseA`, while
+plan `B-Projects`, MCP Approval `B-MCP`, and Projects Approval `B-Projects`
+separately carry and exact-match `projectsProducerReleaseBProjects`. Byte
+equality does not make either plan, approval, or release binding shared or
+reusable.
+
 The effects may not consume, copy, infer, transform, or treat success from any
 value in the other effect as authority. Equality of any value that must be
 distinct fails both effects before provider invocation.
 
-Shared release commits, contract versions, sandbox profile identifiers, and
-public compatibility evidence are descriptive bindings only. They grant no
-execution authority.
+Contract versions, sandbox profile identifiers, and public compatibility
+evidence are descriptive bindings only. Projects producer release commits and
+artifact digests are explicitly excluded from that category.
 
 ## Execution and verification
 
 Effect A starts from its own complete fresh observation and reproduces Projects
-plan `A` under its own lease. Effect B independently verifies MCP plan `B-MCP`,
-then Projects starts from a separate complete fresh observation and reproduces
-nested Projects plan `B-Projects` under its own lease. Accepted rate admission,
-precondition checks, nonce consumption, one-request mutation attempt,
-stop-on-first-failure behavior, targeted verification, and final zero-operation
-reconciliation remain unchanged.
+plan `A` under its own lease after exact equality checks for
+`projectsProducerReleaseA`. Effect B independently verifies MCP plan `B-MCP`,
+then Projects starts from a separate complete fresh observation, exact-matches
+`projectsProducerReleaseBProjects`, and reproduces nested Projects plan
+`B-Projects` under its own lease. Accepted rate admission, precondition checks,
+nonce consumption, one-request mutation attempt, stop-on-first-failure
+behavior, targeted verification, and final zero-operation reconciliation
+remain unchanged.
+
+Changing either producer release commit, artifact digest, or entrypoint version
+invalidates that complete effect plan and every approval that binds it. The
+effect requires a fresh observation, fresh plan envelope, and every applicable
+fresh approval before provider invocation. No compatibility declaration,
+successful sibling effect, or equal release value can carry authority forward.
 
 A provider acknowledgement is not success. A lost response or timeout after a
 possible effect produces `completion_unknown`, no automatic retry, and no
@@ -234,6 +263,8 @@ The deterministic repository corpus emits only:
 - immutable synthetic input digest;
 - distinct suite plan digests for A and B plus the nested `B-Projects` plan and
   operation-set digest;
+- separate canonical producer-release binding digests for Effect A and nested
+  `B-Projects`;
 - independent verification outcomes for all three named approval artifacts;
 - stable operation kind and aggregate count for each effect;
 - MCP capability definition digest and admission outcome for B;
@@ -276,6 +307,8 @@ address:
   Projects principal in `subjectRef`;
 - one of the three approvals being replayed, translated, or treated as
   authority for another assertion or effect;
+- a producer commit, artifact digest, or entrypoint version being substituted,
+  inherited from the other effect, or treated as descriptive metadata;
 - credential, nonce, lease, idempotency, verifier, or audit-chain reuse;
 - MCP admission being mistaken for Projects approval, or vice versa;
 - provider completion becoming ambiguous after possible effect;
@@ -299,10 +332,12 @@ Owner acceptance must explicitly approve or revise:
    three named approval assertions;
 3. the compound `B-MCP`/`B-Projects` admission bridge, authenticated Projects
    principal binding, and no authority substitution;
-4. the required distinct authority-bearing values;
-5. the MCP provider closure and zero-call denial boundary;
-6. teardown as the version-1 final-state mechanism; and
-7. the redacted evidence and threat-model delta.
+4. the independent Effect A and nested Effect B Projects producer-release
+   bindings and their fresh-plan/fresh-approval invalidation rule;
+5. the required distinct authority-bearing values;
+6. the MCP provider closure and zero-call denial boundary;
+7. teardown as the version-1 final-state mechanism; and
+8. the redacted evidence and threat-model delta.
 
 Only after acceptance may separate issues propose deterministic synthetic
 implementation, adversarial tests, sandbox qualification, candidate release
