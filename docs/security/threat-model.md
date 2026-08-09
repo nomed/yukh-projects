@@ -205,7 +205,7 @@ the authenticated GitHub principal with an MCP subject or capability digest,
 substitutes one plan, producer, target, policy, postcondition, or wrapper after
 approval, or calls low-level apply primitives through unreviewed glue.
 
-Controls proposed under issue #150:
+Controls accepted under issue #150:
 
 - leave the closed Projects v1 approval envelope and its `subjectRef` semantics
   unchanged;
@@ -243,8 +243,9 @@ continuation, redispatch, automatic restore, or success-shaped cleanup.
 Residual risk remains compromise of either approval authority, either trust
 profile, the protected host, pinned MCP verifier, wrapper or Projects artifact,
 target-profile resolver, policy artifact, credential materializer, transport,
-Coordination service, provider, or runtime. This Proposed control set accepts
-none of those operational risks and authorizes no implementation or live use.
+Coordination service, provider, or runtime. This Accepted specification assumes
+none of those operational risks and authorizes no implementation, provider
+credentials, or live use.
 
 Accepted Projects effects v1 and Proposed MCP RFC-0011 currently select
 different Effect B operation kinds (`add_dependency` and
