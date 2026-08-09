@@ -28,6 +28,6 @@ on an existing supplied credential are not an eligibility failure.
 
 The accepted preview record is specification-only. Its approval-bridge and
 wrapper dependency is Proposed under issue #150 and remains blocked on
-role-separated independent review and later execution under Accepted RFC-0007.
-It preserves the Accepted dependency effect and grants no implementation,
-provider, mutation, acceptance, merge, or release authority.
+RFC-0007 independent review and a distinct executor. It preserves the Accepted
+Projects `add_dependency` Effect B and grants no implementation, provider,
+mutation, or release authority.

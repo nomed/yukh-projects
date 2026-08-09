@@ -246,13 +246,16 @@ target-profile resolver, policy artifact, credential materializer, transport,
 Coordination service, provider, or runtime. This Proposed control set accepts
 none of those operational risks and authorizes no implementation or live use.
 
-Accepted RFC-0007 resolves the Accepted Projects effects v1 versus Proposed MCP
-RFC-0011 conflict in favor of the already-Accepted `add_dependency(201 blocks
-202)` semantics. Treating the Proposed `set_field_value(status)` operation as
-equivalent would substitute a plan and postcondition across immutable records.
-The Proposed MCP record remains nonconforming and must be revised separately in
-its owning repository; issue #150 neither supersedes nor reinterprets Accepted
-Projects semantics.
+Accepted Projects effects v1 and Proposed MCP RFC-0011 currently select
+different Effect B operation kinds (`add_dependency` and
+`set_field_value(status)`). Treating them as equivalent would substitute a plan
+and postcondition across immutable records. Accepted RFC-0007 at
+`bb8628edf7a07c2af56f07e4f9140f58c851ef47` resolves the conflict in favor of
+the already-Accepted Projects `add_dependency` semantic: it claims the least
+authority, preserves compatibility, is more reversible because the conflicting
+MCP record is still Proposed, and requires the smallest diff. Proposed MCP
+RFC-0011 must conform later; this Projects contract cannot supersede or
+reinterpret its Accepted operation.
 
 ### Stale plan and time-of-check/time-of-use
 

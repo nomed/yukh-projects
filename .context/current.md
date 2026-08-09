@@ -15,6 +15,8 @@ without implementing or authorizing either preview effect.
 - Suite RFC-0005 is authoritative on `nomed.github.io` `main` at
   `12d9215f10c4b7fb1762a5025367e3e81543800f` and requires two independent
   consequential effects for RFC-0003 steps 8 and 9.
+- Autonomous-maintainer RFC-0007 is suite-wide authoritative at
+  `nomed/nomed.github.io@bb8628edf7a07c2af56f07e4f9140f58c851ef47`.
 - [#147](https://github.com/nomed/yukh-projects/issues/147) records owner
   acceptance of the Projects-owned specification.
 - [Projects effects v1](../docs/contracts/first-usable-preview-projects-v1.md)
@@ -29,21 +31,19 @@ without implementing or authorizing either preview effect.
   defines a closed authenticated bridge v2, and specifies one immutable
   producer-owned Effect B wrapper with zero provider calls before complete
   compound admission.
-- Accepted autonomous maintainer mandate RFC-0007 at
-  `nomed/nomed.github.io@bb8628edf7a07c2af56f07e4f9140f58c851ef47`
-  resolves the cross-record conflict: Accepted RFC-0005 and Projects effects v1
-  preserve `projects.add-dependency.v1` and exactly one
-  `add_dependency(201 blocks 202)`. Proposed MCP RFC-0011 is nonconforming and
-  must be revised later in its owning repository.
+- The RFC-0007 conflict rule resolves the cross-record mismatch in favor of the
+  already-Accepted Projects `add_dependency` Effect B. Proposed MCP RFC-0011's
+  `set_field_value(status)` operation is nonconforming and must be revised in
+  its owning repository before acceptance or activation.
 
 ## Next
 
-1. Obtain a distinct independent read-only Class B review of the exact Proposed
-   approval-bridge v2 and immutable MCP-safe controlled-apply wrapper commit
-   under [#150](https://github.com/nomed/yukh-projects/issues/150).
-2. Require a later distinct executor/merger to verify that review and the exact
-   green check snapshot; the author performs neither role.
-3. Revise Proposed MCP RFC-0011 separately in its owning repository.
+1. Obtain RFC-0007 independent read-only review of the Proposed approval-bridge
+   v2 and immutable MCP-safe controlled-apply wrapper contract under
+   [#150](https://github.com/nomed/yukh-projects/issues/150).
+2. Require Proposed MCP RFC-0011 to conform to the Accepted Projects
+   `add_dependency` Effect B in its owning repository.
+3. Keep author, reviewer, and any later executor/merger sessions distinct.
 4. Stop before any implementation.
 5. Keep any later synthetic implementation or live sandbox mutation behind
    separately accepted contracts, a fresh exact plan,
@@ -55,8 +55,7 @@ without implementing or authorizing either preview effect.
 - Running or authorizing live apply, teardown, or provider state creation.
 - Creating credentials, approval material, sandbox resources, release
   artifacts, tags, deployments, or consumer migrations.
-- Implementing the #150 bridge or wrapper before its contract is explicitly
-  accepted.
+- Implementing the #150 bridge or wrapper under this governance-only record.
 
 ## Invariants
 
@@ -74,9 +73,9 @@ without implementing or authorizing either preview effect.
   entrypoint version. Equal release values do not share authority; any change
   requires a fresh plan and every applicable fresh approval.
 - The accepted Projects approval envelope v1 remains unchanged. Preview
-  implementation is blocked on separate acceptance of the proposed closed
-  Projects approval bridge v2 that authenticates the producer-release and
-  preview-envelope bindings.
+  implementation remains blocked. Acceptance of the proposed closed Projects
+  approval bridge v2 would authenticate the producer-release and
+  preview-envelope bindings but would not authorize implementation.
 - The Proposed MCP-safe wrapper exposes one closed function, fixes native mode,
   target profile, policy, producer and wrapper releases, and exactly one
   `add_dependency(201 blocks 202)` operation. It accepts no caller-selected
