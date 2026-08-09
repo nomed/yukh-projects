@@ -170,20 +170,32 @@ not add those operations and therefore cannot describe reverse mutation as
 Projects-controlled restore.
 
 The version-1 preview declares teardown, rather than reverse reconciliation, as
-the final-state mechanism:
+the final-state mechanism. Teardown is available after every terminal effect
+outcome: pre-effect denial, verified success, failure, or
+`completion_unknown`. It does not require either effect to converge or report
+zero drift.
 
-1. both effects reach independently verified zero drift;
-2. all authority artifacts expire or are consumed;
-3. the sandbox owner receives a separate teardown decision that is not a
-   Projects plan, MCP capability, or Coordination message;
+The lifecycle order is:
+
+1. each started effect seals its own terminal outcome and effect-specific
+   evidence before teardown;
+2. unused authority artifacts expire and consumed artifacts remain consumed;
+3. the sandbox owner independently authorizes teardown through a decision that
+   is not a Projects plan, MCP capability, effect approval, or Coordination
+   message;
 4. teardown removes the dedicated synthetic sandbox as one bounded lifecycle
    action outside the Projects and MCP effect paths; and
-5. an independent verifier records only the declared final-state outcome.
+5. an independent teardown verifier records the declared cleanup final state
+   without rewriting either effect record.
 
 Teardown credentials, provider calls, resource identifiers, and raw evidence
 remain private to the separately governed sandbox owner. Teardown failure
 cannot be reported as effect success. Reusing either effect approval for
-teardown is forbidden.
+teardown is forbidden. Teardown success cannot convert a denied, failed, or
+`completion_unknown` effect into success, prove that an unknown effect did not
+occur, erase remaining drift, or act as compensating mutation evidence. Public
+evidence preserves each effect's original terminal status and reports teardown
+authorization, execution, and verification separately.
 
 Any future in-place restore through reverse Projects mutations requires a new
 accepted destructive-operation contract and threat-model review.
@@ -241,7 +253,10 @@ address:
 - provider completion becoming ambiguous after possible effect;
 - public evidence correlating private authority-bearing identifiers; and
 - teardown being triggered by effect authority or reported complete without
-  independent final-state verification.
+  independent final-state verification;
+- cleanup being unavailable after denial, failure, or unknown completion; and
+- teardown success concealing or rewriting an effect-specific failure,
+  remaining drift, or `completion_unknown` outcome.
 
 All pre-effect denial tests must prove zero provider invocation. The dry-run,
 parser, planner, and public-report dependency graphs remain structurally free

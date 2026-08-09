@@ -127,6 +127,22 @@ test("the proposed preview contract keeps RFC-0003 effects independently authori
 
   assert.match(contract, /denied MCP admission performs zero Projects provider\s+calls/);
   assert.match(contract, /teardown, rather than reverse reconciliation/);
+  assert.match(
+    contract,
+    /Teardown is available after every terminal effect\s+outcome: pre-effect denial, verified success, failure, or\s+`completion_unknown`/,
+  );
+  assert.match(
+    contract,
+    /seals its own terminal outcome and effect-specific\s+evidence before teardown/,
+  );
+  assert.match(
+    contract,
+    /Teardown success cannot convert a denied, failed, or\s+`completion_unknown` effect into success/,
+  );
+  assert.match(
+    contract,
+    /reports teardown\s+authorization, execution, and verification separately/,
+  );
   assert.match(contract, /authorizes no implementation, merge, provider access/);
   assert.match(index, /Projects effects v1/);
   assert.match(index, /Proposed records are non-executable/);
