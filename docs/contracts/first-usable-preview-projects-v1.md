@@ -1,12 +1,13 @@
 # First usable preview Projects effects v1 — proposed specification
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Proposed:** 2026-08-09
+- **Accepted:** 2026-08-09 by `@nomed`
 - **Governing issue:** [#147](https://github.com/nomed/yukh-projects/issues/147)
 - **Suite decision:** RFC-0005 in
   `nomed/nomed.github.io@12d9215f10c4b7fb1762a5025367e3e81543800f`
-- **Decision gate:** explicit owner acceptance is required before implementation
-- **Authority:** proposal and review only; no provider access or mutation
+- **Decision gate:** #150 approval-bridge and wrapper contract review
+- **Authority:** specification acceptance only; no provider access or mutation
 
 ## Objective
 
@@ -20,10 +21,10 @@ apply for a different target and operation. The effects share only an
 immutable compatibility profile and redacted evidence index. They do not share
 authority-bearing artifacts.
 
-This proposal adds no runtime, transport, credential source, mutation kind, or
-release surface. Until it is accepted and separately implemented, all
-qualification is limited to deterministic invented fixtures and injected
-synthetic adapters.
+This accepted specification adds no runtime, transport, credential source,
+mutation kind, or release surface. Until each follow-up contract is separately
+accepted and implemented, all qualification is limited to deterministic
+invented fixtures and injected synthetic adapters.
 
 ## Exact synthetic scope
 
@@ -370,9 +371,9 @@ content, or operational identifier.
 
 ## Threat-model delta
 
-The proposal introduces no executable trust boundary, but acceptance would
-permit later implementation of a new MCP-to-Projects call path. Review must
-address:
+This specification introduces no executable trust boundary, but its accepted
+follow-up gates may permit later implementation of a new MCP-to-Projects call
+path. Follow-up review must address:
 
 - capability or target substitution at the MCP provider boundary;
 - an MCP capability or provider digest being substituted for the authenticated
@@ -397,9 +398,9 @@ All pre-effect denial tests must prove zero provider invocation. The dry-run,
 parser, planner, and public-report dependency graphs remain structurally free
 of mutation and MCP provider imports.
 
-## Acceptance and follow-up gates
+## Acceptance record and follow-up gates
 
-Owner acceptance must explicitly approve or revise:
+The owner accepted this specification on 2026-08-09, including:
 
 1. the exact invented targets and disjoint operation sets;
 2. two suite-level effect plans, nested Projects plan `B-Projects`, and the
@@ -417,13 +418,14 @@ Owner acceptance must explicitly approve or revise:
 9. teardown as the version-1 final-state mechanism; and
 10. the redacted evidence and threat-model delta.
 
-Only after acceptance may separate issues propose deterministic synthetic
-implementation, adversarial tests, sandbox qualification, candidate release
-artifacts, or operational-readiness evidence. Any live synthetic provider
-mutation remains gated by a fresh exact plan, approval, protected host, and
-separate operational authorization. Effect B requires fresh `B-MCP` and
+Acceptance advances only the separately governed #150 approval-bridge and
+wrapper contract. Deterministic implementation, adversarial tests, sandbox
+qualification, candidate release artifacts, and operational-readiness evidence
+remain blocked until that contract is explicitly accepted. Any live synthetic
+provider mutation remains gated by a fresh exact plan, approval, protected host,
+and separate operational authorization. Effect B requires fresh `B-MCP` and
 `B-Projects` plans and both independently verified approvals.
 
-This proposal authorizes no implementation, merge, provider access, credential
-creation, Project or issue mutation, teardown, deployment, release, tag,
-consumer migration, suite publication, or production-readiness claim.
+Acceptance authorizes no implementation, provider access, credential creation,
+Project or issue mutation, teardown, deployment, release, tag, consumer
+migration, suite publication, or production-readiness claim.

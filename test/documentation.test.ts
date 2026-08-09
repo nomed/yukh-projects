@@ -82,7 +82,7 @@ test("dry-run credential eligibility is structural rather than scope-exclusive",
   }
 });
 
-test("the proposed preview contract keeps RFC-0003 effects independently authorized", async () => {
+test("the accepted preview contract keeps RFC-0003 effects independently authorized", async () => {
   const contract = await read(
     "docs/contracts/first-usable-preview-projects-v1.md",
   );
@@ -90,7 +90,8 @@ test("the proposed preview contract keeps RFC-0003 effects independently authori
   const current = await read(".context/current.md");
   const approvalCountSources = [contract, index, current];
 
-  assert.match(contract, /\*\*Status:\*\* Proposed/);
+  assert.match(contract, /\*\*Status:\*\* Accepted/);
+  assert.match(contract, /\*\*Accepted:\*\* 2026-08-09 by `@nomed`/);
   assert.match(
     contract,
     /nomed\/nomed\.github\.io@12d9215f10c4b7fb1762a5025367e3e81543800f/,
@@ -230,9 +231,9 @@ test("the proposed preview contract keeps RFC-0003 effects independently authori
     contract,
     /reports teardown\s+authorization, execution, and verification separately/,
   );
-  assert.match(contract, /authorizes no implementation, merge, provider access/);
+  assert.match(contract, /Acceptance authorizes no implementation, provider access/);
   assert.match(index, /Projects effects v1/);
-  assert.match(index, /Proposed records are non-executable/);
-  assert.match(current, /owner acceptance\s+pending/);
+  assert.match(index, /specification-only/);
+  assert.match(current, /approval bridge\s+and wrapper contract pending/);
   assert.match(current, /No live apply is authorized/);
 });

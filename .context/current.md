@@ -1,7 +1,7 @@
 # Current context
 
-**Status:** first usable preview Projects contract proposed; owner acceptance
-pending
+**Status:** first usable preview Projects contract accepted; approval bridge
+and wrapper contract pending
 **Project:** Yukh Projects
 **Visibility:** public
 
@@ -15,23 +15,24 @@ without implementing or authorizing either preview effect.
 - Suite RFC-0005 is authoritative on `nomed.github.io` `main` at
   `12d9215f10c4b7fb1762a5025367e3e81543800f` and requires two independent
   consequential effects for RFC-0003 steps 8 and 9.
-- [#147](https://github.com/nomed/yukh-projects/issues/147) governs the
-  Projects-owned proposal.
+- [#147](https://github.com/nomed/yukh-projects/issues/147) records owner
+  acceptance of the Projects-owned specification.
 - [Projects effects v1](../docs/contracts/first-usable-preview-projects-v1.md)
-  proposes exact invented targets, disjoint operation allowlists, two
+  accepts exact invented targets, disjoint operation allowlists, two
   suite-level effect plans, a nested Effect B Projects plan, three independent
   approval assertions, separate authority chains, teardown, and redacted
   qualification evidence.
-- The proposal adds no runtime, provider access, credential source, mutation
+- The specification adds no runtime, provider access, credential source, mutation
   authority, or release surface.
 
 ## Next
 
-1. Obtain explicit owner acceptance or revision of the proposed component
-   contract.
-2. After acceptance only, govern deterministic synthetic implementation and
-   adversarial tests through a separate issue and pull request.
-3. Keep any later live synthetic sandbox mutation behind a fresh exact plan,
+1. Define the separately reviewable closed approval-bridge v2 and immutable
+   MCP-safe controlled-apply wrapper contract under
+   [#150](https://github.com/nomed/yukh-projects/issues/150).
+2. Stop for owner acceptance before any implementation.
+3. Keep any later synthetic implementation or live sandbox mutation behind
+   separately accepted contracts, a fresh exact plan,
    approval, protected host, and separate operational authorization.
 
 ## Non-goals
@@ -40,7 +41,7 @@ without implementing or authorizing either preview effect.
 - Running or authorizing live apply, teardown, or provider state creation.
 - Creating credentials, approval material, sandbox resources, release
   artifacts, tags, deployments, or consumer migrations.
-- Changing an accepted contract before the proposed record is explicitly
+- Implementing the #150 bridge or wrapper before its contract is explicitly
   accepted.
 
 ## Invariants

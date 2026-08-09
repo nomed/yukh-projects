@@ -18,17 +18,12 @@ and authorize no implementation or provider access.
 | Apply entrypoint | [Controlled apply entrypoint v1](../contracts/controlled-apply-entrypoint-v1.md) |
 | Reviewed single-token exception | [Controlled apply single-token profile v1](../contracts/controlled-apply-single-token-profile-v1.md) |
 | Resumable rate deferral | [Resumable rate-limit deferral v1](../contracts/resumable-rate-deferral-v1.md) |
+| First usable suite preview | [Projects effects v1](../contracts/first-usable-preview-projects-v1.md) |
 
 Unknown versions and fields fail closed. A plan or credential alone never
 authorizes apply. For dry-run and legacy-shadow, read permissions are the
 functional minimum and least privilege is recommended; excess write permissions
 on an existing supplied credential are not an eligibility failure.
 
-## Proposed records
-
-| Concern | Proposed contract | Required decision |
-| --- | --- | --- |
-| First usable suite preview | [Projects effects v1](../contracts/first-usable-preview-projects-v1.md) | Accept or revise the exact synthetic targets, disjoint operation allowlists, two suite effect plans, nested Effect B Projects plan, three approvals, teardown boundary, and evidence contract |
-
-Proposed records are non-executable and cannot authorize implementation, live
-apply, credential creation, release, deployment, or consumer migration.
+The accepted preview record is specification-only. Its approval-bridge and
+wrapper dependency remains separately gated by issue #150.
