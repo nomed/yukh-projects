@@ -41,6 +41,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           RELEASE_VERSION: ${{ steps.release.outputs.version }}
           RELEASE_COMMIT: ${{ github.sha }}
+          MCP_IMPLEMENTATION_COMMIT: a4f05f673bb0a03f66fc9864372cee7839ed78d1
         shell: bash
         run: |
           set -euo pipefail
@@ -56,6 +57,8 @@ jobs:
           npm run verify:bundles
           npm audit --audit-level=moderate
           npm sbom --sbom-format spdx > release.spdx.json
+          node scripts/create-release-package.mjs "$RELEASE_VERSION" release-package.tgz
+          node scripts/release-provenance.mjs "$RELEASE_VERSION" "$MCP_IMPLEMENTATION_COMMIT" release-package.tgz > release-provenance.json
           node scripts/release-preflight.mjs "$RELEASE_VERSION" "$RELEASE_COMMIT" > would-publish.json
           mkdir release-assets
           cp RELEASE_NOTES.md "release-assets/yukh-projects-release-notes-${RELEASE_VERSION}.md"
@@ -67,7 +70,12 @@ jobs:
           cp dist/apply/index.js "release-assets/yukh-projects-apply-library-${RELEASE_VERSION}.js"
           cp dist/apply/manifest.json "release-assets/yukh-projects-apply-manifest-${RELEASE_VERSION}.json"
           cp dist/cli/index.js "release-assets/yukh-projects-cli-${RELEASE_VERSION}.js"
+          cp dist/mcp-effect-b/index.js "release-assets/yukh-projects-mcp-effect-b-${RELEASE_VERSION}.js"
+          cp dist/mcp-effect-b/manifest.json "release-assets/yukh-projects-mcp-effect-b-manifest-${RELEASE_VERSION}.json"
+          cp test/fixtures/mcp-effect-b-bridge-v2-vector.json "release-assets/yukh-projects-mcp-effect-b-bridge-v2-vector-${RELEASE_VERSION}.json"
           cp package-lock.json "release-assets/yukh-projects-lock-${RELEASE_VERSION}.json"
+          cp release-package.tgz "release-assets/yukh-projects-package-${RELEASE_VERSION}.tgz"
+          cp release-provenance.json "release-assets/yukh-projects-${RELEASE_VERSION}.provenance.json"
           cp release.spdx.json "release-assets/yukh-projects-${RELEASE_VERSION}.spdx.json"
           cp would-publish.json release-assets/would-publish.json
           (cd release-assets && sha256sum yukh-projects-* > "yukh-projects-${RELEASE_VERSION}.sha256")

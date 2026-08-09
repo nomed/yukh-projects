@@ -236,7 +236,7 @@ test("the accepted preview contract keeps RFC-0003 effects independently authori
   assert.match(index, /semantic authority/);
   assert.match(
     current,
-    /bridge\/wrapper\s+implementation candidate is author-remediated after a security block and awaits\s+distinct normal review plus fresh security review/,
+    /bridge\/wrapper\s+implementation accepted; `v1\.8\.0` release\/package candidate is in Author\s+preparation and remains unpublished/,
   );
   assert.match(current, /No live apply is authorized/);
 });

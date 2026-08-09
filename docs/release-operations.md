@@ -31,3 +31,15 @@ uploads and verifies the complete allowlisted asset set, then publishes the
 draft. It accepts success only when GitHub reports the Release immutable and the
 resulting tag resolves to the exact candidate commit. A partial draft is left
 for explicit operator review; automation must not delete, replace or rewrite it.
+
+For the MCP Effect B bridge/wrapper release, the allowlist also carries the
+one-function bundle, its disabled manifest, the canonical conformance vector, a
+root-only package tarball, and a deterministic provenance descriptor. The
+tarball is a GitHub Release asset only: `package.json` remains `private: true`
+and the publisher has no npm permission or registry command.
+
+Candidate files retain `publication: disabled` before and after upload. The
+separately authorized state transition is only repository state: absent tag and
+Release, one complete verified draft, then one immutable Release. Publication
+does not activate the wrapper, bind a provider profile, create credentials, or
+grant apply authority.

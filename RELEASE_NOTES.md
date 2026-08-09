@@ -1,48 +1,67 @@
-# Yukh Projects 1.7.0 <!-- x-release-please-version -->
+# Yukh Projects 1.8.0 <!-- x-release-please-version -->
 
-This release adds the explicit `legacy-single-token-apply-v1` profile for the
-fixed Yukh MCP Project 5 issue #27 scope. It retains fresh-plan matching,
-approval, whole-plan rate admission, one attempt, and verification while using
-one write-capable credential for reads and writes.
+This release packages the accepted compound approval bridge v2 and the fixed
+MCP Effect B controlled-apply wrapper from
+`a4f05f673bb0a03f66fc9864372cee7839ed78d1` (tree
+`16969542925e35ebf669cc9e9e27ce758dfe5585`).
 
-## Explicit legacy apply
+## Closed MCP Effect B surface
 
-- Action and CLI accept the exact mode `legacy-apply-v1`.
-- A closed internal discriminator selects the version-1 compatibility planner;
-  policy text cannot select or substitute the apply host.
-- Native `apply` and structurally separate shadow entrypoints remain unchanged.
-- Every apply pass still requires its own fresh, exact signed approval.
+- The standalone MCP bundle and production wrapper module each expose exactly
+  `runMcpEffectBControlledApplyV1`.
+- The fixed profile admits only `projects.add-dependency.v1` and exactly
+  `add_dependency(201 blocks 202)`.
+- Complete MCP, Projects v1, and bridge admission occurs before provider-backed
+  factory construction. Every pre-admission denial performs zero provider calls.
+- One mutation request may be attempted after admission; ambiguous outcomes are
+  terminal `completion_unknown` and are never retried or resumed.
 
-## Safety
+## Package and release assets
 
-- Synthetic qualification used an organization-owned repository fixture with
-  GraphQL remaining zero and no provider access.
-- The first synthetic runtime performed one native Issue Type REST mutation and
-  converged; a separately constructed second runtime planned zero operations.
-- Mode and policy substitution fail before provider reads.
-- Signed plan approval, protected coordination, fresh preflight, bounded
-  mutation, resumable deferral, verification and redacted diagnostics remain in
-  force.
-
-## Compatibility
-
-- Existing v1.5.1 native, shadow and resumable-deferral behavior is preserved.
-- Legacy controlled apply is an explicit changed capability, not an implicit
-  interpretation of `.yukh/project.yaml`.
-- This release does not itself enable live apply, backfill, legacy removal or
-  consumer migration.
+- The package retains its root-only export map and explicit `dist/src/` file
+  allowlist. Package-name deep imports remain blocked.
+- The root package exposes no MCP Effect B handle constructor or test helper and
+  adds only `runMcpEffectBControlledApplyV1` to its MCP-facing surface.
+- The immutable release candidate includes the MCP bundle, closed manifest,
+  conformance vector, private root package tarball, SPDX SBOM, provenance
+  descriptor, lockfile, existing Action/CLI/apply artifacts, and exact SHA-256
+  checksums.
+- `package.json` remains `private: true`; no npm registry publication is
+  performed or authorized.
 
 ## Integrity and qualification
 
-The integrated candidate passes 219 tests, byte-identical bundle verification,
-consumer-neutrality checks, CodeQL and dependency audit. A separately
-authorized publication would add checksums, an SPDX SBOM, provenance
-attestations and immutable assets.
+Clean builds must reproduce the committed bundles and the package tarball
+byte-for-byte. The protected preflight verifies the exact version, main commit,
+tree-derived provenance, complete asset allowlist, byte sizes, SHA-256 digests,
+root-only package exports, dependency audit, and deterministic synthetic test
+suite before any publication permission is available.
+
+The bridge conformance corpus uses invented identities and injected transports.
+Qualification performs zero live provider calls and has expected cloud cost
+EUR 0.
+
+## Publication and activation boundary
+
+The local candidate, package manifest, MCP artifact manifest, provenance
+descriptor, and would-publish manifest all retain `publication: disabled`.
+Separately authorized publication may transition only repository state from no
+tag or Release, through one draft with the complete verified assets, to immutable
+`v1.8.0`. It does not activate a provider, create credentials, grant apply
+approval, publish to npm, or authorize a live effect.
+
+## Compatibility
+
+Existing Action, CLI, dry-run, Projects v1 approval, native apply, and legacy
+apply behavior is unchanged. Package subpaths were not exported APIs and remain
+unavailable. Any wrapper, producer, policy, target-profile, verifier, plan, or
+approval binding change requires fresh artifacts and fresh governance.
 
 ## Rollback
 
-The exact rollback pin is `v1.5.1` at commit
-`d58837397bc5856923e0e742458be34d8e5a27d6`.
-
-Rollback requires a separately reviewed consumer pin change. It does not
-authorize moving or deleting a tag, deployment, live apply or migration.
+Before publication, rollback is closing the release PR and deleting local
+candidate assets. After publication, consumers may separately pin immutable
+`v1.7.0` at `71784218366805922e5a12903eef9073f715f59f` or a later corrective
+release. Tags and immutable Releases are never moved, deleted, or overwritten.
+Rollback grants no provider restore, live mutation, credential, deployment, or
+activation authority.
