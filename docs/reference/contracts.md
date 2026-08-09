@@ -19,6 +19,7 @@ and authorize no implementation or provider access.
 | Reviewed single-token exception | [Controlled apply single-token profile v1](../contracts/controlled-apply-single-token-profile-v1.md) |
 | Resumable rate deferral | [Resumable rate-limit deferral v1](../contracts/resumable-rate-deferral-v1.md) |
 | First usable suite preview | [Projects effects v1](../contracts/first-usable-preview-projects-v1.md) |
+| MCP compound approval and bounded apply entrypoint (Proposed) | [MCP compound approval bridge and wrapper v1](../contracts/mcp-compound-approval-wrapper-v1.md) |
 
 Unknown versions and fields fail closed. A plan or credential alone never
 authorizes apply. For dry-run and legacy-shadow, read permissions are the
@@ -26,4 +27,7 @@ functional minimum and least privilege is recommended; excess write permissions
 on an existing supplied credential are not an eligibility failure.
 
 The accepted preview record is specification-only. Its approval-bridge and
-wrapper dependency remains separately gated by issue #150.
+wrapper dependency is Proposed under issue #150 and remains blocked on
+RFC-0007 independent review and a distinct executor. It preserves the Accepted
+Projects `add_dependency` Effect B and grants no implementation, provider,
+mutation, or release authority.

@@ -198,6 +198,65 @@ Controls:
 - reject subset, superset, reordering, scope substitution, replay, continuation, and partial-plan authorization;
 - require a fresh plan and approval after any interruption or failure.
 
+### MCP compound approval and wrapper confusion
+
+An MCP caller presents one valid assertion as authority for Projects, replaces
+the authenticated GitHub principal with an MCP subject or capability digest,
+substitutes one plan, producer, target, policy, postcondition, or wrapper after
+approval, or calls low-level apply primitives through unreviewed glue.
+
+Controls proposed under issue #150:
+
+- leave the closed Projects v1 approval envelope and its `subjectRef` semantics
+  unchanged;
+- require independently signed and independently verified MCP and Projects
+  assertions plus one closed authenticated bridge v2;
+- preserve MCP-owned assertion verification through a pinned, unforgeable
+  verified-admission handle rather than parsing or authorizing MCP claims inside
+  Projects;
+- bind exact canonical assertion digests, plans, operation sets, subjects,
+  authentication context, target, policy, postcondition, producer release,
+  wrapper release, host-selected trust profiles, lifetime, distinct nonces, and
+  the intended Coordination epoch, lease scope, and lease holder;
+- treat the bridge as evidence only, never approval, a credential, or a bearer
+  capability;
+- expose one producer-owned MCP-safe function whose immutable release fixes
+  native mode, target profile, policy, transports, verifier dependency, and
+  exactly one `add_dependency(201 blocks 202)` operation;
+- reject caller-selected URLs, methods, headers, queries, documents, provider
+  identifiers, credentials, targets, policies, operations, transports, or
+  verifiers;
+- verify the complete compound admission and private handle separation before
+  constructing a provider-backed transport; and
+- call `verifySignedApproval` on the unchanged Projects v1 artifact before
+  `createControlledApplyHostFactory(...).create(...)`, because the current
+  factory `create` performs an initial provider read; pass the same artifact to
+  `runApplyEntrypoint` for its accepted independent re-verification;
+- forbid MCP from directly composing `parseProtectedHostCapsule`,
+  `createControlledApplyHostFactory`, or `runApplyEntrypoint`.
+
+Missing, malformed, stale, replayed, substituted, incomparable, or unknown
+bindings produce zero provider calls. After the one effect boundary, ambiguous
+completion is durable `completion_unknown`; there is no hidden retry,
+continuation, redispatch, automatic restore, or success-shaped cleanup.
+
+Residual risk remains compromise of either approval authority, either trust
+profile, the protected host, pinned MCP verifier, wrapper or Projects artifact,
+target-profile resolver, policy artifact, credential materializer, transport,
+Coordination service, provider, or runtime. This Proposed control set accepts
+none of those operational risks and authorizes no implementation or live use.
+
+Accepted Projects effects v1 and Proposed MCP RFC-0011 currently select
+different Effect B operation kinds (`add_dependency` and
+`set_field_value(status)`). Treating them as equivalent would substitute a plan
+and postcondition across immutable records. Accepted RFC-0007 at
+`bb8628edf7a07c2af56f07e4f9140f58c851ef47` resolves the conflict in favor of
+the already-Accepted Projects `add_dependency` semantic: it claims the least
+authority, preserves compatibility, is more reversible because the conflicting
+MCP record is still Proposed, and requires the smallest diff. Proposed MCP
+RFC-0011 must conform later; this Projects contract cannot supersede or
+reinterpret its Accepted operation.
+
 ### Stale plan and time-of-check/time-of-use
 
 State changes after planning or between operations make approved intent unsafe.
@@ -349,6 +408,13 @@ no live request, mutation, release, deployment, apply, or consumer migration.
 - dry-run with a write-capable token still performs zero mutations;
 - apply without both gates fails closed;
 - approval plan/scope mismatch, expiry, nonce replay, subset, superset, and interrupted-run rejection;
+- MCP/Projects assertion independence, bridge canonicalization and signature,
+  exact cross-binding, principal preservation, bridge replay, trust-root
+  substitution, and zero provider calls on every compound-admission failure;
+- immutable MCP wrapper selection, fixed target/policy/native mode and exact
+  `add_dependency(201 blocks 202)` operation, private read/write handle separation,
+  absence of generic transport/query/document/provider inputs, one attempt,
+  no hidden retry, and durable `completion_unknown`;
 - fresh-plan mismatch, precondition drift, lease contention, and lease-loss rejection;
 - stop-on-first-failure, accurate partial outcomes, zero retry, and concurrent-run convergence;
 - post-operation verification and final zero-operation reconciliation;

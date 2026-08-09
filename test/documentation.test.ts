@@ -234,6 +234,210 @@ test("the accepted preview contract keeps RFC-0003 effects independently authori
   assert.match(contract, /Acceptance authorizes no implementation, provider access/);
   assert.match(index, /Projects effects v1/);
   assert.match(index, /specification-only/);
-  assert.match(current, /approval bridge\s+and wrapper contract pending/);
+  assert.match(
+    current,
+    /approval bridge\s+and wrapper contract proposed for independent review/,
+  );
   assert.match(current, /No live apply is authorized/);
+});
+
+test("the proposed MCP bridge and wrapper preserve compound authority", async () => {
+  const contract = await read(
+    "docs/contracts/mcp-compound-approval-wrapper-v1.md",
+  );
+  const threatModel = await read("docs/security/threat-model.md");
+  const index = await read("docs/reference/contracts.md");
+  const current = await read(".context/current.md");
+
+  assert.match(contract, /\*\*Status:\*\* Proposed/);
+  assert.match(
+    contract,
+    /nomed\/yukh-mcp@cef0d9c1088ae641e3a5892d616859458e429bb0/,
+  );
+  assert.match(contract, /schema: "yukh-projects-approval-bridge-v2"/);
+  assert.match(
+    contract,
+    /Projects `SignedApprovalEnvelope` schema 1 and `ApprovalClaims` remain\s+byte-for-byte and semantically unchanged/,
+  );
+  assert.match(
+    contract,
+    /Projects v1 `subjectRef` remains the opaque host-attested GitHub\s+installation or principal reference/,
+  );
+  assert.match(contract, /The bridge is evidence, not authorization/);
+  assert.match(contract, /Autonomous conflict decision/);
+  assert.match(
+    contract,
+    /nomed\/nomed\.github\.io@bb8628edf7a07c2af56f07e4f9140f58c851ef47/,
+  );
+  assert.match(
+    contract,
+    /nomed\/yukh-projects@8b123f4f5dd6796dc355c34e5a800753ee257a82/,
+  );
+  assert.match(contract, /`projects\.add-dependency\.v1`/);
+  assert.match(contract, /`github\.projects\.item\.status\.set@1\.0\.0`/);
+  assert.match(
+    contract,
+    /operation cannot exact-match the\s+Accepted\s+dependency plan and must not be\s+treated as another name for it/,
+  );
+  for (const tieBreak of [
+    "Least authority expansion",
+    "Already-Accepted semantics — decisive",
+    "Compatibility",
+    "Reversibility",
+    "Smallest diff",
+  ]) {
+    assert.match(contract, new RegExp(tieBreak));
+  }
+  assert.match(
+    contract,
+    /MCP RFC-0011 must be revised later in its owning repository;\s+no\s+MCP\s+supersession is bundled into issue #150/,
+  );
+  assert.match(
+    contract,
+    /complete\s+record Proposed for a distinct independent\s+read-only review and a later\s+distinct executor\/merger/,
+  );
+  assert.match(contract, /Decision ID: projects-150-effect-b-conflict-v1/);
+  assert.match(contract, /Class: B governance-only\/inert; pending independent review/);
+  assert.match(
+    contract,
+    /Author session: 9912816c-7ee6-40f8-bb95-ac299453e722; role Author/,
+  );
+  assert.match(contract, /Outcome: Proposed and review-ready; not Accepted; no live authority/);
+  assert.match(
+    contract,
+    /Decision: preserve Projects effects v1 capability projects\.add-dependency\.v1/,
+  );
+  assert.match(
+    contract,
+    /Proposed MCP RFC-0011 must conform in its owning repository/,
+  );
+  assert.match(
+    contract,
+    /Neither this\s+proposal nor its acceptance authorizes implementation/,
+  );
+  assert.match(
+    contract,
+    /Neither independent review nor later acceptance of this record authorizes an\s+implementation issue/,
+  );
+  assert.doesNotMatch(
+    contract,
+    /Owner acceptance must therefore also choose a separate governance path/,
+  );
+  assert.match(contract, /Every field is required/);
+  assert.match(contract, /Unknown fields, missing fields/);
+  assert.match(
+    contract,
+    /trustRootFingerprint` is the canonical digest of\s+the host-selected Projects trust profile/,
+  );
+  assert.match(
+    contract,
+    /exact-match every binding that\s+exists in v1/,
+  );
+  assert.match(
+    contract,
+    /values that are intentionally absent\s+from the unchanged v1 schema against their separately authenticated sources/,
+  );
+  assert.match(contract, /mcpNonceBindingDigest/);
+  assert.match(contract, /projectsNonceBindingDigest/);
+  assert.match(contract, /projectsLeaseScopeDigest/);
+  assert.match(contract, /projectsLeaseHolderDigest/);
+  assert.match(contract, /coordinationEpoch/);
+  assert.match(
+    contract,
+    /They describe\s+the one lease the Projects host may acquire; they are not a lease capability/,
+  );
+  assert.match(
+    contract,
+    /MCP and Projects approvals bind the same byte-identical canonical Effect B\s+postcondition/,
+  );
+  assert.match(contract, /MCP MUST NOT consume it/);
+  assert.match(
+    contract,
+    /keeps MCP assertion verification inside the MCP approval\s+adapter/,
+  );
+  assert.match(contract, /mcpVerifiedAdmissionHandle/);
+  assert.doesNotMatch(contract, /mcpTrustHandle/);
+  assert.match(contract, /Compound admission is atomic at the provider boundary/);
+  assert.match(
+    contract,
+    /zero GitHub or other provider calls/,
+  );
+  assert.match(
+    contract,
+    /runMcpEffectBControlledApplyV1/,
+  );
+  assert.match(contract, /reconciliation mode `native-v1`/);
+  assert.match(contract, /`add_dependency\(201 blocks 202\)` operation/);
+  assert.match(contract, /approved kind\s+`add_blocked_by`/);
+  assert.doesNotMatch(
+    contract,
+    /profile `yukh-mcp\/suite-preview-effect-b-status-v1`/,
+  );
+  assert.match(
+    contract,
+    /cannot contain or select a repository, Project, issue, item,\s+field, option, provider identifier, target, policy, environment, mode/,
+  );
+  for (const primitive of [
+    "verifySignedApproval",
+    "parseProtectedHostCapsule",
+    "createControlledApplyHostFactory",
+    "runApplyEntrypoint",
+  ]) {
+    assert.match(contract, new RegExp(primitive));
+  }
+  const composition = contract.slice(
+    contract.indexOf("## Reviewed primitive composition"),
+    contract.indexOf("## One attempt and completion semantics"),
+  );
+  assert.ok(
+    composition.indexOf("verifySignedApproval") <
+      composition.indexOf("createControlledApplyHostFactory"),
+  );
+  assert.match(
+    composition,
+    /`verifySignedApproval` call MUST complete successfully before\s+`createControlledApplyHostFactory\(\.\.\.\)\.create\(\.\.\.\)`/,
+  );
+  assert.match(
+    composition,
+    /factory\s+`create` method performs an initial provider read/,
+  );
+  assert.match(
+    composition,
+    /invalid, unavailable, stale, substituted, or mismatched Projects v1\s+approval returns `YKP-MCP-WRAPPER-003`[\s\S]*zero provider calls/,
+  );
+  assert.match(
+    composition,
+    /`runApplyEntrypoint` receives the original unchanged Projects v1 approval[\s\S]*MUST re-verify/,
+  );
+  assert.match(
+    threatModel,
+    /call `verifySignedApproval` on the unchanged Projects v1 artifact before\s+`createControlledApplyHostFactory\(\.\.\.\)\.create\(\.\.\.\)`/,
+  );
+  assert.match(contract, /Exactly one request is allowed/);
+  assert.match(contract, /There is no hidden retry/);
+  assert.match(contract, /status: "completion_unknown"/);
+  assert.match(contract, /checksums and an SPDX SBOM/);
+  assert.match(contract, /closed conformance vector corpus/);
+  assert.match(
+    contract,
+    /Acceptance would still authorize no live GitHub request, credential creation/,
+  );
+
+  assert.match(threatModel, /MCP compound approval and wrapper confusion/);
+  assert.match(
+    threatModel,
+    /resolves the conflict in favor of\s+the already-Accepted Projects `add_dependency` semantic/,
+  );
+  assert.match(threatModel, /durable `completion_unknown`/);
+  assert.match(index, /MCP compound approval bridge and wrapper v1/);
+  assert.match(index, /remains blocked on\s+RFC-0007 independent review/);
+  assert.match(current, /wrapper contract proposed for independent review/);
+  assert.match(
+    current,
+    /conflict rule resolves the cross-record mismatch in favor of the\s+already-Accepted Projects `add_dependency` Effect B/,
+  );
+  assert.match(
+    current,
+    /Class B author decision and proposal review grant no\s+implementation, acceptance, merge, or release authority/,
+  );
 });
