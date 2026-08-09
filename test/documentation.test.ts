@@ -102,7 +102,11 @@ test("the proposed preview contract keeps RFC-0003 effects independently authori
   assert.match(contract, /distinct nested provider-owned Projects\s+plan `B-Projects`/);
   assert.match(
     contract,
-    /exactly three independently verifiable approval\s+assertions and artifacts/,
+    /exactly three independently verifiable approval\s+assertions/,
+  );
+  assert.match(
+    contract,
+    /Each Projects\s+approval assertion is an atomic pair of the unchanged v1 envelope and the\s+proposed v2 bridge claim/,
   );
   for (const approval of [
     "Projects Approval `A`",
@@ -119,11 +123,11 @@ test("the proposed preview contract keeps RFC-0003 effects independently authori
   }
   assert.match(
     contract,
-    /`subjectRef`\s+remains the opaque host-attested GitHub installation or\s+principal reference/,
+    /keeps the accepted v1 `subjectRef` meaning: the\s+opaque host-attested GitHub installation or principal reference/,
   );
   assert.match(
     contract,
-    /It never\s+contains or identifies an MCP capability, provider, verifier, plan, or policy\s+digest/,
+    /Neither contains or uses an\s+MCP capability, provider, verifier, plan, or policy digest as `subjectRef`/,
   );
   assert.match(
     contract,
@@ -159,6 +163,40 @@ test("the proposed preview contract keeps RFC-0003 effects independently authori
   assert.doesNotMatch(
     contract,
     /Shared release commits,[\s\S]{0,120}descriptive bindings only/,
+  );
+  assert.match(
+    contract,
+    /accepted Projects approval envelope v1 is closed and rejects unknown\s+fields/,
+  );
+  assert.match(
+    contract,
+    /schema: "yukh-projects-approval-bridge-v2"/,
+  );
+  assert.match(
+    contract,
+    /Every listed field\s+is required; unknown fields, unknown schema values, aliases, unlisted nesting,\s+sidecars, partial claims, and extra signatures fail closed/,
+  );
+  assert.match(
+    contract,
+    /implementation is blocked until a separately reviewed and accepted Projects\s+approval-bridge v2 and entrypoint compatibility contract/,
+  );
+  assert.match(
+    contract,
+    /There is no automatic\s+upgrade, inference, wrapping, or fallback between v1 and v2/,
+  );
+  assert.match(contract, /leaves current v1 behavior unchanged/);
+  assert.match(contract, /effectBPostconditionBinding/);
+  assert.match(
+    contract,
+    /MCP Approval `B-MCP` and Projects Approval `B-Projects` MUST carry the same\s+byte-identical canonical `effectBPostconditionBinding` digest/,
+  );
+  assert.match(
+    contract,
+    /verifier\s+identities, verifier artifacts, evidence chains, and authority scopes remain\s+distinct/,
+  );
+  assert.doesNotMatch(
+    contract,
+    /verifier identity and declared postconditions/,
   );
 
   for (const binding of [

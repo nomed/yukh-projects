@@ -55,6 +55,13 @@ without implementing or authorizing either preview effect.
   an exact immutable Projects producer commit, apply-artifact digest, and
   entrypoint version. Equal release values do not share authority; any change
   requires a fresh plan and every applicable fresh approval.
+- The accepted Projects approval envelope v1 remains unchanged. Preview
+  implementation is blocked on separate acceptance of the proposed closed
+  Projects approval bridge v2 that authenticates the producer-release and
+  preview-envelope bindings.
+- MCP Approval `B-MCP` and Projects Approval `B-Projects` bind the same
+  canonical Effect B postcondition. Their verifier identities, evidence, and
+  authority scopes remain distinct.
 - Dry-run remains structurally separated from mutation.
 - GitHub read permissions are the functional minimum for non-mutating
   qualification. A supplied credential with additional write permissions
