@@ -1,8 +1,13 @@
-# MCP compound approval bridge and wrapper v1 — proposed specification
+# MCP compound approval bridge and wrapper v1 — accepted specification
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Proposed:** 2026-08-09
+- **Accepted:** 2026-08-09
 - **Governing issue:** [#150](https://github.com/nomed/yukh-projects/issues/150)
+- **Substantive review and merge:** [PR #152](https://github.com/nomed/yukh-projects/pull/152)
+  at exact reviewed head `0efc858522e20dd3afa20e75da7935cf49e3f47f`,
+  squash-merged as
+  `nomed/yukh-projects@56118de6760b5b582c9a2cf84640e22e3eaaac83`
 - **Projects preview dependency:** [Projects effects v1](first-usable-preview-projects-v1.md)
 - **Autonomous-maintainer mandate:** RFC-0007 in
   `nomed/nomed.github.io@bb8628edf7a07c2af56f07e4f9140f58c851ef47`
@@ -14,8 +19,9 @@
   `nomed/yukh-mcp@cef0d9c1088ae641e3a5892d616859458e429bb0`
 - **Producer baseline:**
   `nomed/yukh-projects@71784218366805922e5a12903eef9073f715f59f`
-- **Authority:** review material only; no implementation, provider access, or
-  mutation
+- **Authority:** specification only; acceptance authorizes no implementation,
+  provider access, credential creation, workflow activation, live effect,
+  release, or deployment
 
 ## Objective
 
@@ -35,9 +41,9 @@ approval. A credential is capability, not authorization. No one of those
 objects, no workflow admission, and no provider response substitutes for
 either independently signed approval.
 
-This proposal adds no executable export, dependency, transport, credential
-source, provider target, deployment profile, or release artifact. Neither this
-proposal nor its acceptance authorizes implementation. Any later synthetic
+This contract adds no executable export, dependency, transport, credential
+source, provider target, deployment profile, or release artifact. Its
+acceptance authorizes no implementation. Any later synthetic
 implementation would require a separately reviewed record. Live apply would
 remain separately gated.
 
@@ -65,7 +71,7 @@ The autonomous author decision is:
 
 ~~~text
 Decision ID: projects-150-effect-b-conflict-v1
-Class: B governance-only/inert; pending independent review
+Class: B governance-only/inert
 Authority chain: RFC-0007@bb8628edf7a07c2af56f07e4f9140f58c851ef47;
   RFC-0005@12d9215f10c4b7fb1762a5025367e3e81543800f;
   yukh-projects@8b123f4f5dd6796dc355c34e5a800753ee257a82
@@ -75,7 +81,7 @@ Decision: preserve Projects effects v1 capability projects.add-dependency.v1
 Operation: exactly one add_dependency(201 blocks 202)
 Rejected input: Proposed MCP RFC-0011 set_field_value(status)
 Implementation authority: none
-Outcome: Proposed and review-ready; not Accepted; no live authority
+Author-gate outcome: Proposed and review-ready; no live authority
 ~~~
 
 The tie-break evidence is:
@@ -96,15 +102,13 @@ The tie-break evidence is:
 5. **Smallest diff:** narrowing the wrapper to its already-Accepted operation
    and later revising the Proposed MCP record is the smallest contained change.
 
-This decision does not modify the immutable Accepted Projects record. It
+This decision did not modify the immutable Accepted Projects record. It
 removes the unresolved choice: the status operation is nonconforming and
 ineligible for bridge admission. MCP RFC-0011 must later adopt the accepted
 dependency target, capability, operation, and postcondition. Until then it
 remains blocked. MCP RFC-0011 must be revised later in its owning repository; no
-MCP supersession is bundled into issue #150. This decision leaves the complete
-record Proposed for a distinct independent read-only review and a later
-distinct executor/merger. This Proposed contract remains author work only; the
-two later roles must supply RFC-0007 evidence before acceptance or merge.
+MCP supersession is bundled into issue #150. The distinct review and execution
+records that accepted this contract are preserved below.
 
 ## Existing contracts remain unchanged
 
@@ -569,7 +573,8 @@ cross-version reuse:
   release binding requires a new schema or wrapper version and fresh plans and
   approvals.
 
-Pre-implementation rollback is rejection or revision of this proposal.
+Pre-implementation rollback requires a superseding governance record that
+withdraws or revises this Accepted contract.
 Post-implementation rollback removes or disables the wrapper registration and
 bridge-v2 path while leaving v1 behavior unchanged. Source rollback never
 reverses provider state and is not restore authority.
@@ -598,32 +603,38 @@ All fixtures use invented identities and injected transports. No qualification
 test may use a credential, provider endpoint, GitHub request, workflow apply,
 consumer data, or live sandbox.
 
-## Independent review and next gate
+## Acceptance evidence and next gate
 
-This author record resolves only the Proposed-record conflict under Accepted
-RFC-0007. It does not self-review, self-accept, or merge this substantive
-contract.
+RFC-0007 Class B role separation is recorded immutably on issue #150:
 
-Before this record may move from Proposed to Accepted, issue #150 must contain:
+1. **Author:** project session
+   `9912816c-7ee6-40f8-bb95-ac299453e722`, role Author, bound the substantive
+   proposal to exact head `0efc858522e20dd3afa20e75da7935cf49e3f47f` in
+   [issue comment 5231931606](https://github.com/nomed/yukh-projects/issues/150#issuecomment-5231931606).
+   The author did not review, accept, execute, or merge it.
+2. **Independent read-only reviewer:** project session
+   `25943a6f-ca56-4540-b162-d93e4a7da1f3`, role Independent read-only reviewer,
+   found no blocking defect on that exact head and recorded the complete
+   authority, conflict, scope, and check review in
+   [issue comment 5232002216](https://github.com/nomed/yukh-projects/issues/150#issuecomment-5232002216).
+   The reviewer did not author, execute, or merge it.
+3. **Executor/merger:** project session
+   `edc1a0d3-52c1-4ccd-8ebe-291b8467db21`, role distinct RFC-0007 Class B
+   Executor/Merger, accepted and performed the single SHA-bound squash merge in
+   [issue comment 5232023269](https://github.com/nomed/yukh-projects/issues/150#issuecomment-5232023269).
+   The executor did not author or independently review it.
 
-1. a distinct read-only reviewer session's confirmation against the exact
-   commit that the bridge schema, canonicalization, authentication, trust,
-   lifetime, replay, migration, early Projects approval verification, atomic
-   admission, wrapper closure, one-attempt semantics, `completion_unknown`,
-   supply-chain evidence, and redaction remain inside Accepted authority;
-2. confirmation that the wrapper admits only the Accepted
-   `projects.add-dependency.v1` / `add_dependency(201 blocks 202)` Effect B and
-   that Proposed MCP RFC-0011 must conform later;
-3. all required checks green on that exact commit; and
-4. a later executor/merger session distinct from both author and reviewer.
+PR #152 was reviewed at exact head
+`0efc858522e20dd3afa20e75da7935cf49e3f47f` with all five checks successful
+and was squash-merged as authoritative
+`nomed/yukh-projects@56118de6760b5b582c9a2cf84640e22e3eaaac83`.
+The three sessions and roles are distinct. The accepted decision preserves only
+`projects.add-dependency.v1` / `add_dependency(201 blocks 202)`; Proposed MCP
+RFC-0011 must conform separately.
 
-Neither independent review nor later acceptance of this record authorizes an
-implementation issue to add the bridge verifier, wrapper, fixture, export,
-runtime dependency, credential path, provider call, deployment, or release. A
-separately reviewed implementation record remains mandatory.
-
-Acceptance would still authorize no live GitHub request, credential creation,
-workflow activation, mutation, deployment, publication, teardown, restore,
-consumer migration, or production-readiness claim. Those remain behind later
-implementation, qualification, deployment, activation, exact-plan, and
-operational-authorization gates.
+Acceptance authorizes no implementation of the bridge verifier, wrapper,
+fixture, export, runtime dependency, credential path, provider call,
+deployment, release, or live effect. It authorizes no GitHub request,
+credential creation, workflow activation, mutation, publication, teardown,
+restore, consumer migration, or production-readiness claim. A separately
+reviewed implementation record remains mandatory.

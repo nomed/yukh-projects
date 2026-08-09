@@ -236,12 +236,12 @@ test("the accepted preview contract keeps RFC-0003 effects independently authori
   assert.match(index, /specification-only/);
   assert.match(
     current,
-    /approval bridge\s+and wrapper contract proposed for independent review/,
+    /approval bridge\/wrapper\s+contract accepted; implementation remains unauthorized/,
   );
   assert.match(current, /No live apply is authorized/);
 });
 
-test("the proposed MCP bridge and wrapper preserve compound authority", async () => {
+test("the accepted MCP bridge and wrapper preserve compound authority", async () => {
   const contract = await read(
     "docs/contracts/mcp-compound-approval-wrapper-v1.md",
   );
@@ -249,7 +249,13 @@ test("the proposed MCP bridge and wrapper preserve compound authority", async ()
   const index = await read("docs/reference/contracts.md");
   const current = await read(".context/current.md");
 
-  assert.match(contract, /\*\*Status:\*\* Proposed/);
+  assert.match(contract, /\*\*Status:\*\* Accepted/);
+  assert.match(contract, /\*\*Accepted:\*\* 2026-08-09/);
+  assert.match(contract, /pull\/152/);
+  assert.match(
+    contract,
+    /nomed\/yukh-projects@56118de6760b5b582c9a2cf84640e22e3eaaac83/,
+  );
   assert.match(
     contract,
     /nomed\/yukh-mcp@cef0d9c1088ae641e3a5892d616859458e429bb0/,
@@ -292,17 +298,13 @@ test("the proposed MCP bridge and wrapper preserve compound authority", async ()
     contract,
     /MCP RFC-0011 must be revised later in its owning repository;\s+no\s+MCP\s+supersession is bundled into issue #150/,
   );
-  assert.match(
-    contract,
-    /complete\s+record Proposed for a distinct independent\s+read-only review and a later\s+distinct executor\/merger/,
-  );
   assert.match(contract, /Decision ID: projects-150-effect-b-conflict-v1/);
-  assert.match(contract, /Class: B governance-only\/inert; pending independent review/);
+  assert.match(contract, /Class: B governance-only\/inert/);
   assert.match(
     contract,
     /Author session: 9912816c-7ee6-40f8-bb95-ac299453e722; role Author/,
   );
-  assert.match(contract, /Outcome: Proposed and review-ready; not Accepted; no live authority/);
+  assert.match(contract, /Implementation authority: none/);
   assert.match(
     contract,
     /Decision: preserve Projects effects v1 capability projects\.add-dependency\.v1/,
@@ -313,11 +315,11 @@ test("the proposed MCP bridge and wrapper preserve compound authority", async ()
   );
   assert.match(
     contract,
-    /Neither this\s+proposal nor its acceptance authorizes implementation/,
+    /acceptance authorizes no implementation/,
   );
   assert.match(
     contract,
-    /Neither independent review nor later acceptance of this record authorizes an\s+implementation issue/,
+    /Acceptance authorizes no implementation of the bridge verifier/,
   );
   assert.doesNotMatch(
     contract,
@@ -420,8 +422,23 @@ test("the proposed MCP bridge and wrapper preserve compound authority", async ()
   assert.match(contract, /closed conformance vector corpus/);
   assert.match(
     contract,
-    /Acceptance would still authorize no live GitHub request, credential creation/,
+    /It authorizes no GitHub request,\s+credential creation/,
   );
+  assert.match(
+    contract,
+    /9912816c-7ee6-40f8-bb95-ac299453e722[\s\S]*role Author/,
+  );
+  assert.match(
+    contract,
+    /25943a6f-ca56-4540-b162-d93e4a7da1f3[\s\S]*role Independent read-only reviewer/,
+  );
+  assert.match(
+    contract,
+    /edc1a0d3-52c1-4ccd-8ebe-291b8467db21[\s\S]*role distinct RFC-0007 Class B\s+Executor\/Merger/,
+  );
+  for (const commentId of ["5231931606", "5232002216", "5232023269"]) {
+    assert.match(contract, new RegExp(commentId));
+  }
 
   assert.match(threatModel, /MCP compound approval and wrapper confusion/);
   assert.match(
@@ -429,15 +446,23 @@ test("the proposed MCP bridge and wrapper preserve compound authority", async ()
     /resolves the conflict in favor of\s+the already-Accepted Projects `add_dependency` semantic/,
   );
   assert.match(threatModel, /durable `completion_unknown`/);
+  assert.match(threatModel, /Controls accepted under issue #150/);
+  assert.match(
+    threatModel,
+    /Accepted specification assumes\s+none of those operational risks and authorizes no implementation, provider\s+credentials, or live use/,
+  );
   assert.match(index, /MCP compound approval bridge and wrapper v1/);
-  assert.match(index, /remains blocked on\s+RFC-0007 independent review/);
-  assert.match(current, /wrapper contract proposed for independent review/);
+  assert.match(
+    index,
+    /substantively reviewed and merged through PR #152 as\s+`nomed\/yukh-projects@56118de6760b5b582c9a2cf84640e22e3eaaac83`/,
+  );
+  assert.match(current, /is Accepted under #150 after independent review of PR #152/);
   assert.match(
     current,
     /conflict rule resolves the cross-record mismatch in favor of the\s+already-Accepted Projects `add_dependency` Effect B/,
   );
   assert.match(
     current,
-    /Class B author decision and proposal review grant no\s+implementation, acceptance, merge, or release authority/,
+    /Class B acceptance and merge records grant no implementation,\s+provider, credential, live-effect, deployment, or release authority/,
   );
 });

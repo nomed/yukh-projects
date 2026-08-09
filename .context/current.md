@@ -1,7 +1,7 @@
 # Current context
 
-**Status:** first usable preview Projects contract accepted; approval bridge
-and wrapper contract proposed for independent review
+**Status:** first usable preview Projects contract and approval bridge/wrapper
+contract accepted; implementation remains unauthorized
 **Project:** Yukh Projects
 **Visibility:** public
 
@@ -27,10 +27,13 @@ without implementing or authorizing either preview effect.
 - The specification adds no runtime, provider access, credential source, mutation
   authority, or release surface.
 - [MCP compound approval bridge and wrapper v1](../docs/contracts/mcp-compound-approval-wrapper-v1.md)
-  is Proposed under #150. It keeps the Projects v1 approval envelope unchanged,
-  defines a closed authenticated bridge v2, and specifies one immutable
-  producer-owned Effect B wrapper with zero provider calls before complete
-  compound admission.
+  is Accepted under #150 after independent review of PR #152 at exact head
+  `0efc858522e20dd3afa20e75da7935cf49e3f47f` and its distinct Class B
+  executor/merger record. The substantive record is authoritative on `main` at
+  `56118de6760b5b582c9a2cf84640e22e3eaaac83`. It keeps the Projects v1
+  approval envelope unchanged, defines a closed authenticated bridge v2, and
+  specifies one immutable producer-owned Effect B wrapper with zero provider
+  calls before complete compound admission.
 - The RFC-0007 conflict rule resolves the cross-record mismatch in favor of the
   already-Accepted Projects `add_dependency` Effect B. Proposed MCP RFC-0011's
   `set_field_value(status)` operation is nonconforming and must be revised in
@@ -38,14 +41,10 @@ without implementing or authorizing either preview effect.
 
 ## Next
 
-1. Obtain RFC-0007 independent read-only review of the Proposed approval-bridge
-   v2 and immutable MCP-safe controlled-apply wrapper contract under
-   [#150](https://github.com/nomed/yukh-projects/issues/150).
-2. Require Proposed MCP RFC-0011 to conform to the Accepted Projects
+1. Require Proposed MCP RFC-0011 to conform to the Accepted Projects
    `add_dependency` Effect B in its owning repository.
-3. Keep author, reviewer, and any later executor/merger sessions distinct.
-4. Stop before any implementation.
-5. Keep any later synthetic implementation or live sandbox mutation behind
+2. Stop before any implementation.
+3. Keep any later synthetic implementation or live sandbox mutation behind
    separately accepted contracts, a fresh exact plan,
    approval, protected host, and separate operational authorization.
 
@@ -73,11 +72,11 @@ without implementing or authorizing either preview effect.
   entrypoint version. Equal release values do not share authority; any change
   requires a fresh plan and every applicable fresh approval.
 - The accepted Projects approval envelope v1 remains unchanged. Preview
-  implementation remains blocked. Acceptance of the proposed closed Projects
-  approval bridge v2 would authenticate the producer-release and
-  preview-envelope bindings but would not authorize implementation.
-- The Proposed MCP-safe wrapper exposes one closed function, fixes native mode,
-  target profile, policy, producer and wrapper releases, and exactly one
+  implementation remains blocked. The accepted closed Projects approval bridge
+  v2 specifies authentication of the producer-release and preview-envelope
+  bindings but does not implement or authorize that path.
+- The Accepted MCP-safe wrapper contract exposes one closed function, fixes
+  native mode, target profile, policy, producer and wrapper releases, and exactly one
   `add_dependency(201 blocks 202)` operation. It accepts no caller-selected
   transport, URL, query, document, credential, provider identifier, target,
   policy, or operation.
@@ -90,8 +89,8 @@ without implementing or authorizing either preview effect.
   remains eligible and grants no apply authority because the path has no
   mutation transport, apply host, approval input, or controlled-apply
   authority.
-- Accepted Projects contracts still forbid destructive restore; the proposed
+- Accepted Projects contracts still forbid destructive restore; the accepted
   preview uses a separately governed teardown boundary.
 - No live apply is authorized.
-- The RFC-0007 Class B author decision and proposal review grant no
-  implementation, acceptance, merge, or release authority.
+- The RFC-0007 Class B acceptance and merge records grant no implementation,
+  provider, credential, live-effect, deployment, or release authority.
