@@ -125,6 +125,7 @@ type ProjectsApprovalBridgeV2Claims = {
   mcpCapabilityDefinitionDigest: LowerHexSha256;
   mcpProviderImplementationDigest: LowerHexSha256;
   mcpPolicyCommit: LowerHexCommit;
+  mcpNonceBindingDigest: LowerHexSha256;
 
   wrapperRelease: {
     sourceCommit: LowerHexCommit;
@@ -141,6 +142,10 @@ type ProjectsApprovalBridgeV2Claims = {
   issuedAtMs: SafeInteger;
   expiresAtMs: SafeInteger;
   nonce: BoundedPrivateRef;
+  projectsNonceBindingDigest: LowerHexSha256;
+  projectsLeaseScopeDigest: LowerHexSha256;
+  projectsLeaseHolderDigest: LowerHexSha256;
+  coordinationEpoch: SafeInteger;
   trustRootFingerprint: LowerHexSha256;
 };
 ~~~
@@ -183,11 +188,16 @@ signature.
 
 The bridge public key is supplied through a private protected-host handle. A
 key embedded in the bridge, approval, policy, repository, workflow input, or
-MCP request is never trusted. The bridge `issuerRef`, `subjectRef`,
-`trustRootFingerprint`, `keyFingerprint`, lifetime, nonce, and protected
-environment MUST exactly equal the paired Projects v1 claims and trust
-selection. Key rotation is an explicit host-profile change and invalidates
-every outstanding bridge and paired approval.
+MCP request is never trusted. `trustRootFingerprint` is the canonical digest of
+the host-selected Projects trust profile: profile version, exact Ed25519 public
+key fingerprint, and ordered issuer allowlist. It is not taken from either
+approval or from the bridge. The same host-selected trust profile verifies the
+paired Projects v1 approval and bridge. The bridge `issuerRef`, `subjectRef`,
+`keyFingerprint`, lifetime, nonce, and protected environment exact-match the
+corresponding Projects v1 envelope and claims; `trustRootFingerprint`
+exact-matches the separately selected host profile. Key or issuer-allowlist
+rotation is an explicit host-profile change and invalidates every outstanding
+bridge and paired approval.
 
 Private signing keys never enter the wrapper, MCP runtime, repository,
 workflow input, log, output, audit record, or evidence.
@@ -199,14 +209,22 @@ envelope bytes. `mcpApprovalDigest` is SHA-256 of the exact canonical
 authenticated MCP approval bytes accepted by the pinned MCP verifier. Neither
 digest authenticates the underlying artifact by itself.
 
-The paired Projects v1 envelope and bridge MUST exact-match:
+The paired Projects v1 envelope and bridge MUST exact-match every binding that
+exists in v1:
 
 - Projects plan ID and ordered operation-set digest;
 - issuer, `subjectRef`, scope, `environment: apply`, protected environment,
-  issued-at, expiry, nonce, key fingerprint, and trust root;
+  issued-at, expiry, nonce, and key fingerprint.
+
+The bridge MUST additionally exact-match values that are intentionally absent
+from the unchanged v1 schema against their separately authenticated sources:
+
 - the exact preview plan-envelope digest;
 - the exact Projects target and postcondition binding digests; and
-- the independently authority-bound Projects producer release tuple.
+- the independently authority-bound Projects producer release tuple;
+- the host-selected Projects trust-profile fingerprint; and
+- the protected capsule's Coordination epoch, lease-scope digest, and
+  lease-holder digest.
 
 The MCP approval, Projects v1 approval, and bridge MUST exact-match:
 
@@ -217,6 +235,17 @@ The MCP approval, Projects v1 approval, and bridge MUST exact-match:
   principal, producer release, and Effect B postcondition;
 - fixed wrapper release and wrapper-profile digests; and
 - one shared expiry window that does not extend either approval.
+
+`mcpNonceBindingDigest` exact-matches the domain-separated digest of the nonce
+in the verified MCP assertion. `projectsNonceBindingDigest` exact-matches the
+domain-separated digest of the nonce in the verified Projects v1 assertion,
+whose private raw value remains in `nonce` only because v1 exact matching
+requires it. The two nonce digests and raw nonce values MUST be distinct.
+`projectsLeaseScopeDigest`, `projectsLeaseHolderDigest`, and
+`coordinationEpoch` exact-match the MCP reservation, Projects plan binding,
+protected capsule, and wrapper profile before lease acquisition. They describe
+the one lease the Projects host may acquire; they are not a lease capability
+and do not prove acquisition.
 
 The MCP and Projects approvals bind the same byte-identical canonical Effect B
 postcondition. Their subjects, schemas, signers, trust roots, nonces,
@@ -234,16 +263,21 @@ release fails before provider access.
 ## Lifetime, replay, and atomicity
 
 The bridge lifetime is at most 15 minutes, begins no earlier than either paired
-approval, and ends no later than the first approval to expire. The trusted host
-clock performs all comparisons. Missing, future-issued, expired, incomparable,
-or differently bounded times fail closed.
+approval, and ends no later than the first approval to expire. Its
+`issuedAtMs` and `expiresAtMs` still exact-match the Projects v1 assertion; if
+that interval cannot also fit inside the verified MCP assertion interval, the
+compound admission is impossible. The trusted host clock performs all
+comparisons. Missing, future-issued, expired, incomparable, or differently
+bounded times fail closed.
 
 The Projects nonce remains owned and consumed exactly once by the Projects
 controlled-apply host. MCP MUST NOT consume it. The bridge additionally binds
-the distinct MCP approval digest; MCP consumes its own nonce through its
-separate lifecycle before wrapper invocation. A consumed, expired, replaced,
-or mismatched nonce or assertion makes the bridge unusable. There is no bridge
-refresh, continuation, resume, re-signing, or replay path.
+the distinct MCP approval and nonce digests; MCP consumes its own nonce through
+its separate lifecycle before wrapper invocation. The wrapper validates the
+Projects nonce binding before the Projects host consumes that nonce. A
+consumed, expired, replaced, equal, or mismatched nonce or assertion makes the
+bridge unusable. There is no bridge refresh, continuation, resume, re-signing,
+or replay path.
 
 Compound admission is atomic at the provider boundary:
 

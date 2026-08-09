@@ -275,6 +275,27 @@ test("the proposed MCP bridge and wrapper preserve compound authority", async ()
   assert.match(contract, /Unknown fields, missing fields/);
   assert.match(
     contract,
+    /trustRootFingerprint` is the canonical digest of\s+the host-selected Projects trust profile/,
+  );
+  assert.match(
+    contract,
+    /exact-match every binding that\s+exists in v1/,
+  );
+  assert.match(
+    contract,
+    /values that are intentionally absent\s+from the unchanged v1 schema against their separately authenticated sources/,
+  );
+  assert.match(contract, /mcpNonceBindingDigest/);
+  assert.match(contract, /projectsNonceBindingDigest/);
+  assert.match(contract, /projectsLeaseScopeDigest/);
+  assert.match(contract, /projectsLeaseHolderDigest/);
+  assert.match(contract, /coordinationEpoch/);
+  assert.match(
+    contract,
+    /They describe\s+the one lease the Projects host may acquire; they are not a lease capability/,
+  );
+  assert.match(
+    contract,
     /MCP and Projects approvals bind the same byte-identical canonical Effect B\s+postcondition/,
   );
   assert.match(contract, /MCP MUST NOT consume it/);

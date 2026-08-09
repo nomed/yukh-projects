@@ -216,7 +216,8 @@ Controls proposed under issue #150:
   Projects;
 - bind exact canonical assertion digests, plans, operation sets, subjects,
   authentication context, target, policy, postcondition, producer release,
-  wrapper release, trust, lifetime, and nonces;
+  wrapper release, host-selected trust profiles, lifetime, distinct nonces, and
+  the intended Coordination epoch, lease scope, and lease holder;
 - treat the bridge as evidence only, never approval, a credential, or a bearer
   capability;
 - expose one producer-owned MCP-safe function whose immutable release fixes
