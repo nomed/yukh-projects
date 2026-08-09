@@ -228,6 +228,10 @@ Controls proposed under issue #150:
   verifiers;
 - verify the complete compound admission and private handle separation before
   constructing a provider-backed transport; and
+- call `verifySignedApproval` on the unchanged Projects v1 artifact before
+  `createControlledApplyHostFactory(...).create(...)`, because the current
+  factory `create` performs an initial provider read; pass the same artifact to
+  `runApplyEntrypoint` for its accepted independent re-verification;
 - forbid MCP from directly composing `parseProtectedHostCapsule`,
   `createControlledApplyHostFactory`, or `runApplyEntrypoint`.
 

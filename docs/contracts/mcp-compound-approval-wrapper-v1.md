@@ -383,25 +383,44 @@ manifest-bound artifact; there is no path or caller-provided policy source.
 
 ## Reviewed primitive composition
 
-After complete admission, the wrapper owns this exact sequence:
+The wrapper owns this exact admission and execution sequence:
 
 1. resolve the one manifest-bound private target profile and policy artifact;
-2. parse the protected capsule with `parseProtectedHostCapsule` against that
+2. bounded-read the Projects v1 approval and host-selected Projects trust
+   profile, then call `verifySignedApproval` with the exact artifact, public
+   key, and issuer allowlist;
+3. require the verified Projects v1 claims to exact-match the bridge, immutable
+   wrapper profile, authenticated GitHub principal, plan, operation set, scope,
+   environment, lifetime, nonce, and producer bindings;
+4. parse the protected capsule with `parseProtectedHostCapsule` against that
    exact scope and protected environment;
-3. require capsule enablement `apply-explicitly-enabled`, approved kind
+5. require capsule enablement `apply-explicitly-enabled`, approved kind
    `update_project_item_field_value`, the exact permission profile, and request
    ceilings compatible with one operation;
-4. call `createControlledApplyHostFactory` with only the parsed capsule options
+6. call `createControlledApplyHostFactory` with only the parsed capsule options
    and fixed attempt instrumentation;
-5. call the factory's `create` once with `reconciliationMode: "native-v1"`,
+7. call the factory's `create` once with `reconciliationMode: "native-v1"`,
    the fixed scope and policy, and the distinct resolved read and write
    credentials;
-6. exact-match the returned scope and fresh one-operation plan to the bridge;
-7. call `runApplyEntrypoint` once with the approved Projects plan ID, fixed
+8. exact-match the returned scope and fresh one-operation plan to the bridge;
+9. call `runApplyEntrypoint` once with the approved Projects plan ID, fixed
    protected environment, returned scope, Projects v1 approval, and
    Projects-selected public key; and
-8. close every private handle in an unconditional finalizer without changing
+10. close every private handle in an unconditional finalizer without changing
    the recorded effect outcome.
+
+The explicit `verifySignedApproval` call MUST complete successfully before
+`createControlledApplyHostFactory(...).create(...)`. The accepted factory
+`create` method performs an initial provider read while constructing the fresh
+plan; calling it first would violate the zero-provider-call admission boundary.
+An invalid, unavailable, stale, substituted, or mismatched Projects v1
+approval returns `YKP-MCP-WRAPPER-003` without constructing the provider-backed
+host and with zero provider calls.
+
+`runApplyEntrypoint` receives the original unchanged Projects v1 approval and
+Projects public key and MUST re-verify them under its accepted semantics. The
+early verification is an additional no-I/O admission gate, not a replacement,
+cached success, translated approval, or new approval schema.
 
 The wrapper may use an explicitly accepted successor only after a new
 compatibility review and fresh wrapper version. MCP may not call these

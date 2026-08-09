@@ -321,12 +321,41 @@ test("the proposed MCP bridge and wrapper preserve compound authority", async ()
     /cannot contain or select a repository, Project, issue, item,\s+field, option, provider identifier, target, policy, environment, mode/,
   );
   for (const primitive of [
+    "verifySignedApproval",
     "parseProtectedHostCapsule",
     "createControlledApplyHostFactory",
     "runApplyEntrypoint",
   ]) {
     assert.match(contract, new RegExp(primitive));
   }
+  const composition = contract.slice(
+    contract.indexOf("## Reviewed primitive composition"),
+    contract.indexOf("## One attempt and completion semantics"),
+  );
+  assert.ok(
+    composition.indexOf("verifySignedApproval") <
+      composition.indexOf("createControlledApplyHostFactory"),
+  );
+  assert.match(
+    composition,
+    /`verifySignedApproval` call MUST complete successfully before\s+`createControlledApplyHostFactory\(\.\.\.\)\.create\(\.\.\.\)`/,
+  );
+  assert.match(
+    composition,
+    /factory\s+`create` method performs an initial provider read/,
+  );
+  assert.match(
+    composition,
+    /invalid, unavailable, stale, substituted, or mismatched Projects v1\s+approval returns `YKP-MCP-WRAPPER-003`[\s\S]*zero provider calls/,
+  );
+  assert.match(
+    composition,
+    /`runApplyEntrypoint` receives the original unchanged Projects v1 approval[\s\S]*MUST re-verify/,
+  );
+  assert.match(
+    threatModel,
+    /call `verifySignedApproval` on the unchanged Projects v1 artifact before\s+`createControlledApplyHostFactory\(\.\.\.\)\.create\(\.\.\.\)`/,
+  );
   assert.match(contract, /Exactly one request is allowed/);
   assert.match(contract, /There is no hidden retry/);
   assert.match(contract, /status: "completion_unknown"/);
