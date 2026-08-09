@@ -31,3 +31,15 @@ test("builds a root-only package and deterministic disabled provenance",async()=
   await rm(temporary,{recursive:true,force:true});
  }
 });
+
+test("normalizes the SPDX SBOM to the exact implementation source",()=>{
+ const first=spawnSync(process.execPath,["scripts/create-release-sbom.mjs","1.8.0","a4f05f673bb0a03f66fc9864372cee7839ed78d1"],{encoding:"utf8"});
+ const second=spawnSync(process.execPath,["scripts/create-release-sbom.mjs","1.8.0","a4f05f673bb0a03f66fc9864372cee7839ed78d1"],{encoding:"utf8"});
+ assert.equal(first.status,0,first.stderr);
+ assert.equal(second.status,0,second.stderr);
+ assert.equal(first.stdout,second.stdout);
+ const document=JSON.parse(first.stdout);
+ assert.equal(document.spdxVersion,"SPDX-2.3");
+ assert.equal(document.documentNamespace,"https://github.com/nomed/yukh-projects/releases/tag/v1.8.0#spdx-a4f05f673bb0a03f66fc9864372cee7839ed78d1");
+ assert.deepEqual(document.creationInfo.creators,["Tool: npm/cli","Tool: yukh-projects/create-release-sbom-v1"]);
+});

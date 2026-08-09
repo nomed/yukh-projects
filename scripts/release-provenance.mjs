@@ -59,7 +59,7 @@ const provenance={
   lockfileVersion:3,
   typescript:packageDocument.devDependencies?.typescript,
   esbuild:packageDocument.devDependencies?.esbuild,
-  commands:["npm ci","npm test","npm run verify:bundles","npm audit --audit-level=moderate","npm sbom --sbom-format spdx","npm pack --ignore-scripts"]
+  commands:["npm ci","npm test","npm run verify:bundles","npm audit --audit-level=moderate","node scripts/create-release-sbom.mjs","npm pack --ignore-scripts"]
  },
  qualification:{providerCalls:0,expectedCostEur:0,fixtures:"synthetic"},
  activation:{status:"not-authorized",requiredBindings:"separately-governed"},

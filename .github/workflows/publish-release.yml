@@ -56,7 +56,7 @@ jobs:
           npm test
           npm run verify:bundles
           npm audit --audit-level=moderate
-          npm sbom --sbom-format spdx > release.spdx.json
+          node scripts/create-release-sbom.mjs "$RELEASE_VERSION" "$MCP_IMPLEMENTATION_COMMIT" > release.spdx.json
           node scripts/create-release-package.mjs "$RELEASE_VERSION" release-package.tgz
           node scripts/release-provenance.mjs "$RELEASE_VERSION" "$MCP_IMPLEMENTATION_COMMIT" release-package.tgz > release-provenance.json
           node scripts/release-preflight.mjs "$RELEASE_VERSION" "$RELEASE_COMMIT" > would-publish.json
