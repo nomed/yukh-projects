@@ -1,7 +1,7 @@
 # Current context
 
 **Status:** first usable preview Projects contract accepted; approval bridge
-and wrapper contract pending
+and wrapper contract pending owner acceptance (proposed)
 **Project:** Yukh Projects
 **Visibility:** public
 
@@ -27,10 +27,11 @@ without implementing or authorizing either preview effect.
 
 ## Next
 
-1. Define the separately reviewable closed approval-bridge v2 and immutable
-   MCP-safe controlled-apply wrapper contract under
-   [#150](https://github.com/nomed/yukh-projects/issues/150).
-2. Stop for owner acceptance before any implementation.
+1. Review the [proposed compound approval bridge v2 and MCP-safe wrapper
+   contract](../docs/contracts/compound-approval-bridge-v2.md) under
+   [#150](https://github.com/nomed/yukh-projects/issues/150), including its
+   narrow supersession of the incompatible accepted Effect B operation.
+2. Stop for an explicit all-items owner decision before any implementation.
 3. Keep any later synthetic implementation or live sandbox mutation behind
    separately accepted contracts, a fresh exact plan,
    approval, protected host, and separate operational authorization.
@@ -58,8 +59,11 @@ without implementing or authorizing either preview effect.
   requires a fresh plan and every applicable fresh approval.
 - The accepted Projects approval envelope v1 remains unchanged. Preview
   implementation is blocked on separate acceptance of the proposed closed
-  Projects approval bridge v2 that authenticates the producer-release and
-  preview-envelope bindings.
+  Projects approval bridge v2 and MCP-safe wrapper contract.
+- Accepted Projects effects v1 names Effect B as `add_dependency`, while
+  authoritative MCP RFC-0011 names one `set_field_value(status)`. The proposed
+  contract fails closed on that mismatch and asks the owner to supersede only
+  the incompatible Effect B target, operation, capability, and postcondition.
 - MCP Approval `B-MCP` and Projects Approval `B-Projects` bind the same
   canonical Effect B postcondition. Their verifier identities, evidence, and
   authority scopes remain distinct.

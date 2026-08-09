@@ -237,3 +237,31 @@ test("the accepted preview contract keeps RFC-0003 effects independently authori
   assert.match(current, /approval bridge\s+and wrapper contract pending/);
   assert.match(current, /No live apply is authorized/);
 });
+
+test("the proposed compound bridge fails closed across MCP and Projects authority", async () => {
+  const contract = await read("docs/contracts/compound-approval-bridge-v2.md");
+  const threatModel = await read("docs/security/threat-model.md");
+  const index = await read("docs/reference/contracts.md");
+  const current = await read(".context/current.md");
+
+  assert.match(contract, /\*\*Status:\*\* Proposed/);
+  assert.match(contract, /leave the accepted `SignedApprovalEnvelope` and `ApprovalClaims` v1 schemas/);
+  assert.match(contract, /schema: "yukh-projects-approval-bridge-v2"/);
+  assert.match(contract, /subjectRef` remains the opaque host-attested GitHub\s+installation or principal reference/);
+  assert.match(contract, /github\.projects\.item\.status\.set/);
+  assert.match(contract, /kind: "set_field_value"/);
+  assert.match(contract, /logicalField: "status"/);
+  assert.match(contract, /ead6dce3da3ebe3319531ffd1aea005efd9fbd678e3db9b62430d34d03226b95/);
+  assert.match(contract, /runMcpSafeControlledApplyV1/);
+  assert.match(contract, /createControlledApplyHostFactory/);
+  assert.match(contract, /runApplyEntrypoint/);
+  assert.match(contract, /zero provider calls/);
+  assert.match(contract, /exactly zero or one\s+fixed mutation request/);
+  assert.match(contract, /completion_unknown/);
+  assert.match(contract, /SPDX SBOM/);
+  assert.match(contract, /Owner acceptance gate/);
+  assert.match(contract, /No implementation, fixture that calls a provider/);
+  assert.match(threatModel, /Proposed MCP compound approval bridge and wrapper/);
+  assert.match(index, /Proposed compound approval and MCP wrapper/);
+  assert.match(current, /set_field_value\(status\)/);
+});

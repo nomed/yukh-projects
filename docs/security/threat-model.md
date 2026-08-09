@@ -330,6 +330,40 @@ GraphQL fallback.
 This review authorizes deterministic implementation and review only. It grants
 no live request, mutation, release, deployment, apply, or consumer migration.
 
+### Proposed MCP compound approval bridge and wrapper — 2026-08-09
+
+- Governing issue: #150
+- Proposed contract: Compound approval bridge v2 and MCP-safe controlled-apply
+  wrapper v1
+- New live trust boundary: none; owner acceptance remains pending
+
+The accepted Projects preview record and authoritative MCP RFC-0011 name
+different Effect B operations. Treating `add_dependency` and
+`set_field_value(status)` as equivalent would permit plan and postcondition
+substitution. The proposed contract instead requests a narrow superseding owner
+decision and requires exact rejection until that decision is accepted.
+
+| Threat | Proposed control | Residual risk / dependency |
+| --- | --- | --- |
+| MCP assertion, Projects assertion, or bridge authorizes another | three closed artifacts, distinct signers, trust roots, nonce stores, verifier receipts, and exact digest pairing; bridge is non-authorizing | compromise or collusion across approval authorities remains outside this contract |
+| MCP subject replaces the authenticated GitHub principal | unchanged Projects v1 `subjectRef`; bridge compares its digest to the independently bound GitHub principal | deployment must prove read and write hosts authenticate the same installation or principal |
+| operation, target, producer, wrapper, policy, environment, or postcondition substitution | fixed status profile and byte-exact canonical bindings, including source and artifact digests | future wrapper digests do not exist until a separately reviewed immutable publication |
+| invalid approval triggers the factory's initial provider read | wrapper verifies v1 approval and bridge before parsing the capsule or constructing the host | duplicate v1 verification remains necessary until a separately accepted no-I/O producer primitive exists |
+| caller smuggles transport or provider identifiers | one closed private-handle input and one fixed wrapper export; no URL, query, document, credential, scope, operation, verifier, or transport selector | protected materializer and host compromise remain residual |
+| retry after possible effect | one wrapper invocation, at most one mutation request, terminal durable `completion_unknown`, and no resume or automatic restore | operator reconciliation and separately governed teardown remain required |
+| provider result becomes MCP success | Projects targeted and final verification plus independent fresh MCP read-only zero-drift verification | either verifier can fail after a real effect and withhold success |
+| bridge, assertion, nonce, lease, credential, or reservation replay | bounded nested lifetimes, three distinct nonces, bridge-only replay store, component-owned nonce stores, and one-shot handles | replay-store or Coordination unavailability fails closed |
+| public evidence reveals compound authority | static codes and closed counts only; redaction before error, callback, log, audit, or serialization | private operator diagnosis needs a separately governed channel |
+| wrapper supply-chain replacement | exact source and artifact digests, byte-identical rebuild, checksums, SPDX SBOM, provenance, export/dependency manifest, and conformance vectors | no wrapper implementation or artifact is authorized by contract acceptance |
+
+All compound admission checks, including both independent assertion
+verifications, bridge authentication, current MCP apply authorization, audit
+admission, reservation, and bridge nonce consumption, must complete before the
+first GitHub read. Negative conformance cases must prove zero provider calls.
+This proposal grants no implementation, provider request, credential, OIDC
+configuration, mutation, deployment, release, activation, restore, teardown,
+or production-readiness authority.
+
 ## Required security tests
 
 - contract size, depth, alias, duplicate-block, and malformed-type limits;
