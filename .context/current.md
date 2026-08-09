@@ -1,7 +1,7 @@
 # Current context
 
 **Status:** first usable preview Projects contract accepted; approval bridge
-and wrapper contract proposed for owner review
+and wrapper contract proposed for independent review
 **Project:** Yukh Projects
 **Visibility:** public
 
@@ -15,6 +15,8 @@ without implementing or authorizing either preview effect.
 - Suite RFC-0005 is authoritative on `nomed.github.io` `main` at
   `12d9215f10c4b7fb1762a5025367e3e81543800f` and requires two independent
   consequential effects for RFC-0003 steps 8 and 9.
+- Autonomous-maintainer RFC-0007 is suite-wide authoritative at
+  `nomed/nomed.github.io@bb8628edf7a07c2af56f07e4f9140f58c851ef47`.
 - [#147](https://github.com/nomed/yukh-projects/issues/147) records owner
   acceptance of the Projects-owned specification.
 - [Projects effects v1](../docs/contracts/first-usable-preview-projects-v1.md)
@@ -29,20 +31,21 @@ without implementing or authorizing either preview effect.
   defines a closed authenticated bridge v2, and specifies one immutable
   producer-owned Effect B wrapper with zero provider calls before complete
   compound admission.
-- Owner review must resolve a cross-record conflict before suite compatibility:
-  accepted Projects effects v1 names `add_dependency` for Effect B, while
-  Proposed MCP RFC-0011 names `set_field_value(status)`. Neither record may be
-  silently reinterpreted.
+- The RFC-0007 conflict rule resolves the cross-record mismatch in favor of the
+  already-Accepted Projects `add_dependency` Effect B. Proposed MCP RFC-0011's
+  `set_field_value(status)` operation is nonconforming and must be revised in
+  its owning repository before acceptance or activation.
 
 ## Next
 
-1. Obtain explicit owner review and acceptance or revision of the Proposed
-   approval-bridge v2 and immutable MCP-safe controlled-apply wrapper contract
-   under [#150](https://github.com/nomed/yukh-projects/issues/150).
-2. Select the separately reviewed supersession or upstream-RFC revision path
-   that makes the Effect B operation exact across components.
-3. Stop before any implementation.
-4. Keep any later synthetic implementation or live sandbox mutation behind
+1. Obtain RFC-0007 independent read-only review of the Proposed approval-bridge
+   v2 and immutable MCP-safe controlled-apply wrapper contract under
+   [#150](https://github.com/nomed/yukh-projects/issues/150).
+2. Require Proposed MCP RFC-0011 to conform to the Accepted Projects
+   `add_dependency` Effect B in its owning repository.
+3. Keep author, reviewer, and any later executor/merger sessions distinct.
+4. Stop before any implementation.
+5. Keep any later synthetic implementation or live sandbox mutation behind
    separately accepted contracts, a fresh exact plan,
    approval, protected host, and separate operational authorization.
 
@@ -52,8 +55,7 @@ without implementing or authorizing either preview effect.
 - Running or authorizing live apply, teardown, or provider state creation.
 - Creating credentials, approval material, sandbox resources, release
   artifacts, tags, deployments, or consumer migrations.
-- Implementing the #150 bridge or wrapper before its contract is explicitly
-  accepted.
+- Implementing the #150 bridge or wrapper under this governance-only record.
 
 ## Invariants
 
@@ -71,14 +73,14 @@ without implementing or authorizing either preview effect.
   entrypoint version. Equal release values do not share authority; any change
   requires a fresh plan and every applicable fresh approval.
 - The accepted Projects approval envelope v1 remains unchanged. Preview
-  implementation is blocked on separate acceptance of the proposed closed
-  Projects approval bridge v2 that authenticates the producer-release and
-  preview-envelope bindings.
+  implementation remains blocked. Acceptance of the proposed closed Projects
+  approval bridge v2 would authenticate the producer-release and
+  preview-envelope bindings but would not authorize implementation.
 - The Proposed MCP-safe wrapper exposes one closed function, fixes native mode,
   target profile, policy, producer and wrapper releases, and exactly one
-  `set_field_value(status)` operation. It accepts no caller-selected transport,
-  URL, query, document, credential, provider identifier, target, policy, or
-  operation.
+  `add_dependency(201 blocks 202)` operation. It accepts no caller-selected
+  transport, URL, query, document, credential, provider identifier, target,
+  policy, or operation.
 - MCP Approval `B-MCP` and Projects Approval `B-Projects` bind the same
   canonical Effect B postcondition. Their verifier identities, evidence, and
   authority scopes remain distinct.

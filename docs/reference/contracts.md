@@ -27,6 +27,7 @@ functional minimum and least privilege is recommended; excess write permissions
 on an existing supplied credential are not an eligibility failure.
 
 The accepted preview record is specification-only. Its approval-bridge and
-wrapper dependency is Proposed under issue #150 and remains blocked on explicit
-owner acceptance. It grants no implementation, provider, mutation, or release
-authority.
+wrapper dependency is Proposed under issue #150 and remains blocked on
+RFC-0007 independent review and a distinct executor. It preserves the Accepted
+Projects `add_dependency` Effect B and grants no implementation, provider,
+mutation, or release authority.

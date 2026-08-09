@@ -236,7 +236,7 @@ test("the accepted preview contract keeps RFC-0003 effects independently authori
   assert.match(index, /specification-only/);
   assert.match(
     current,
-    /approval bridge\s+and wrapper contract proposed for owner review/,
+    /approval bridge\s+and wrapper contract proposed for independent review/,
   );
   assert.match(current, /No live apply is authorized/);
 });
@@ -264,12 +264,51 @@ test("the proposed MCP bridge and wrapper preserve compound authority", async ()
     /Projects v1 `subjectRef` remains the opaque host-attested GitHub\s+installation or principal reference/,
   );
   assert.match(contract, /The bridge is evidence, not authorization/);
-  assert.match(contract, /Compatibility conflict requiring owner decision/);
+  assert.match(contract, /Autonomous conflict decision/);
+  assert.match(
+    contract,
+    /nomed\/nomed\.github\.io@bb8628edf7a07c2af56f07e4f9140f58c851ef47/,
+  );
+  assert.match(
+    contract,
+    /nomed\/yukh-projects@8b123f4f5dd6796dc355c34e5a800753ee257a82/,
+  );
   assert.match(contract, /`projects\.add-dependency\.v1`/);
   assert.match(contract, /`github\.projects\.item\.status\.set@1\.0\.0`/);
   assert.match(
     contract,
     /cannot exact-match and\s+cannot be treated as two names for one effect/,
+  );
+  assert.match(contract, /Decision ID: projects-150-effect-b-conflict-v1/);
+  assert.match(contract, /Class: B governance-only\/inert; pending independent review/);
+  assert.match(
+    contract,
+    /Decision: preserve Projects effects v1 capability projects\.add-dependency\.v1/,
+  );
+  for (const tieBreak of [
+    "Least authority expansion",
+    "Already-Accepted semantics",
+    "Compatibility",
+    "Reversibility",
+    "Smallest diff",
+  ]) {
+    assert.match(contract, new RegExp(`\\*\\*${tieBreak}:\\*\\*`));
+  }
+  assert.match(
+    contract,
+    /Proposed MCP RFC-0011 must conform in its owning repository/,
+  );
+  assert.match(
+    contract,
+    /Neither this\s+proposal nor its acceptance authorizes implementation/,
+  );
+  assert.match(
+    contract,
+    /Neither independent review nor later acceptance of this record authorizes an\s+implementation issue/,
+  );
+  assert.doesNotMatch(
+    contract,
+    /Owner acceptance must therefore also choose a separate governance path/,
   );
   assert.match(contract, /Every field is required/);
   assert.match(contract, /Unknown fields, missing fields/);
@@ -315,7 +354,12 @@ test("the proposed MCP bridge and wrapper preserve compound authority", async ()
     /runMcpEffectBControlledApplyV1/,
   );
   assert.match(contract, /reconciliation mode `native-v1`/);
-  assert.match(contract, /exactly one `set_field_value` operation for logical field `status`/);
+  assert.match(contract, /`add_dependency\(201 blocks 202\)` operation/);
+  assert.match(contract, /approved kind\s+`add_blocked_by`/);
+  assert.doesNotMatch(
+    contract,
+    /profile `yukh-mcp\/suite-preview-effect-b-status-v1`/,
+  );
   assert.match(
     contract,
     /cannot contain or select a repository, Project, issue, item,\s+field, option, provider identifier, target, policy, environment, mode/,
@@ -369,12 +413,15 @@ test("the proposed MCP bridge and wrapper preserve compound authority", async ()
   assert.match(threatModel, /MCP compound approval and wrapper confusion/);
   assert.match(
     threatModel,
-    /different Effect B operation kinds \(`add_dependency` and\s+`set_field_value\(status\)`\)/,
+    /resolves the conflict in favor of\s+the already-Accepted Projects `add_dependency` semantic/,
   );
   assert.match(threatModel, /durable `completion_unknown`/);
   assert.match(index, /MCP compound approval bridge and wrapper v1/);
-  assert.match(index, /remains blocked on explicit\s+owner acceptance/);
-  assert.match(current, /wrapper contract proposed for owner review/);
-  assert.match(current, /cross-record conflict before suite compatibility/);
+  assert.match(index, /remains blocked on\s+RFC-0007 independent review/);
+  assert.match(current, /wrapper contract proposed for independent review/);
+  assert.match(
+    current,
+    /conflict rule resolves the cross-record mismatch in favor of the\s+already-Accepted Projects `add_dependency` Effect B/,
+  );
   assert.match(current, /Proposal review grants no implementation or release authority/);
 });

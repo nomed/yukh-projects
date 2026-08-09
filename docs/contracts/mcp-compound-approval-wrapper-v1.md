@@ -4,7 +4,13 @@
 - **Proposed:** 2026-08-09
 - **Governing issue:** [#150](https://github.com/nomed/yukh-projects/issues/150)
 - **Projects preview dependency:** [Projects effects v1](first-usable-preview-projects-v1.md)
-- **MCP dependency:** RFC-0011 in
+- **Autonomous-maintainer mandate:** RFC-0007 in
+  `nomed/nomed.github.io@bb8628edf7a07c2af56f07e4f9140f58c851ef47`
+- **Suite authority:** RFC-0005 in
+  `nomed/nomed.github.io@12d9215f10c4b7fb1762a5025367e3e81543800f`
+- **Accepted Projects authority:**
+  `nomed/yukh-projects@8b123f4f5dd6796dc355c34e5a800753ee257a82`
+- **Nonconforming Proposed MCP input:** RFC-0011 in
   `nomed/yukh-mcp@cef0d9c1088ae641e3a5892d616859458e429bb0`
 - **Producer baseline:**
   `nomed/yukh-projects@71784218366805922e5a12903eef9073f715f59f`
@@ -30,11 +36,12 @@ objects, no workflow admission, and no provider response substitutes for
 either independently signed approval.
 
 This proposal adds no executable export, dependency, transport, credential
-source, provider target, deployment profile, or release artifact. Acceptance
-would authorize only a later synthetic implementation issue. Live apply would
+source, provider target, deployment profile, or release artifact. Neither this
+proposal nor its acceptance authorizes implementation. Any later synthetic
+implementation would require a separately reviewed record. Live apply would
 remain separately gated.
 
-## Compatibility conflict requiring owner decision
+## Autonomous conflict decision
 
 The two governing proposals currently name different Effect B operations:
 
@@ -46,19 +53,53 @@ The two governing proposals currently name different Effect B operations:
   `set_field_value(status)` operation.
 
 Those plans, targets, operations, and postconditions cannot exact-match and
-cannot be treated as two names for one effect. This contract freezes the
-RFC-0011 status wrapper described below because #150 is the producer dependency
-named by that RFC. It does not revise the immutable accepted Projects effects
-v1 record and cannot, by itself, satisfy that record's `add_dependency` Effect
-B.
+cannot be treated as two names for one effect.
 
-Owner acceptance must therefore also choose a separate governance path:
-supersede Projects effects v1 with a new accepted record that selects the
-RFC-0011 status effect, or revise RFC-0011 through its owning repository to
-match the accepted Projects dependency effect. No bridge, implementation,
-qualification, or activation may claim suite compatibility until one reviewed
-path makes the two immutable records exact. This conflict is not resolved by
-accepting the schema or wrapper mechanics below.
+Accepted RFC-0007 at
+`nomed/nomed.github.io@bb8628edf7a07c2af56f07e4f9140f58c851ef47`
+requires Proposed records inside an Accepted mission to resolve conflicts by:
+least authority expansion, already-Accepted semantics, compatibility,
+reversibility, and smallest diff, in that order. It also makes superseding or
+reinterpreting an Accepted operation semantic Class C unless the Accepted
+mission explicitly leaves that choice open. RFC-0005 does not leave the
+Projects Effect B operation open.
+
+The autonomous author decision is:
+
+~~~text
+Decision ID: projects-150-effect-b-conflict-v1
+Class: B governance-only/inert; pending independent review
+Decision: preserve Projects effects v1 capability projects.add-dependency.v1
+Operation: exactly one add_dependency(201 blocks 202)
+Rejected input: Proposed MCP RFC-0011 set_field_value(status)
+Implementation authority: none
+~~~
+
+The tie-break evidence is:
+
+1. **Least authority expansion:** retaining the Accepted Projects operation
+   claims no new capability; adopting the Proposed status operation would add
+   and substitute authority.
+2. **Already-Accepted semantics:** the Accepted RFC-0005 mission at
+   `12d9215f10c4b7fb1762a5025367e3e81543800f` and Accepted Projects record on
+   `main` at `8b123f4f5dd6796dc355c34e5a800753ee257a82` already fix Effect B as
+   `add_dependency`. This tie-break discriminates and is decisive.
+3. **Compatibility:** preserving `add_dependency` keeps the Projects plan,
+   approval, producer, postcondition, teardown, and evidence contracts
+   compatible. Proposed MCP RFC-0011 must conform in its owning repository
+   before it can be accepted or activated.
+4. **Reversibility:** revising an unaccepted MCP proposal is reversible;
+   superseding an Accepted Projects semantic is not an ordinary Class B change.
+5. **Smallest diff:** narrowing the wrapper to its already-Accepted operation
+   and later revising the Proposed MCP record is the smallest contained change.
+
+This decision does not modify the immutable Accepted Projects record. It
+removes the unresolved choice: the status operation is nonconforming and
+ineligible for bridge admission. MCP RFC-0011 must later adopt the accepted
+dependency target, capability, operation, and postcondition. Until then it
+remains blocked. This Proposed contract remains author work only; a distinct
+read-only reviewer and later distinct executor must supply RFC-0007 role
+evidence before acceptance or merge.
 
 ## Existing contracts remain unchanged
 
@@ -255,10 +296,10 @@ that the MCP-approved operation named the same host-attested Projects
 principal binding.
 
 The fixed Effect B profile admits exactly one native Projects
-`set_field_value(status)` operation for the one server-owned synthetic target.
-Any second operation, different logical field, different desired value,
-different target, caller-selected identifier, or different producer or wrapper
-release fails before provider access.
+`add_dependency(201 blocks 202)` operation for the two server-owned synthetic
+issues in the accepted target. Any second operation, reversed relationship,
+different issue, field operation, different target, caller-selected identifier,
+or different producer or wrapper release fails before provider access.
 
 ## Lifetime, replay, and atomicity
 
@@ -363,11 +404,12 @@ transport, verifier, operation, or output mapping.
 
 The immutable wrapper release manifest fixes:
 
-- profile `yukh-mcp/suite-preview-effect-b-status-v1`;
+- profile `yukh-mcp/suite-preview-effect-b-add-dependency-v1`;
 - external mode `apply` and internal reconciliation mode `native-v1`;
 - exact protected environment, target-profile digest, and policy commit and
   artifact digest;
-- exactly one `set_field_value` operation for logical field `status`;
+- capability `projects.add-dependency.v1` and exactly one
+  `add_dependency(201 blocks 202)` operation;
 - Projects producer source, apply-artifact, and entrypoint release;
 - wrapper source, artifact, and entrypoint release;
 - the exact pinned MCP verifier source and artifact digests;
@@ -395,8 +437,8 @@ The wrapper owns this exact admission and execution sequence:
 4. parse the protected capsule with `parseProtectedHostCapsule` against that
    exact scope and protected environment;
 5. require capsule enablement `apply-explicitly-enabled`, approved kind
-   `update_project_item_field_value`, the exact permission profile, and request
-   ceilings compatible with one operation;
+   `add_blocked_by`, the exact permission profile, and request ceilings
+   compatible with one dependency operation;
 6. call `createControlledApplyHostFactory` with only the parsed capsule options
    and fixed attempt instrumentation;
 7. call the factory's `create` once with `reconciliationMode: "native-v1"`,
@@ -551,26 +593,29 @@ All fixtures use invented identities and injected transports. No qualification
 test may use a credential, provider endpoint, GitHub request, workflow apply,
 consumer data, or live sandbox.
 
-## Acceptance and next gate
+## Independent review and next gate
 
-The owner must explicitly accept or reject:
+This author record resolves only the Proposed-record conflict under Accepted
+RFC-0007. It does not self-review, self-accept, or merge this substantive
+contract.
 
-1. the exact bridge schema, canonicalization, authentication, trust, lifetime,
-   replay, and migration rules;
-2. atomic verification without authority substitution;
-3. the single exported function, closed handles and result union;
-4. the immutable profile and exact reviewed primitive composition;
-5. one-attempt and `completion_unknown` semantics; and
-6. the release, SBOM, provenance, conformance, and redaction requirements.
+Before this record may move from Proposed to Accepted, issue #150 must contain:
 
-The owner must additionally direct resolution of the immutable operation
-conflict above. Schema acceptance alone does not select or change the suite
-Effect B operation.
+1. a distinct read-only reviewer session's confirmation against the exact
+   commit that the bridge schema, canonicalization, authentication, trust,
+   lifetime, replay, migration, early Projects approval verification, atomic
+   admission, wrapper closure, one-attempt semantics, `completion_unknown`,
+   supply-chain evidence, and redaction remain inside Accepted authority;
+2. confirmation that the wrapper admits only the Accepted
+   `projects.add-dependency.v1` / `add_dependency(201 blocks 202)` Effect B and
+   that Proposed MCP RFC-0011 must conform later;
+3. all required checks green on that exact commit; and
+4. a later executor/merger session distinct from both author and reviewer.
 
-Until explicit owner acceptance is recorded in #150 and this Proposed record is
-changed through review to Accepted, no implementation issue may add the bridge
-verifier, wrapper, fixture, export, runtime dependency, credential path,
-provider call, deployment, or release.
+Neither independent review nor later acceptance of this record authorizes an
+implementation issue to add the bridge verifier, wrapper, fixture, export,
+runtime dependency, credential path, provider call, deployment, or release. A
+separately reviewed implementation record remains mandatory.
 
 Acceptance would still authorize no live GitHub request, credential creation,
 workflow activation, mutation, deployment, publication, teardown, restore,

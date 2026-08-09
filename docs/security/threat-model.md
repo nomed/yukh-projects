@@ -222,7 +222,7 @@ Controls proposed under issue #150:
   capability;
 - expose one producer-owned MCP-safe function whose immutable release fixes
   native mode, target profile, policy, transports, verifier dependency, and
-  exactly one `set_field_value(status)` operation;
+  exactly one `add_dependency(201 blocks 202)` operation;
 - reject caller-selected URLs, methods, headers, queries, documents, provider
   identifiers, credentials, targets, policies, operations, transports, or
   verifiers;
@@ -249,9 +249,13 @@ none of those operational risks and authorizes no implementation or live use.
 Accepted Projects effects v1 and Proposed MCP RFC-0011 currently select
 different Effect B operation kinds (`add_dependency` and
 `set_field_value(status)`). Treating them as equivalent would substitute a plan
-and postcondition across immutable records. Suite compatibility remains denied
-until a separately reviewed supersession or upstream RFC revision makes the
-operation, target, and postcondition exact.
+and postcondition across immutable records. Accepted RFC-0007 at
+`bb8628edf7a07c2af56f07e4f9140f58c851ef47` resolves the conflict in favor of
+the already-Accepted Projects `add_dependency` semantic: it claims the least
+authority, preserves compatibility, is more reversible because the conflicting
+MCP record is still Proposed, and requires the smallest diff. Proposed MCP
+RFC-0011 must conform later; this Projects contract cannot supersede or
+reinterpret its Accepted operation.
 
 ### Stale plan and time-of-check/time-of-use
 
@@ -408,7 +412,7 @@ no live request, mutation, release, deployment, apply, or consumer migration.
   exact cross-binding, principal preservation, bridge replay, trust-root
   substitution, and zero provider calls on every compound-admission failure;
 - immutable MCP wrapper selection, fixed target/policy/native mode and exact
-  `set_field_value(status)` operation, private read/write handle separation,
+  `add_dependency(201 blocks 202)` operation, private read/write handle separation,
   absence of generic transport/query/document/provider inputs, one attempt,
   no hidden retry, and durable `completion_unknown`;
 - fresh-plan mismatch, precondition drift, lease contention, and lease-loss rejection;
