@@ -189,6 +189,18 @@ jobs:
           const manifestBytes=await readFile("release-input/release-manifest.json"),manifest=JSON.parse(manifestBytes);
           const receiptBytes=await readFile("release-input/authorization-receipt.json"),receipt=JSON.parse(receiptBytes);
           if(hash(manifestBytes)!==process.env.ASSET_MANIFEST_SHA256||manifest.publication!=="disabled"||manifest.assets.length!==16||manifest.version!==process.env.RELEASE_VERSION||manifest.tag!==process.env.RELEASE_TAG||manifest.checksum.sha256!==process.env.CHECKSUM_INDEX_SHA256||receipt.schema!=="yukh-projects-release-authorization-receipt-v1"||receipt.publication!=="authorized"||JSON.stringify(receipt.effects)!==JSON.stringify(["attest-17-assets","create-immutable-tag","create-github-release","upload-17-assets"])||receipt.releaseCommit!==process.env.RELEASE_COMMIT||receipt.releaseTree!==process.env.RELEASE_TREE||receipt.workflowBlobSha!==process.env.WORKFLOW_BLOB_SHA||receipt.authorizationCommentId!==Number(process.env.AUTHORIZATION_COMMENT_ID)||receipt.authorizationBodySha256!==process.env.AUTHORIZATION_BODY_SHA256)throw new Error("publication receipt binding mismatch");
+          const tagRef=`refs/tags/${receipt.tag}`,tagPath=`/repos/${repository}/git/ref/tags/${encodeURIComponent(receipt.tag)}`;
+          function requireTagBinding(value,stage){
+            if(value?.ref!==tagRef||value.object?.type!=="commit"||value.object?.sha!==receipt.releaseCommit)throw new Error(`${stage} tag binding mismatch`);
+          }
+          async function verifyReservedTag(stage){
+            const [tag,tagCommit]=await Promise.all([
+              request(tagPath),
+              request(`/repos/${repository}/git/commits/${receipt.releaseCommit}`)
+            ]);
+            requireTagBinding(tag,stage);
+            if(tagCommit.sha!==receipt.releaseCommit||tagCommit.tree?.sha!==receipt.releaseTree)throw new Error(`${stage} commit tree binding mismatch`);
+          }
           const expected=[...manifest.assets,manifest.checksum].sort((a,b)=>a.name.localeCompare(b.name));
           const names=(await readdir("release-input/assets")).sort();
           if(JSON.stringify(names)!==JSON.stringify(expected.map(asset=>asset.name)))throw new Error("publication assets are missing or extra");
@@ -204,14 +216,18 @@ jobs:
             request(`/repos/${repository}/contents/.github/workflows/publish-release.yml?ref=${receipt.releaseCommit}`),
             request(`/repos/${repository}/immutable-releases`),
             request(`/repos/${repository}/releases?per_page=100`),
-            fetch(`${apiRoot}/repos/${repository}/git/ref/tags/${encodeURIComponent(receipt.tag)}`,{headers,redirect:"error"})
+            fetch(`${apiRoot}${tagPath}`,{headers,redirect:"error"})
           ]);
           const authorization=JSON.parse(comment.body);
-          if(comment.id!==receipt.authorizationCommentId||!comment.issue_url.endsWith("/issues/156")||comment.user?.login!==repositoryState.owner?.login||comment.author_association!=="OWNER"||hash(Buffer.from(comment.body,"utf8"))!==receipt.authorizationBodySha256||comment.created_at!==comment.updated_at||authorization.releaseCommit!==receipt.releaseCommit||authorization.releaseTree!==receipt.releaseTree||authorization.version!==receipt.version||authorization.tag!==receipt.tag||authorization.assetManifestSha256!==receipt.assetManifestSha256||authorization.checksumIndexSha256!==receipt.checksumIndexSha256||authorization.workflowBlobSha!==receipt.workflowBlobSha||JSON.stringify(authorization.effects)!==JSON.stringify(receipt.effects)||branch.commit?.sha!==receipt.releaseCommit||commit.tree?.sha!==receipt.releaseTree||workflow.sha!==receipt.workflowBlobSha||policy.enabled!==true)throw new Error("fresh publication authority check failed");
+          if(comment.id!==receipt.authorizationCommentId||!comment.issue_url.endsWith("/issues/156")||comment.user?.login!==repositoryState.owner?.login||comment.author_association!=="OWNER"||hash(Buffer.from(comment.body,"utf8"))!==receipt.authorizationBodySha256||comment.created_at!==comment.updated_at||authorization.releaseCommit!==receipt.releaseCommit||authorization.releaseTree!==receipt.releaseTree||authorization.version!==receipt.version||authorization.tag!==receipt.tag||authorization.assetManifestSha256!==receipt.assetManifestSha256||authorization.checksumIndexSha256!==receipt.checksumIndexSha256||authorization.workflowBlobSha!==receipt.workflowBlobSha||JSON.stringify(authorization.effects)!==JSON.stringify(receipt.effects)||branch.commit?.sha!==receipt.releaseCommit||commit.sha!==receipt.releaseCommit||commit.tree?.sha!==receipt.releaseTree||workflow.sha!==receipt.workflowBlobSha||policy.enabled!==true)throw new Error("fresh publication authority check failed");
           if(tagResponse.status!==404||releases.some(release=>release.tag_name===receipt.tag))throw new Error("release rerun or partial state detected");
+          const reserved=await request(`/repos/${repository}/git/refs`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ref:tagRef,sha:receipt.releaseCommit})},[201]);
+          requireTagBinding(reserved,"created");
+          await verifyReservedTag("reserved");
           const notesName=`yukh-projects-release-notes-${receipt.version}.md`,notes=await readFile(`release-input/assets/${notesName}`,"utf8");
           const draft=await request(`/repos/${repository}/releases`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tag_name:receipt.tag,target_commitish:receipt.releaseCommit,name:`Yukh Projects ${receipt.version}`,body:notes,draft:true,prerelease:false})},[201]);
           if(!Number.isSafeInteger(draft.id)||draft.tag_name!==receipt.tag||draft.draft!==true)throw new Error("draft release receipt is invalid");
+          await verifyReservedTag("draft");
           for(const asset of expected){
             const bytes=await readFile(`release-input/assets/${asset.name}`);
             const response=await fetch(`${uploadRoot}/repos/${repository}/releases/${draft.id}/assets?name=${encodeURIComponent(asset.name)}`,{method:"POST",headers:{...headers,"Content-Type":"application/octet-stream","Content-Length":String(bytes.byteLength)},body:bytes,redirect:"error"});
@@ -219,12 +235,19 @@ jobs:
             const uploaded=await response.json();
             if(uploaded.name!==asset.name||uploaded.size!==asset.bytes||uploaded.digest!==`sha256:${asset.sha256}`)throw new Error("release asset upload receipt mismatch");
           }
+          await verifyReservedTag("uploaded");
           const uploaded=await request(`/repos/${repository}/releases/${draft.id}/assets?per_page=100`);
           if(uploaded.length!==expected.length||expected.some(asset=>{const value=uploaded.find(item=>item.name===asset.name);return !value||value.size!==asset.bytes||value.digest!==`sha256:${asset.sha256}`;}))throw new Error("draft release asset verification failed");
+          await verifyReservedTag("publish");
           const published=await request(`/repos/${repository}/releases/${draft.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({draft:false})});
-          const finalRelease=await request(`/repos/${repository}/releases/${draft.id}`);
-          const finalTag=await request(`/repos/${repository}/git/ref/tags/${encodeURIComponent(receipt.tag)}`);
-          if(published.draft!==false||finalRelease.draft!==false||finalRelease.immutable!==true||finalTag.object?.type!=="commit"||finalTag.object?.sha!==receipt.releaseCommit)throw new Error("immutable release verification failed");
+          const [finalRelease,finalTag,finalCommit,finalAssets]=await Promise.all([
+            request(`/repos/${repository}/releases/${draft.id}`),
+            request(tagPath),
+            request(`/repos/${repository}/git/commits/${receipt.releaseCommit}`),
+            request(`/repos/${repository}/releases/${draft.id}/assets?per_page=100`)
+          ]);
+          requireTagBinding(finalTag,"immutable");
+          if(published.id!==draft.id||published.tag_name!==receipt.tag||published.draft!==false||finalRelease.id!==draft.id||finalRelease.tag_name!==receipt.tag||finalRelease.draft!==false||finalRelease.immutable!==true||finalCommit.sha!==receipt.releaseCommit||finalCommit.tree?.sha!==receipt.releaseTree||finalAssets.length!==expected.length||expected.some(asset=>{const value=finalAssets.find(item=>item.name===asset.name);return !value||value.size!==asset.bytes||value.digest!==`sha256:${asset.sha256}`;}))throw new Error("immutable release verification failed");
           NODE
       - name: Attest exact release assets
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1

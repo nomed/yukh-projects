@@ -50,9 +50,14 @@ Publication requires immutable normal and security review receipts plus an
 authenticated repository-owner Class C record bound to the exact reviewed
 head/tree, merged commit/tree, workflow, version/tag, manifest, checksum index,
 and four publication effects. A protected no-checkout job may then transition
-only repository state from no tag or Release, through one draft with the
-complete verified assets, to immutable `v1.8.0`, then attest the exact 17-file
-directory through the accepted pinned OIDC boundary. It has no npm credential
+only repository state by atomically creating `refs/tags/v1.8.0` at the exact
+authorized commit, immediately verifying its commit/tree, creating one draft
+for that reserved tag, uploading the complete verified assets once, and
+publishing immutable `v1.8.0`. The ref, commit/tree, and provider asset digests
+are rechecked through publication before the exact 17-file directory is
+attested through the accepted pinned OIDC boundary. A pre-existing or raced tag,
+including one already at the correct commit, is terminal. The job never moves,
+deletes, retries, resumes, or overwrites release state. It has no npm credential
 and does not activate a provider, create credentials, grant apply approval, or
 authorize a live effect.
 

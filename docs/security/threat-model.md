@@ -409,9 +409,18 @@ Controls:
 - immediately recheck the authorization body, main commit/tree, workflow blob,
   immutable-release policy, tag absence, Release absence, and every local asset
   before the first mutation;
-- upload once to a single draft, require provider-reported SHA-256 digests, and
-  publish only after the complete exact set is present, then use a pinned
-  GitHub action to attest the exact verified 17-file directory;
+- atomically create the fully qualified semantic-version tag ref at the exact
+  authorized commit before draft creation; accept only a fresh `201`, then read
+  back and verify the direct commit target and authorized tree; a pre-existing
+  same-target tag or competing creation is terminal, and the workflow never
+  updates or deletes a ref;
+- recheck the reserved ref, commit, and tree after draft creation, after upload,
+  immediately before publication, and after immutable publication; require
+  provider-reported SHA-256 digests for the exact complete asset set both before
+  and after publication;
+- rely on the immutable Release's tag/commit/asset attestation and then use a
+  pinned GitHub action to attest the same exact verified 17-file directory from
+  the authorized workflow commit;
 - fail closed on any existing tag, draft, Release, changed binding, partial
   state, rerun, or verification failure; never retry, resume, delete, move,
   overwrite, or automatically compensate release state;

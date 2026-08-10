@@ -92,17 +92,35 @@ Immediately before its first mutation, the inline reviewed publisher rechecks
 the authorization body digest and immutability, `main` commit/tree, workflow
 blob, repository immutable-release policy, local manifest and all 17 assets.
 Any pre-existing tag, draft, or Release is a rerun or partial-state signal and
-fails closed.
+fails closed, including a tag that already points to the authorized commit.
 
-The publisher creates one draft bound to the exact commit, uploads each asset
-once, verifies the provider-reported name, size, and SHA-256 digest and the
-complete allowlist, then publishes the draft. Success requires GitHub to report
-the Release immutable and its tag to resolve directly to the exact authorized
-commit. A pinned GitHub action then attests the exact verified 17-file asset
-directory. There is no retry, resume, tag movement, overwrite, deletion, or
-automatic cleanup. A failure after the first mutation, including attestation
-failure after an otherwise immutable Release, leaves observable partial state
-and blocks every rerun for private owner investigation and a corrective release.
+The first mutation is one `POST /git/refs` that atomically creates the fully
+qualified `refs/tags/v1.8.0` reference at the exact authorized merged commit.
+The publisher accepts only the `201` creation response with a direct commit
+target, then immediately reads the reference and commit object back and verifies
+the authorized commit and tree. A preemption or competing creation returns an
+error and is terminal; the workflow does not treat an existing same-target tag
+as success. It never calls the reference update or delete APIs.
+
+Only after that reservation does the publisher create one draft for the
+existing exact tag. GitHub documents `target_commitish` as unused when the tag
+already exists, so the atomic reference creation and read-back—not that release
+field—are the target authority. The publisher re-verifies the reserved ref,
+commit, and tree after draft creation, after all one-shot uploads, immediately
+before publication, and after immutable publication. It verifies every
+provider-reported asset name, size, and SHA-256 digest both before and after
+publication.
+
+Success requires GitHub to report the Release immutable, the final tag to
+resolve directly to the exact authorized commit, the commit to retain the exact
+authorized tree, and the immutable asset set to remain the exact allowlist.
+GitHub's immutable-release attestation binds that tag, commit, and asset set; the
+next pinned GitHub action attests the same exact 17 files from the authorized
+workflow commit. There is no retry, resume, tag movement, overwrite, deletion,
+or automatic cleanup. A failure after atomic reservation—including a race,
+partial draft or upload, provider digest mismatch, or attestation failure after
+an otherwise immutable Release—leaves observable partial state and blocks every
+rerun for private owner investigation and a corrective release.
 
 Repository immutable releases must be enabled before publication. Unavailable,
 malformed, stale, ambiguous, or disabled policy or authorization state fails
@@ -115,7 +133,7 @@ release boundary.
 Candidate files retain `publication: "disabled"` before and after upload. The
 authorized state transition affects repository state only:
 
-`absent -> one complete verified draft -> one immutable Release`.
+`absent -> one exact reserved tag -> one complete verified draft -> one immutable Release`.
 
 Publication does not activate the wrapper, bind a provider profile, create
 credentials, grant controlled-apply approval, or authorize a live Project

@@ -53,10 +53,15 @@ activation, credentials, or either preview effect.
   local assets, checksums, SPDX SBOM, provenance, and reproducibility evidence.
   Release publication, tag creation or movement, asset upload, package
   publication, and permission changes remain RFC-0007 Class C owner-only.
-- Security review blocked PR #157 at `509a539610f2f66fd349112626c9f88d7217a95a`.
-  Remediation replaces the automatic push publisher with authenticated exact
-  owner authorization, a secret-free preflight, committed reproducible
-  descriptors, and a protected no-checkout one-shot publication job.
+- Security review at PR #157 head
+  `e71c30e635b4af9720fee948af58d40e1b2a0579` confirmed the authenticated
+  owner authorization, secret-free preflight, committed reproducible
+  descriptors, and protected no-checkout one-shot publication boundary. It
+  blocked publication on the unconfigured protected `release` environment and
+  a tag-creation race. Author remediation atomically reserves the exact tag
+  before draft creation and treats every pre-existing, raced, moved, rerun, or
+  partial state as terminal; environment configuration remains a separate
+  repository-owner administrative prerequisite.
 
 ## Next
 

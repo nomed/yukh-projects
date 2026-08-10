@@ -101,14 +101,14 @@
     {
       "name": "yukh-projects-release-notes-1.8.0.md",
       "source": "RELEASE_NOTES.md",
-      "sha256": "b3a81c30791e93959350ec13c6641e7c3fe8edbbeae42dd2c633aad0c5fe054f",
-      "bytes": 3933
+      "sha256": "38391e5017853aaeaea2c5eb4182df6e64714f7912a194d6c5b4eaf8da3b1ba9",
+      "bytes": 4322
     }
   ],
   "checksum": {
     "name": "yukh-projects-1.8.0.sha256",
     "source": "release/1.8.0/checksums.sha256",
-    "sha256": "f4703b99ba6b82a6449dfc61ee14d0c6f34199da41a2dd958ff4621ef8fa4ed1",
+    "sha256": "42ef2d222ea4e390ba89b84d161f6ef7b1b1c0ab2d4edc2967d24c27d2639db8",
     "bytes": 1630,
     "covers": 16
   },
