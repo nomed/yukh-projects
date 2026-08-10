@@ -61,6 +61,16 @@ This repository currently contains the public project foundation. Functional cod
 
 Do not report vulnerabilities in public issues. Follow [SECURITY.md](SECURITY.md) to use a private disclosure channel.
 
+## Local E2E sandbox demo
+
+Run the closed, deterministic suite-orchestrator command:
+
+```sh
+npm --silent run demo:e2e
+```
+
+The command uses only invented policy, issue, Project, approval, and transport fixtures. It performs no network request or live mutation and proves dry-run, approval denial, one observable fake mutation, and a zero-effect second pass. See [the validation note](docs/validation/e2e-sandbox-demo.md) for the fixed output contract and safety boundary.
+
 ## License
 
 Licensed under the [Apache License 2.0](LICENSE).
