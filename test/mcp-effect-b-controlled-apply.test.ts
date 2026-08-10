@@ -65,6 +65,7 @@ interface FixtureOptions{
  writeFailure?:boolean;
  verificationFailure?:boolean;
  cleanupFailure?:boolean;
+ rotateProjectsTrustOnRead?:boolean;
 }
 
 function expectedOperation(scope:BoundScope):PlannedOperation{
@@ -292,6 +293,9 @@ function fixture(options:FixtureOptions={}){
  const items=()=>[201,202].map(number=>({id:number+1000,node_id:`PVTI_${number}`,content:issue(number as 201|202,dependencyPresent),fields:[{name:"Area",value:{name:{raw:"Bridge"}}},{name:"Work Type",value:{name:{raw:"Task"}}}]}));
  const readFetch:typeof globalThis.fetch=async(input)=>{
   readCalls++;
+  if(options.rotateProjectsTrustOnRead&&readCalls===1){
+   projectsTrust.publicKey=generateKeyPairSync("ed25519").publicKey.export({type:"spki",format:"pem"});
+  }
   const url=String(input);
   if(url.endsWith("/repos/example-org/example-repo"))return json({node_id:"R_1",owner:{type:"Organization"}});
   if(url.endsWith("/orgs/example-org/projectsV2/7"))return json({node_id:"P_7",number:7});
@@ -409,7 +413,7 @@ test("rejects every missing bridge field and open nested release object",()=>{
  }
 });
 
-test("performs exact Effect B once and records only effect_observed",async()=>{
+test("[conformance:effect-observed] performs exact Effect B once and records only effect_observed",async()=>{
  const value=fixture();
  const result=await runMcpEffectBControlledApplyV1(value.invocation);
  assert.deepEqual(result,{schema:"yukh-projects-mcp-effect-b-result-v1",status:"effect_observed",effectBoundaryEntered:true,mutationRequestCount:1,changed:true,remaining:0},canonical(value.calls()));
@@ -422,7 +426,7 @@ test("performs exact Effect B once and records only effect_observed",async()=>{
  assert.equal(value.calls().write,1);
 });
 
-test("keeps every compound admission denial before all provider calls",async()=>{
+test("[conformance:denial-zero-call] keeps every compound admission denial before all provider calls",async()=>{
  const cases:[string,FixtureOptions,string][]=[
   ["MCP handle claims",{invalidMcp:true},"YKP-MCP-WRAPPER-002"],
   ["Projects v1 approval",{invalidApproval:true},"YKP-MCP-WRAPPER-003"],
@@ -446,7 +450,7 @@ test("keeps every compound admission denial before all provider calls",async()=>
  }
 });
 
-test("rejects mismatched v1 and bridge trust profiles before every provider call",async()=>{
+test("[conformance:trust-mismatch] rejects mismatched v1 and bridge trust profiles before every provider call",async()=>{
  const value=fixture({mismatchedBridgeTrust:true});
  const result=await runMcpEffectBControlledApplyV1(value.invocation);
  assert.deepEqual(result,{
@@ -456,6 +460,27 @@ test("rejects mismatched v1 and bridge trust profiles before every provider call
   mutationRequestCount:0,
   code:"YKP-MCP-WRAPPER-005"
  });
+ assert.deepEqual(value.calls(),{read:0,write:0,coordination:0,closed:9});
+});
+
+test("[conformance:nonce-substitution] rejects a signed substituted nonce before every provider call",async()=>{
+ const substituted="projects-effect-b-substituted-nonce";
+ const value=fixture({bridgeClaims:claims=>({
+  ...claims,
+  nonce:substituted,
+  projectsNonceBindingDigest:mcpEffectBProjectNonceDigestForTest(substituted)
+ })});
+ const result=await runMcpEffectBControlledApplyV1(value.invocation);
+ assert.equal(result.status,"rejected");
+ assert.equal(result.status==="rejected"&&result.code,"YKP-MCP-WRAPPER-005");
+ assert.deepEqual(value.calls(),{read:0,write:0,coordination:0,closed:9});
+});
+
+test("[conformance:lease-substitution] rejects a signed substituted lease binding before every provider call",async()=>{
+ const value=fixture({bridgeClaims:claims=>({...claims,projectsLeaseHolderDigest:"0".repeat(64)})});
+ const result=await runMcpEffectBControlledApplyV1(value.invocation);
+ assert.equal(result.status,"rejected");
+ assert.equal(result.status==="rejected"&&result.code,"YKP-MCP-WRAPPER-006");
  assert.deepEqual(value.calls(),{read:0,write:0,coordination:0,closed:9});
 });
 
@@ -472,12 +497,15 @@ test("rejects open invocation schemas and ordinary objects without touching a pr
  assert.equal(second.status==="rejected"&&second.code,"YKP-MCP-WRAPPER-001");
 });
 
-test("returns durable completion_unknown after one ambiguous mutation and never retries",async()=>{
+test("[conformance:completion-unknown-no-retry] returns durable completion_unknown after one ambiguous mutation and never retries",async()=>{
  const value=fixture({writeFailure:true});
  const result=await runMcpEffectBControlledApplyV1(value.invocation);
  assert.deepEqual(result,{schema:"yukh-projects-mcp-effect-b-result-v1",status:"completion_unknown",effectBoundaryEntered:true,mutationRequestCount:1,code:"YKP-MCP-WRAPPER-009"});
  assert.equal(value.calls().write,1);
  assert.deepEqual(mcpEffectBTerminalResultForTest(value.invocation),result);
+ const replay=await runMcpEffectBControlledApplyV1(value.invocation);
+ assert.equal(replay.status,"rejected");
+ assert.equal(value.calls().write,1);
 });
 
 test("requires post-mutation convergence and keeps ambiguous verification terminal",async()=>{
@@ -488,7 +516,17 @@ test("requires post-mutation convergence and keeps ambiguous verification termin
  assert.equal(value.calls().write,1);
 });
 
-test("cleanup failure cannot rewrite an independently observed effect",async()=>{
+test("[conformance:independent-verification] re-verifies Projects approval independently before mutation",async()=>{
+ const value=fixture({rotateProjectsTrustOnRead:true});
+ const result=await runMcpEffectBControlledApplyV1(value.invocation);
+ assert.equal(result.status,"rejected");
+ assert.equal(result.status==="rejected"&&result.code,"YKP-MCP-WRAPPER-008");
+ assert.ok(value.calls().read>0);
+ assert.equal(value.calls().write,0);
+ assert.equal(value.calls().closed,9);
+});
+
+test("[conformance:cleanup] cleanup failure cannot rewrite an independently observed effect",async()=>{
  const value=fixture({cleanupFailure:true});
  const result=await runMcpEffectBControlledApplyV1(value.invocation);
  assert.equal(result.status,"effect_observed");

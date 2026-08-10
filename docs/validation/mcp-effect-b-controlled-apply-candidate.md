@@ -60,10 +60,17 @@ requires every MCP Effect B package subpath to fail with
 The MCP Effect B test host lives only in
 `test/support/mcp-effect-b-private-test-host.inject.ts`. Production TypeScript
 compilation excludes it and the MCP test that consumes it. `npm test` injects
-that source into one temporary esbuild test bundle, runs the complete suite,
-and deletes the temporary directory unconditionally. Neither production
+that source into one project-local ephemeral esbuild test bundle, runs the
+complete suite, and deletes the bundle directory unconditionally. Neither production
 `dist/src`, the committed candidate bundle, declarations, manifests, nor the
 package contains a handle constructor or test helper.
+
+The separately documented
+[hermetic conformance runner](mcp-effect-b-hermetic-conformance-runner.md)
+uses the same injection builder with a closed `core-v1` selector. It emits only
+bounded pass/fail JSON for fixed synthetic cases. It is a repository-only
+test seam, not runtime authority, and adds no package export, deep import,
+credential, endpoint, network path, provider call, or release artifact.
 
 The author session also produces local-only checksum, provenance, and SPDX
 candidate files after the final implementation commit. Those files bind the
