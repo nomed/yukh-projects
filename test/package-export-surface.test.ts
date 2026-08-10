@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, mkdir, readFile, readdir, rm, symlink } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, readFile, readdir, rm, symlink } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import test from "node:test";
@@ -57,8 +56,10 @@ test("exposes no MCP Effect B handle authority from runtime or candidate bundles
 });
 
 test("packs only the closed root export and blocks every MCP Effect B subpath",async()=>{
- const temporary=await mkdtemp(join(tmpdir(),"yukh-projects-package-"));
+ const temporary=join(root,".test-work",`package-${process.pid}`);
  try{
+  await rm(temporary,{recursive:true,force:true});
+  await mkdir(temporary,{recursive:true});
   const packed=spawnSync("npm",["pack","--json","--pack-destination",temporary],{cwd:root,encoding:"utf8"});
   assert.equal(packed.status,0,packed.stderr);
   const report=JSON.parse(packed.stdout) as [{filename:string;files:{path:string}[]}];

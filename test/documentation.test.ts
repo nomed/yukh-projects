@@ -499,3 +499,31 @@ test("the accepted MCP bridge and wrapper preserve compound authority", async ()
   assert.match(validation, /ERR_PACKAGE_PATH_NOT_EXPORTED/);
   assert.match(validation, /distinct normal and\s+fresh security review/i);
 });
+
+test("the Effect B conformance runner is documented only as a hermetic test seam",async()=>{
+  const runner=await read("docs/validation/mcp-effect-b-hermetic-conformance-runner.md");
+  const validation=await read("docs/validation/mcp-effect-b-controlled-apply-candidate.md");
+  assert.match(runner,/repository-checkout conformance seam/);
+  assert.match(runner,/not a package API, runtime entrypoint/);
+  assert.match(runner,/sole production MCP Effect B\s+export/);
+  assert.match(runner,/exactly two\s+fields/);
+  assert.match(runner,/at most 512 bytes/);
+  assert.match(runner,/no larger than 4096 bytes/);
+  assert.match(runner,/cannot contain raw handles, secrets, credentials/);
+  assert.match(runner,/no URL, endpoint, credential, handle, module, source path/);
+  assert.match(runner,/Provider calls:\*\* none/);
+  assert.match(runner,/Class: B-X local test-only implementation candidate/);
+  assert.match(runner,/grants no self-review, acceptance, merge, release/);
+  for(const caseId of [
+    "effect-observed",
+    "denial-zero-call",
+    "trust-mismatch",
+    "nonce-substitution",
+    "lease-substitution",
+    "completion-unknown-no-retry",
+    "independent-verification",
+    "cleanup",
+  ])assert.match(runner,new RegExp(`\\\`${caseId}\\\``));
+  assert.match(validation,/hermetic conformance runner/);
+  assert.match(validation,/repository-only\s+test seam, not runtime authority/);
+});

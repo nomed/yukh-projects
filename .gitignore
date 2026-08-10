@@ -21,4 +21,5 @@ dist/mcp-effect-b/*
 !dist/mcp-effect-b/index.js
 !dist/mcp-effect-b/manifest.json
 coverage/
+.test-work/
 *.log

@@ -11,7 +11,7 @@
     {
       "name": "yukh-projects-1.8.0.provenance.json",
       "source": "release/1.8.0/provenance.json",
-      "sha256": "9504704369cfcc42bdf6485946e77580fbe8f62ac8426dc71a9846f5e6ff895c",
+      "sha256": "378e5ce88e525c28004296228172f225266c75a92f3b48f21f5d2cae3a7145fb",
       "bytes": 2050
     },
     {
@@ -95,8 +95,8 @@
     {
       "name": "yukh-projects-package-1.8.0.tgz",
       "source": "release/1.8.0/package.tgz",
-      "sha256": "3bb8a5b83ea83e050184c3da1d47ed9df19f924ce21730bf06ec7412cc147e9b",
-      "bytes": 75260
+      "sha256": "4384e67e617daf266aab9f87536bd1c405dc640a0e10104cc63ad42058c13801",
+      "bytes": 75276
     },
     {
       "name": "yukh-projects-release-notes-1.8.0.md",
@@ -108,7 +108,7 @@
   "checksum": {
     "name": "yukh-projects-1.8.0.sha256",
     "source": "release/1.8.0/checksums.sha256",
-    "sha256": "42ef2d222ea4e390ba89b84d161f6ef7b1b1c0ab2d4edc2967d24c27d2639db8",
+    "sha256": "0de7185eae69083fa3b86f8dc643cf9f9d7f7e5b4d74348358ded57fa2e1b663",
     "bytes": 1630,
     "covers": 16
   },
