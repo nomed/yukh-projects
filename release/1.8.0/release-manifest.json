@@ -1,0 +1,116 @@
+{
+  "schema": 1,
+  "repository": "nomed/yukh-projects",
+  "version": "1.8.0",
+  "tag": "v1.8.0",
+  "source": {
+    "implementationCommit": "a4f05f673bb0a03f66fc9864372cee7839ed78d1",
+    "implementationTree": "16969542925e35ebf669cc9e9e27ce758dfe5585"
+  },
+  "assets": [
+    {
+      "name": "yukh-projects-1.8.0.provenance.json",
+      "source": "release/1.8.0/provenance.json",
+      "sha256": "378e5ce88e525c28004296228172f225266c75a92f3b48f21f5d2cae3a7145fb",
+      "bytes": 2050
+    },
+    {
+      "name": "yukh-projects-1.8.0.spdx.json",
+      "source": "release/1.8.0/spdx.json",
+      "sha256": "ec761d5096f4053969d0df18e111e5b46ce35411c245326fcd8e6408635a89f9",
+      "bytes": 33502
+    },
+    {
+      "name": "yukh-projects-action-1.8.0.js",
+      "source": "dist/action/index.js",
+      "sha256": "a0fe37aea48251e75f4e1cd0474551cbb6601346f1ff369fadca6a71f1c45c55",
+      "bytes": 362132
+    },
+    {
+      "name": "yukh-projects-action-1.8.0.yml",
+      "source": "action.yml",
+      "sha256": "274455dc9f882730971e473627d4eb831a2bdc5fecab9e75f868f29bee58ef3c",
+      "bytes": 1116
+    },
+    {
+      "name": "yukh-projects-apply-action-1.8.0.js",
+      "source": "dist/apply/action.js",
+      "sha256": "769382a7cd2e2e6d185d60540e7a2febeead96fe75e576f12310136a512c97ff",
+      "bytes": 431423
+    },
+    {
+      "name": "yukh-projects-apply-action-1.8.0.yml",
+      "source": "apply-action.yml",
+      "sha256": "5afa2c4a1d80c9ceff2cd21b08f97ad117171b49f9102b9727d6e104da5b154e",
+      "bytes": 1678
+    },
+    {
+      "name": "yukh-projects-apply-cli-1.8.0.js",
+      "source": "dist/apply/cli.js",
+      "sha256": "7743a842d4b45abea2f6d361303d94a1c0aeb62bd603ca39da7efb5456cc1cdb",
+      "bytes": 432646
+    },
+    {
+      "name": "yukh-projects-apply-library-1.8.0.js",
+      "source": "dist/apply/index.js",
+      "sha256": "5081d30fc3f18a2eec33e679e5fc89a7c14789d8df15889d59ddbe06e40a3ed1",
+      "bytes": 467355
+    },
+    {
+      "name": "yukh-projects-apply-manifest-1.8.0.json",
+      "source": "dist/apply/manifest.json",
+      "sha256": "28c6f97c21e0ed684a33ebe1bd49c09480501b2f2f42e55a9e556a5b907ecf00",
+      "bytes": 429
+    },
+    {
+      "name": "yukh-projects-cli-1.8.0.js",
+      "source": "dist/cli/index.js",
+      "sha256": "66f09951d1b1177b9fea7d870886095fe88d05696c6cfcaaef39716edb5f59aa",
+      "bytes": 371023
+    },
+    {
+      "name": "yukh-projects-lock-1.8.0.json",
+      "source": "package-lock.json",
+      "sha256": "935a7c30e8aa6d43d82a7d2d433787a0437e7cd7d4f1c68b175adb1a617a3a9d",
+      "bytes": 16709
+    },
+    {
+      "name": "yukh-projects-mcp-effect-b-1.8.0.js",
+      "source": "dist/mcp-effect-b/index.js",
+      "sha256": "0af1e26b6ebe96657dc0d92de2ec7c5bfa3755a9078703b170b0b4dd8e16fdb0",
+      "bytes": 453469
+    },
+    {
+      "name": "yukh-projects-mcp-effect-b-bridge-v2-vector-1.8.0.json",
+      "source": "test/fixtures/mcp-effect-b-bridge-v2-vector.json",
+      "sha256": "a4ed0f0fb58a25c02c68f0d22583604348fe78c615fd7478f899d2d0313bb4c9",
+      "bytes": 3533
+    },
+    {
+      "name": "yukh-projects-mcp-effect-b-manifest-1.8.0.json",
+      "source": "dist/mcp-effect-b/manifest.json",
+      "sha256": "b8dbd22d884906ece3595cfbc8e75854ae6cf2cdbc9b3873413108be411ecae2",
+      "bytes": 571
+    },
+    {
+      "name": "yukh-projects-package-1.8.0.tgz",
+      "source": "release/1.8.0/package.tgz",
+      "sha256": "4384e67e617daf266aab9f87536bd1c405dc640a0e10104cc63ad42058c13801",
+      "bytes": 75276
+    },
+    {
+      "name": "yukh-projects-release-notes-1.8.0.md",
+      "source": "RELEASE_NOTES.md",
+      "sha256": "38391e5017853aaeaea2c5eb4182df6e64714f7912a194d6c5b4eaf8da3b1ba9",
+      "bytes": 4322
+    }
+  ],
+  "checksum": {
+    "name": "yukh-projects-1.8.0.sha256",
+    "source": "release/1.8.0/checksums.sha256",
+    "sha256": "0de7185eae69083fa3b86f8dc643cf9f9d7f7e5b4d74348358ded57fa2e1b663",
+    "bytes": 1630,
+    "covers": 16
+  },
+  "publication": "disabled"
+}

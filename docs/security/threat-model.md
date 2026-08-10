@@ -379,15 +379,58 @@ Controls:
 
 ### Release automation privilege confusion
 
-A compromised dependency, untrusted event, stale commit, mutable tag, or overprivileged release bot publishes code that did not pass review.
+A compromised dependency, substituted review or owner record, untrusted
+dispatch input, stale commit, mutable tag, rerun, or overprivileged release bot
+publishes code that did not pass review. A failed upload can also leave a tag or
+draft that unsafe automation mistakes for resumable work.
 
 Controls:
 
 - limit Release Please to version, changelog, and release-PR maintenance with no tag or publication authority;
-- place publication in a separate manually dispatched protected environment with exact version and commit binding;
-- acquire contents, identity-token, and attestation write permissions only in the final publication job;
-- rebuild from a clean checkout, verify the committed bundle byte-for-byte, and publish checksums, an SBOM, and attestations;
+- require immutable canonical normal-review and security-review records bound to
+  the PR head/tree, version/tag, workflow blob, release-manifest digest, and
+  checksum-index digest;
+- require a later unedited canonical owner Class C record on the governing issue
+  that binds both review body digests and comment identifiers, the merged
+  commit/tree, and the exact one-shot publication effects;
+- treat workflow dispatch text as an untrusted numeric comment selector only;
+  derive every release binding from authenticated evidence and fresh GitHub
+  state;
+- keep checkout, dependency installation with lifecycle scripts disabled,
+  build, tests, and asset assembly in read-only jobs with no release-capable
+  token, registry token, OIDC identity, or publication environment;
+- commit the canonical manifest, checksum index, package tarball, SPDX SBOM, and
+  provenance, and recreate the exact 17-file directory offline while rejecting
+  missing, extra, symbolic-linked, and substituted files;
+- place publication in a protected `release` environment and grant only its
+  no-checkout, no-install, no-repository-script job a short-lived
+  `contents: write` token plus the accepted `id-token: write` and
+  `attestations: write` permissions;
+- immediately recheck the authorization body, main commit/tree, workflow blob,
+  immutable-release policy, tag absence, Release absence, and every local asset
+  before the first mutation;
+- atomically create the fully qualified semantic-version tag ref at the exact
+  authorized commit before draft creation; accept only a fresh `201`, then read
+  back and verify the direct commit target and authorized tree; a pre-existing
+  same-target tag or competing creation is terminal, and the workflow never
+  updates or deletes a ref;
+- recheck the reserved ref, commit, and tree after draft creation, after upload,
+  immediately before publication, and after immutable publication; require
+  provider-reported SHA-256 digests for the exact complete asset set both before
+  and after publication;
+- rely on the immutable Release's tag/commit/asset attestation and then use a
+  pinned GitHub action to attest the same exact verified 17-file directory from
+  the authorized workflow commit;
+- fail closed on any existing tag, draft, Release, changed binding, partial
+  state, rerun, or verification failure; never retry, resume, delete, move,
+  overwrite, or automatically compensate release state;
 - publish immutable semantic-version tags only, recommend full commit pins, and correct releases with a new version rather than moving published state.
+
+The residual privileged boundary is the pinned GitHub Actions runtime,
+repository-owner account, protected-environment configuration, GitHub token
+minting, and immutable-release implementation. Publication remains RFC-0007
+Class C and grants no npm, provider, activation, credential, or controlled-apply
+authority.
 
 ### Privacy and neutrality failure
 
@@ -459,7 +502,10 @@ no live request, mutation, release, deployment, apply, or consumer migration.
 - redaction of tokens, URLs, identifiers, and API error bodies;
 - tampered bundle, lockfile, and action-pin detection.
 - preview entrypoint mutation-import, hidden-apply, path-escape, and output-redaction rejection;
-- Release Please privilege separation and publisher commit, version, tag, bundle, SBOM, and attestation mismatch rejection.
+- Release Please privilege separation; owner/reviewer substitution, edited
+  comment, wrong PR head/tree or merged commit/tree, workflow/manifest/checksum
+  mismatch, preflight token presence, missing/extra/substituted asset, tag or
+  draft partial state, and publication rerun rejection.
 
 ## Release gate
 

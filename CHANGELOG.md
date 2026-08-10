@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/nomed/yukh-projects/compare/v1.7.0...v1.8.0) (2026-08-09)
+
+
+### Features
+
+* implement compound approval bridge v2 ([#155](https://github.com/nomed/yukh-projects/issues/155)) ([a4f05f6](https://github.com/nomed/yukh-projects/commit/a4f05f673bb0a03f66fc9864372cee7839ed78d1)), closes [#154](https://github.com/nomed/yukh-projects/issues/154)
+
 ## [1.7.0](https://github.com/nomed/yukh-projects/compare/v1.6.1...v1.7.0) (2026-08-06)
 
 

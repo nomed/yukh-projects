@@ -1,15 +1,16 @@
 # Current context
 
-**Status:** first usable preview Projects contract accepted; bridge/wrapper
-implementation candidate is author-remediated after a security block and awaits
-distinct normal review plus fresh security review
+**Status:** first usable preview Projects contract and bridge/wrapper
+implementation accepted; `v1.8.0` release/package candidate is in Author
+preparation and remains unpublished
 **Project:** Yukh Projects
 **Visibility:** public
 
 ## Objective
 
-Advance accepted suite RFC-0005 through the next Projects-owned review gate
-without implementing or authorizing either preview effect.
+Prepare the separately governed immutable package/release proposal for the
+accepted MCP Effect B bridge/wrapper without authorizing publication,
+activation, credentials, or either preview effect.
 
 ## Now
 
@@ -39,36 +40,51 @@ without implementing or authorizing either preview effect.
   already-Accepted Projects `add_dependency` Effect B. Proposed MCP RFC-0011's
   `set_field_value(status)` operation is nonconforming and must be revised in
   its owning repository before acceptance or activation.
-- [#154](https://github.com/nomed/yukh-projects/issues/154) governs the local
-  RFC-0007 Class B-X implementation candidate. It adds the closed bridge v2
-  verifier, the sole MCP-facing `runMcpEffectBControlledApplyV1` export,
-  deterministic conformance vectors, and an unpublished reproducible bundle.
-  Qualification uses injected synthetic transports only and performs zero live
-  provider calls. Independent security review blocked the first candidate head
-  because a packed deep module exported test handle-minting authority. The
-  Author remediation removes production test helpers, closes package exports
-  and files, and adds deterministic tarball, deep-import, declaration, bundle,
-  and forged-handle negative tests; fresh review of the remediated head remains
-  mandatory.
+- [#154](https://github.com/nomed/yukh-projects/issues/154) and PR #155 record
+  the reviewed RFC-0007 Class B-X implementation. It is authoritative on `main`
+  at `a4f05f673bb0a03f66fc9864372cee7839ed78d1` (tree
+  `16969542925e35ebf669cc9e9e27ce758dfe5585`) and adds the closed bridge v2
+  verifier, sole MCP-facing `runMcpEffectBControlledApplyV1` export,
+  deterministic conformance vector, root-only package exports, and unpublished
+  reproducible bundle. Qualification uses injected synthetic transports only
+  and performs zero live provider calls.
+- [#156](https://github.com/nomed/yukh-projects/issues/156) governs the
+  `1.8.0` / `v1.8.0` release/package proposal. Author preparation may produce
+  local assets, checksums, SPDX SBOM, provenance, and reproducibility evidence.
+  Release publication, tag creation or movement, asset upload, package
+  publication, and permission changes remain RFC-0007 Class C owner-only.
+- Security review at PR #157 head
+  `e71c30e635b4af9720fee948af58d40e1b2a0579` confirmed the authenticated
+  owner authorization, secret-free preflight, committed reproducible
+  descriptors, and protected no-checkout one-shot publication boundary. It
+  blocked publication on the unconfigured protected `release` environment and
+  a tag-creation race. Author remediation atomically reserves the exact tag
+  before draft creation and treats every pre-existing, raced, moved, rerun, or
+  partial state as terminal; environment configuration remains a separate
+  repository-owner administrative prerequisite.
 
 ## Next
 
-1. Obtain a distinct read-only normal review of the exact remediated #154
-   implementation head.
-2. Obtain a fresh security-focused review of the same exact remediated head.
-3. Keep merge/execution in a third session and keep release, activation,
-   credentials, and every live provider effect separately unauthorized.
-4. Require Proposed MCP RFC-0011 to conform to the Accepted Projects
+1. Complete and independently review the remediated exact `v1.8.0` canonical
+   17-asset manifest and RFC-0007 Author record under #156.
+2. Obtain distinct read-only normal and security-focused reviews of the exact
+   release PR head, tree, workflow, and asset manifest.
+3. Require a distinct executor to merge the exact reviewed tree without
+   publishing, then require the owner to post an authenticated Class C record
+   bound to that merge before a distinct manual protected publication dispatch.
+4. Keep wrapper activation, credentials, provider access, consumer migration,
+   and every live effect separately unauthorized.
+5. Require Proposed MCP RFC-0011 to conform to the Accepted Projects
    `add_dependency` Effect B in its owning repository.
 
 ## Non-goals
 
 - Running or authorizing either live preview effect, teardown, or provider state
   creation.
-- Creating credentials, approval material, sandbox resources, release
-  artifacts, tags, deployments, or consumer migrations.
-- Publishing, releasing, registering, or activating the #154 bridge/wrapper
-  candidate.
+- Creating credentials, approval material, sandbox resources, deployments, or
+  consumer migrations.
+- Publishing, tagging, registering, or activating the bridge/wrapper candidate;
+  local release-candidate assembly is evidence only.
 
 ## Invariants
 
@@ -109,3 +125,7 @@ without implementing or authorizing either preview effect.
 - The RFC-0007 Class B-X author record for #154 grants no review, acceptance,
   merge, provider, credential, live-effect, deployment, activation, or release
   authority.
+- The `v1.8.0` package remains `private: true`, exports package subpaths only
+  through `.`, and exposes no MCP Effect B handle-construction authority.
+- Candidate and release manifests retain `publication: disabled`; publishing an
+  immutable GitHub Release does not authorize npm publication or activation.
