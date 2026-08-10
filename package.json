@@ -17,6 +17,7 @@
   },
   "scripts": {
     "test": "npm run build && node scripts/run-tests.mjs",
+    "test:mcp-effect-b-conformance": "node scripts/run-mcp-effect-b-conformance.mjs",
     "build": "node scripts/clean-typescript-output.mjs && tsc -p tsconfig.json",
     "build:bundles": "node scripts/build-bundles.mjs",
     "verify:bundles": "npm run build:bundles && node scripts/verify-bundles.mjs",
