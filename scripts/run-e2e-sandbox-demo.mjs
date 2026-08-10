@@ -1,11 +1,8 @@
 import { createHash, generateKeyPairSync, sign } from "node:crypto";
-import { APPLY_VERSIONS, approvalSigningInputForTest } from "../dist/src/apply-approval.js";
-import { createMemoryApplyCoordinationStore } from "../dist/src/apply-coordination.js";
-import { runApplyEntrypoint } from "../dist/src/apply-entrypoint.js";
-import { prepareReconciliation, runDryRun } from "../dist/src/dry-run.js";
-import { canonicalJson } from "../dist/src/planner.js";
+import { installGlobalFetchSentinel } from "./e2e-network-sentinel.mjs";
 
 const resultSchema="yukh-projects-e2e-sandbox-demo-result-v1";
+const networkSentinel=installGlobalFetchSentinel();
 const now=1_800_000_000_000;
 const requestedScope={ownerLogin:"example-labs",repositoryName:"atlas",projectNumber:7,issueNumber:42};
 const policySource=`schema: 1
@@ -32,6 +29,13 @@ area: core
 const end={hasNextPage:false,endCursor:null};
 const state={workType:"Backlog",fingerprint:"synthetic-item-state-0"};
 const mutationRequests=[];
+let APPLY_VERSIONS;
+let approvalSigningInputForTest;
+let canonicalJson;
+let createMemoryApplyCoordinationStore;
+let prepareReconciliation;
+let runApplyEntrypoint;
+let runDryRun;
 
 function emit(value,code){
  const output=`${JSON.stringify(value)}\n`;
@@ -140,12 +144,13 @@ async function run(){
  const beforeReplay=mutationRequests.length;
  const replay=await runApplyEntrypoint({...request,approvedPlanId:zeroPlan.planId,approvalArtifact:signedApproval(pair,zeroPlan,"synthetic-demo-nonce-second")},host());
  if(replay.status!=="success"||mutationRequests.length!==beforeReplay)throw new Error("idempotency mismatch");
+ if(networkSentinel.attempts!==0)throw new Error("network boundary violated");
  const observed=mutationRequests[0];
  emit({
   schema:resultSchema,
   status:"passed",
   transport:"local-github-fake",
-  liveProviderCalls:0,
+  liveProviderCalls:networkSentinel.attempts,
   phases:[
    {id:"dry-run",status:"passed",operations:dryRun.report.counts.operations},
    {id:"approval-gate",status:"denied",code:denied.diagnostics[0].code,mutationRequests:0},
@@ -157,6 +162,11 @@ async function run(){
 }
 
 try{
+ ({APPLY_VERSIONS,approvalSigningInputForTest}=await import("../dist/src/apply-approval.js"));
+ ({createMemoryApplyCoordinationStore}=await import("../dist/src/apply-coordination.js"));
+ ({runApplyEntrypoint}=await import("../dist/src/apply-entrypoint.js"));
+ ({prepareReconciliation,runDryRun}=await import("../dist/src/dry-run.js"));
+ ({canonicalJson}=await import("../dist/src/planner.js"));
  await run();
 }catch{
  emit({schema:resultSchema,status:"error",code:"YKP-E2E-RUNNER-001"},1);

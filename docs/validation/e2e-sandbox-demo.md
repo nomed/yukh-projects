@@ -13,7 +13,7 @@ From a clean repository checkout:
 npm --silent run demo:e2e
 ```
 
-The command builds the current TypeScript sources and runs one closed scenario. It accepts no arguments, target, URL, credential, environment-selected policy, approval, or transport. Unknown arguments fail with exit status `2`. The scenario uses an in-memory GitHub fake and ephemeral synthetic Ed25519 approval key; it never calls a network transport, loads a secret, enables live apply, publishes an artifact, or changes provider state.
+The command builds the current TypeScript sources and runs one closed scenario. It accepts no arguments, target, URL, credential, environment-selected policy, approval, or transport. Unknown arguments fail with exit status `2`. Before loading production runtime modules it replaces global `fetch` with a non-writable, non-configurable sentinel. Every attempted network call is counted, rejected, and makes the run fail closed; `liveProviderCalls` is derived from that counter rather than asserted as a constant. The scenario uses an in-memory GitHub fake and ephemeral synthetic Ed25519 approval key; it never loads a secret, enables live apply, publishes an artifact, or changes provider state.
 
 ## Scenario
 

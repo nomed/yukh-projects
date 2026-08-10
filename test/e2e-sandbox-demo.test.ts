@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"../..");
 const runner=resolve(root,"scripts/run-e2e-sandbox-demo.mjs");
+const sentinel=resolve(root,"scripts/e2e-network-sentinel.mjs");
 
 function execute(args:readonly string[]=[]){
  return spawnSync(process.execPath,[runner,...args],{cwd:root,encoding:"utf8",env:{},timeout:30_000,maxBuffer:16*1024});
@@ -40,4 +41,16 @@ test("E2E sandbox command rejects caller-selected inputs",()=>{
  assert.equal(result.status,2);
  assert.equal(result.stderr,"");
  assert.deepEqual(JSON.parse(result.stdout),{schema:"yukh-projects-e2e-sandbox-demo-result-v1",status:"rejected",code:"YKP-E2E-REQUEST-001"});
+});
+
+test("network sentinel rejects and counts global fetch attempts",()=>{
+ const source=`import { installGlobalFetchSentinel } from ${JSON.stringify(new URL(`file://${sentinel}`).href)};
+const guard=installGlobalFetchSentinel();
+let denied=false;
+try{await globalThis.fetch("https://example.invalid");}catch{denied=true;}
+process.stdout.write(JSON.stringify({denied,attempts:guard.attempts}));`;
+ const result=spawnSync(process.execPath,["--input-type=module","--eval",source],{cwd:root,encoding:"utf8",env:{},timeout:10_000,maxBuffer:4096});
+ assert.equal(result.status,0);
+ assert.equal(result.stderr,"");
+ assert.deepEqual(JSON.parse(result.stdout),{denied:true,attempts:1});
 });
