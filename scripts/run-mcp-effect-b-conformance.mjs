@@ -79,6 +79,7 @@ if(!selected){
   await buildMcpEffectBTestBundle("test/mcp-effect-b-controlled-apply.test.ts",bundle);
   const child=spawnSync(process.execPath,[
    "--test",
+   "--test-reporter=tap",
    "--test-name-pattern",String.raw`^\[conformance:`,
    bundle
   ],{
