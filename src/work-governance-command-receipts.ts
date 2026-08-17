@@ -120,7 +120,7 @@ export function parseWorkGovernanceCommandReceiptV1(source: string | Uint8Array)
 
 export function workGovernanceCommandReceiptKvConfigV1(options: { maxBytes: number; replicas: number }) {
   if (!options || !positive(options.maxBytes) || options.maxBytes < 64 * 1024 ||
-      !Number.isSafeInteger(options.replicas) || ![1, 3, 5].includes(options.replicas)) fail("YKP-WORK-RECEIPT-001");
+      !Number.isSafeInteger(options.replicas) || ![1, 3, 4, 5].includes(options.replicas)) fail("YKP-WORK-RECEIPT-001");
   return {
     description: "Yukh Projects command receipts v1",
     history: 1,
@@ -153,7 +153,8 @@ export function verifyWorkGovernanceCommandReceiptKvConfigV1(source: unknown, op
         stream.max_msgs_per_subject !== 1 || stream.max_age !== 0 || stream.storage !== expected.storage ||
         stream.num_replicas !== expected.replicas || stream.max_bytes !== expected.max_bytes ||
         stream.max_msg_size !== expected.maxValueSize || stream.allow_direct === true || stream.allow_msg_ttl === true ||
-        stream.allow_rollup_hdrs !== true || stream.subject_transform !== undefined ||
+        stream.allow_rollup_hdrs !== true || stream.discard_new_per_subject === true || stream.sealed === true ||
+        stream.no_ack === true || stream.subject_transform !== undefined ||
         stream.republish !== undefined || stream.mirror !== undefined ||
         (stream.sources !== undefined && (!Array.isArray(stream.sources) || stream.sources.length !== 0))) {
       fail("YKP-WORK-RECEIPT-003");
@@ -289,6 +290,7 @@ export function createWorkGovernanceCommandReceiptStoreV1(options: {
     fail("YKP-WORK-RECEIPT-005");
   };
   return {
+    storageProfile: { storage_epoch: options.storageEpoch, replicas: options.bucket.replicas } as const,
     async reserve(command: WorkGovernanceCommandV1, event: WorkGovernanceEventV1): Promise<{ outcome: "reserved" | "existing"; record: WorkGovernanceCommandReceiptRecordV1 }> {
       const expected = binding(command, event);
       if (expected.storage_epoch !== options.storageEpoch) fail("YKP-WORK-RECEIPT-002");
@@ -312,16 +314,22 @@ export function createWorkGovernanceCommandReceiptStoreV1(options: {
 
 export function createWorkGovernanceCommandAppendCoordinatorV1(options: {
   receipts: ReturnType<typeof createWorkGovernanceCommandReceiptStoreV1>;
-  appender: { append(event: WorkGovernanceEventV1): Promise<WorkGovernanceJetStreamAppendResultV1> };
+  appender: {
+    storageProfile: { storage_epoch: number; replicas: number };
+    append(event: WorkGovernanceEventV1): Promise<WorkGovernanceJetStreamAppendResultV1>;
+  };
 }) {
-  if (!options?.receipts || !options.appender || typeof options.appender.append !== "function") fail("YKP-WORK-RECEIPT-001");
+  if (!options?.receipts || !options.appender || typeof options.appender.append !== "function" ||
+      options.receipts.storageProfile.storage_epoch !== options.appender.storageProfile.storage_epoch ||
+      options.receipts.storageProfile.replicas !== options.appender.storageProfile.replicas) fail("YKP-WORK-RECEIPT-001");
   const publish = async (command: WorkGovernanceCommandV1, event: WorkGovernanceEventV1) => {
     try {
       const result = await options.appender.append(event);
       const record = await options.receipts.markAppended(command, event, result.persistence.stream_sequence);
       return { outcome: result.outcome, event: result.event, receipt: record.receipt };
     } catch (error) {
-      if (error instanceof WorkGovernanceJetStreamError && error.code === "YKP-WORK-JS-005") {
+      if (error instanceof WorkGovernanceJetStreamError &&
+          (error.code === "YKP-WORK-JS-005" || error.code === "YKP-WORK-JS-006")) {
         await options.receipts.markCompletionUnknown(command, event);
       }
       throw error;

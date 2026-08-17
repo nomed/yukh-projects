@@ -141,7 +141,7 @@ test("qualifies interleaved aggregate appends against local JetStream", { skip: 
     let ambiguous = true;
     const receiptCoordinator = createWorkGovernanceCommandAppendCoordinatorV1({
       receipts: receiptStore,
-      appender: { async append(event) {
+      appender: { storageProfile: appender.storageProfile, async append(event) {
         const result = await appender.append(event);
         if (ambiguous) { ambiguous = false; throw new WorkGovernanceJetStreamError("YKP-WORK-JS-005"); }
         return result;

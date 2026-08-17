@@ -25,7 +25,8 @@ export type WorkGovernanceJetStreamErrorCode =
   | "YKP-WORK-JS-002"
   | "YKP-WORK-JS-003"
   | "YKP-WORK-JS-004"
-  | "YKP-WORK-JS-005";
+  | "YKP-WORK-JS-005"
+  | "YKP-WORK-JS-006";
 
 export class WorkGovernanceJetStreamError extends Error {
   constructor(readonly code: WorkGovernanceJetStreamErrorCode) {
@@ -66,6 +67,8 @@ export interface WorkGovernanceJetStreamAppendResultV1 {
   /** Internal persistence position for projectors; this is not a public command receipt. */
   persistence: { stream_sequence: number };
 }
+
+export interface WorkGovernanceStorageProfileV1 { storage_epoch: number; replicas: number }
 
 function fail(code: WorkGovernanceJetStreamErrorCode): never {
   throw new WorkGovernanceJetStreamError(code);
@@ -225,6 +228,7 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
     }
   };
   return {
+    storageProfile: { storage_epoch: options.storageEpoch, replicas: options.stream.replicas } as const,
     async append(input: WorkGovernanceEventV1): Promise<WorkGovernanceJetStreamAppendResultV1> {
       let event: WorkGovernanceEventV1;
       let encoded: Uint8Array;
@@ -278,10 +282,10 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
       if (publication.outcome === "conflict") {
         let observed: WorkGovernanceStoredMessageV1 | null;
         try { observed = await options.ports.getLastMessage(WORK_GOVERNANCE_STREAM_V1, subject); }
-        catch { fail("YKP-WORK-JS-004"); }
+        catch { fail("YKP-WORK-JS-006"); }
         if (observed !== null && safePositiveInteger(observed.sequence) && observed.data instanceof Uint8Array) {
           let stored: WorkGovernanceEventV1;
-          try { stored = parseWorkGovernanceEventV1(observed.data); } catch { fail("YKP-WORK-JS-003"); }
+          try { stored = parseWorkGovernanceEventV1(observed.data); } catch { fail("YKP-WORK-JS-006"); }
           if (stored.event_id === event.event_id && stored.event_digest === event.event_digest) {
             return { outcome: "replayed", event, persistence: { stream_sequence: observed.sequence } };
           }
@@ -291,20 +295,20 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
       const acknowledgement = publication;
       if (acknowledgement.stream !== WORK_GOVERNANCE_STREAM_V1 ||
           !safePositiveInteger(acknowledgement.sequence) || acknowledgement.sequence <= expectedSequence) {
-        fail("YKP-WORK-JS-003");
+        fail("YKP-WORK-JS-006");
       }
       if (acknowledgement.duplicate) {
         let observed: WorkGovernanceStoredMessageV1 | null;
         try { observed = await options.ports.getLastMessage(WORK_GOVERNANCE_STREAM_V1, subject); }
-        catch { fail("YKP-WORK-JS-004"); }
+        catch { fail("YKP-WORK-JS-006"); }
         if (observed !== null && safePositiveInteger(observed.sequence) && observed.data instanceof Uint8Array) {
           let stored: WorkGovernanceEventV1;
-          try { stored = parseWorkGovernanceEventV1(observed.data); } catch { fail("YKP-WORK-JS-003"); }
+          try { stored = parseWorkGovernanceEventV1(observed.data); } catch { fail("YKP-WORK-JS-006"); }
           if (stored.event_id === event.event_id && stored.event_digest === event.event_digest) {
             return { outcome: "replayed", event, persistence: { stream_sequence: observed.sequence } };
           }
         }
-        fail("YKP-WORK-JS-003");
+        fail("YKP-WORK-JS-006");
       }
       return {
         outcome: "appended",

@@ -185,7 +185,7 @@ test("redacts transport failures and fails closed on invalid acknowledgements", 
   };
   await assert.rejects(
     createWorkGovernanceJetStreamAppenderV1({ storageEpoch: 7, stream, ports: invalidAck }).append(first),
-    isCode("YKP-WORK-JS-003")
+    isCode("YKP-WORK-JS-006")
   );
   const conflict: WorkGovernanceJetStreamPortsV1 = {
     async getStreamConfig() { return workGovernanceJetStreamConfigV1(stream); },

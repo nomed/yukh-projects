@@ -91,6 +91,9 @@ test("verifies the exact file-backed no-TTL history-one bucket", () => {
   for (const unsafe of [
     { ...status(), history: 2 }, { ...status(), ttl: 1 }, { ...status(), storage: "memory" },
     { ...status(), streamInfo: { config: { ...status().streamInfo.config, discard: "old" } } },
+    { ...status(), streamInfo: { config: { ...status().streamInfo.config, discard_new_per_subject: true } } },
+    { ...status(), streamInfo: { config: { ...status().streamInfo.config, sealed: true } } },
+    { ...status(), streamInfo: { config: { ...status().streamInfo.config, no_ack: true } } },
     { ...status(), streamInfo: { config: { ...status().streamInfo.config, allow_direct: true } } },
     { ...status(), streamInfo: { config: { ...status().streamInfo.config, republish: { src: ">", dest: "copy.>" } } } }
   ]) assert.throws(() => verifyWorkGovernanceCommandReceiptKvConfigV1(unsafe, bucket), isReceiptCode("YKP-WORK-RECEIPT-003"));
@@ -112,7 +115,7 @@ test("persists completion_unknown and requires explicit exact-event resolution",
   const { command: value, event } = fixture(); let calls = 0;
   const coordinator = createWorkGovernanceCommandAppendCoordinatorV1({
     receipts,
-    appender: { async append(input) {
+    appender: { storageProfile: { storage_epoch: 23, replicas: 1 }, async append(input) {
       calls++;
       if (calls === 1) throw new WorkGovernanceJetStreamError("YKP-WORK-JS-005");
       return { outcome: "replayed", event: input, persistence: { stream_sequence: 41 } };
@@ -135,10 +138,39 @@ test("an existing reservation blocks ordinary publication after a crash boundary
   const { command: value, event } = fixture(); let calls = 0;
   await receipts.reserve(value, event);
   const coordinator = createWorkGovernanceCommandAppendCoordinatorV1({
-    receipts, appender: { async append(input) { calls++; return { outcome: "appended", event: input, persistence: { stream_sequence: 7 } }; } }
+    receipts, appender: { storageProfile: { storage_epoch: 23, replicas: 1 }, async append(input) { calls++; return { outcome: "appended", event: input, persistence: { stream_sequence: 7 } }; } }
   });
   await assert.rejects(coordinator.append(value, event), isReceiptCode("YKP-WORK-RECEIPT-006"));
   assert.equal(calls, 0);
   const resolved = await coordinator.resolveCompletionUnknown(value, event);
   assert.equal(resolved.receipt.state, "appended"); assert.equal(calls, 1);
+});
+
+test("coordinator rejects a receipt bucket with a different epoch or replica profile", () => {
+  const receipts = createWorkGovernanceCommandReceiptStoreV1({ storageEpoch: 23, bucket, ports: memoryPorts() });
+  const append = async (event: ReturnType<typeof fixture>["event"]) =>
+    ({ outcome: "appended" as const, event, persistence: { stream_sequence: 1 } });
+  assert.throws(
+    () => createWorkGovernanceCommandAppendCoordinatorV1({ receipts, appender: { storageProfile: { storage_epoch: 23, replicas: 3 }, append } }),
+    isReceiptCode("YKP-WORK-RECEIPT-001")
+  );
+  assert.throws(
+    () => createWorkGovernanceCommandAppendCoordinatorV1({ receipts, appender: { storageProfile: { storage_epoch: 24, replicas: 1 }, append } }),
+    isReceiptCode("YKP-WORK-RECEIPT-001")
+  );
+});
+
+test("post-publication verification ambiguity becomes durable completion_unknown", async () => {
+  const receipts = createWorkGovernanceCommandReceiptStoreV1({ storageEpoch: 23, bucket, ports: memoryPorts() });
+  const { command: value, event } = fixture();
+  const coordinator = createWorkGovernanceCommandAppendCoordinatorV1({
+    receipts,
+    appender: {
+      storageProfile: { storage_epoch: 23, replicas: 1 },
+      async append() { throw new WorkGovernanceJetStreamError("YKP-WORK-JS-006"); }
+    }
+  });
+  await assert.rejects(coordinator.append(value, event), (error: unknown) =>
+    error instanceof WorkGovernanceJetStreamError && error.code === "YKP-WORK-JS-006");
+  assert.equal((await receipts.reserve(value, event)).record.receipt.state, "completion_unknown");
 });
