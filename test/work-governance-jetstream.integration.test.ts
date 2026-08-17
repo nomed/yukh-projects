@@ -102,7 +102,7 @@ test("qualifies interleaved aggregate appends against local JetStream", { skip: 
         await bothRead;
         return current;
       },
-      getMessageForSubject: (name, subject, sequence) => ports.getMessageForSubject(name, subject, sequence),
+      getSubjectHistory: (name, subject, maximum) => ports.getSubjectHistory(name, subject, maximum),
       publish: (subject, data, request) => ports.publish(subject, data, request)
     });
     const contenders = [left.second, right.second].map((event) =>
