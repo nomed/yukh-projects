@@ -58,6 +58,7 @@ export type WorkGovernancePublishResultV1 = WorkGovernancePublishAckV1 | { outco
 export interface WorkGovernanceJetStreamPortsV1 {
   getStreamConfig(stream: typeof WORK_GOVERNANCE_STREAM_V1): Promise<unknown>;
   getLastMessage(stream: typeof WORK_GOVERNANCE_STREAM_V1, subject: string): Promise<WorkGovernanceStoredMessageV1 | null>;
+  getMessageForSubject(stream: typeof WORK_GOVERNANCE_STREAM_V1, subject: string, sequence: number): Promise<WorkGovernanceStoredMessageV1 | null>;
   publish(subject: string, data: Uint8Array, request: WorkGovernancePublishRequestV1): Promise<WorkGovernancePublishResultV1>;
 }
 
@@ -174,6 +175,10 @@ export function workGovernanceJetStreamPortsV1(
       const message = await manager.streams.getMessage(stream, { last_by_subj: subject });
       return message === null ? null : { sequence: message.seq, data: message.data };
     },
+    async getMessageForSubject(stream, subject, sequence) {
+      const message = await manager.streams.getMessage(stream, { seq: sequence });
+      return message === null || message.subject !== subject ? null : { sequence: message.seq, data: message.data };
+    },
     async publish(subject, data, request) {
       try {
         const acknowledgement = await client.publish(subject, data, {
@@ -214,6 +219,7 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
 }) {
   if (!options || !safePositiveInteger(options.storageEpoch) || !options.ports ||
       typeof options.ports.getStreamConfig !== "function" || typeof options.ports.getLastMessage !== "function" ||
+      typeof options.ports.getMessageForSubject !== "function" ||
       typeof options.ports.publish !== "function") {
     fail("YKP-WORK-JS-001");
   }
@@ -226,6 +232,28 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
       if (error instanceof WorkGovernanceJetStreamError) throw error;
       fail("YKP-WORK-JS-004");
     }
+  };
+  const findExactBefore = async (
+    event: WorkGovernanceEventV1,
+    subject: string,
+    beforeSequence: number,
+    failureCode: "YKP-WORK-JS-003" | "YKP-WORK-JS-006"
+  ): Promise<WorkGovernanceStoredMessageV1 | null> => {
+    for (let sequence = beforeSequence - 1; sequence > 0; sequence--) {
+      let observed: WorkGovernanceStoredMessageV1 | null;
+      try { observed = await options.ports.getMessageForSubject(WORK_GOVERNANCE_STREAM_V1, subject, sequence); }
+      catch { fail(failureCode); }
+      if (observed === null) continue;
+      if (observed.sequence !== sequence || !(observed.data instanceof Uint8Array)) fail(failureCode);
+      let stored: WorkGovernanceEventV1;
+      try { stored = parseWorkGovernanceEventV1(observed.data); } catch { fail(failureCode); }
+      if (!sameAggregate(stored, event)) fail(failureCode);
+      if (stored.event_id === event.event_id) {
+        if (stored.event_digest !== event.event_digest) fail(failureCode);
+        return observed;
+      }
+    }
+    return null;
   };
   return {
     storageProfile: { storage_epoch: options.storageEpoch, replicas: options.stream.replicas } as const,
@@ -260,6 +288,13 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
         if (previous.event_id === event.event_id && previous.event_digest === event.event_digest) {
           return { outcome: "replayed", event, persistence: { stream_sequence: current.sequence } };
         }
+        if (previous.aggregate.revision >= event.aggregate.revision) {
+          const historical = await findExactBefore(event, subject, current.sequence, "YKP-WORK-JS-003");
+          if (historical !== null) {
+            return { outcome: "replayed", event, persistence: { stream_sequence: historical.sequence } };
+          }
+          fail("YKP-WORK-JS-002");
+        }
         if (event.aggregate.revision !== previous.aggregate.revision + 1 ||
             event.command.expected_revision !== previous.aggregate.revision ||
             event.previous?.event_id !== previous.event_id || event.previous.digest !== previous.event_digest) {
@@ -289,6 +324,10 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
           if (stored.event_id === event.event_id && stored.event_digest === event.event_digest) {
             return { outcome: "replayed", event, persistence: { stream_sequence: observed.sequence } };
           }
+          const historical = await findExactBefore(event, subject, observed.sequence, "YKP-WORK-JS-006");
+          if (historical !== null) {
+            return { outcome: "replayed", event, persistence: { stream_sequence: historical.sequence } };
+          }
         }
         fail("YKP-WORK-JS-002");
       }
@@ -306,6 +345,10 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
           try { stored = parseWorkGovernanceEventV1(observed.data); } catch { fail("YKP-WORK-JS-006"); }
           if (stored.event_id === event.event_id && stored.event_digest === event.event_digest) {
             return { outcome: "replayed", event, persistence: { stream_sequence: observed.sequence } };
+          }
+          const historical = await findExactBefore(event, subject, observed.sequence, "YKP-WORK-JS-006");
+          if (historical !== null) {
+            return { outcome: "replayed", event, persistence: { stream_sequence: historical.sequence } };
           }
         }
         fail("YKP-WORK-JS-006");

@@ -102,6 +102,7 @@ test("qualifies interleaved aggregate appends against local JetStream", { skip: 
         await bothRead;
         return current;
       },
+      getMessageForSubject: (name, subject, sequence) => ports.getMessageForSubject(name, subject, sequence),
       publish: (subject, data, request) => ports.publish(subject, data, request)
     });
     const contenders = [left.second, right.second].map((event) =>
@@ -124,10 +125,15 @@ test("qualifies interleaved aggregate appends against local JetStream", { skip: 
       storageEpoch: 19, bucket: receiptBucket,
       ports: await openWorkGovernanceCommandReceiptKvPortsV1(jetstream(connection), receiptBucket)
     });
+    let receiptEventIndex = 0;
+    const receiptEventIds = [
+      "018f4000-0000-7000-8000-000000000001",
+      "018f4000-0000-7000-8000-000000000003"
+    ];
     const receiptEvents = createInMemoryWorkGovernanceEventStoreV1({
       storageEpoch: 19,
-      eventId: () => "018f4000-0000-7000-8000-000000000001",
-      occurredAt: () => "2026-08-17T14:02:00.000Z"
+      eventId: () => receiptEventIds[receiptEventIndex++]!,
+      occurredAt: () => receiptEventIndex === 1 ? "2026-08-17T14:02:00.000Z" : "2026-08-17T14:02:01.000Z"
     });
     const receiptCommand = command("018f4000-0000-7000-8000-000000000002", "work-item:receipt", 0);
     const receiptEvent = receiptEvents.append({
@@ -153,6 +159,11 @@ test("qualifies interleaved aggregate appends against local JetStream", { skip: 
     );
     const unknown = await receiptStore.reserve(receiptCommand, receiptEvent);
     assert.equal(unknown.record.receipt.state, "completion_unknown");
+    const laterCommand = command("018f4000-0000-7000-8000-000000000004", "work-item:receipt", 1);
+    const laterEvent = receiptEvents.append({
+      command: laterCommand, event_type: "work_item.workflow_transitioned.v1", data: { to: "ready" }
+    }).event;
+    assert.equal((await appender.append(laterEvent)).outcome, "appended");
     const resolved = await receiptCoordinator.resolveCompletionUnknown(receiptCommand, receiptEvent);
     assert.equal(resolved.outcome, "replayed"); assert.equal(resolved.receipt.state, "appended");
     assert.ok(resolved.receipt.stream_sequence! > 0);
