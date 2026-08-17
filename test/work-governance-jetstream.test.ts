@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import test from "node:test";
+import type { JetStreamClient, JetStreamManager } from "@nats-io/jetstream";
 import {
+  WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1,
   WORK_GOVERNANCE_MAX_RECOVERY_EVENTS_V1,
   WORK_GOVERNANCE_STREAM_V1,
   WORK_GOVERNANCE_PUBLISH_TIMEOUT_MILLIS_V1,
   WorkGovernanceJetStreamError,
   createWorkGovernanceJetStreamAppenderV1,
+  workGovernanceJetStreamPortsV1,
   workGovernanceJetStreamConfigV1,
   workGovernanceJetStreamSubjectV1,
   verifyWorkGovernanceJetStreamConfigV1,
@@ -232,6 +235,38 @@ test("historical recovery fails closed before an oversized subject read", async 
     isCode("YKP-WORK-JS-003")
   );
   assert.equal(reads, 0);
+});
+
+test("direct history enforces local event and byte limits against over-return", async () => {
+  const stored = (sequence: number, data: Uint8Array) => ({ seq: sequence, data });
+  const portsFor = (messages: Array<{ seq: number; data: Uint8Array }>) => workGovernanceJetStreamPortsV1(
+    { publish() {} } as unknown as JetStreamClient,
+    {
+      streams: { getMessage() {} },
+      direct: {
+        async getBatch() {
+          return (async function* () { for (const message of messages) yield message; })();
+        }
+      }
+    } as unknown as JetStreamManager
+  );
+  const exact = new Uint8Array(WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1);
+  assert.equal((await portsFor([stored(1, exact)]).getSubjectHistory(
+    WORK_GOVERNANCE_STREAM_V1, "ykp.v1.events.synthetic", 1, WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1
+  )).length, 1);
+  await assert.rejects(
+    portsFor([stored(1, new Uint8Array(1)), stored(2, new Uint8Array(1))]).getSubjectHistory(
+      WORK_GOVERNANCE_STREAM_V1, "ykp.v1.events.synthetic", 1, WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1
+    ),
+    isCode("YKP-WORK-JS-003")
+  );
+  const halfPlusOne = new Uint8Array(WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1 / 2 + 1);
+  await assert.rejects(
+    portsFor([stored(1, halfPlusOne), stored(2, halfPlusOne)]).getSubjectHistory(
+      WORK_GOVERNANCE_STREAM_V1, "ykp.v1.events.synthetic", 2, WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1
+    ),
+    isCode("YKP-WORK-JS-003")
+  );
 });
 
 test("redacts transport failures and fails closed on invalid acknowledgements", async () => {

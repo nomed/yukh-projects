@@ -20,6 +20,7 @@ export const WORK_GOVERNANCE_STREAM_V1 = "YKP_WORK_EVENTS_V1";
 export const WORK_GOVERNANCE_SUBJECT_PREFIX_V1 = "ykp.v1.events";
 export const WORK_GOVERNANCE_PUBLISH_TIMEOUT_MILLIS_V1 = 5_000;
 export const WORK_GOVERNANCE_MAX_RECOVERY_EVENTS_V1 = 4_096;
+export const WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1 = 16 * 1024 * 1024;
 
 export type WorkGovernanceJetStreamErrorCode =
   | "YKP-WORK-JS-001"
@@ -59,7 +60,12 @@ export type WorkGovernancePublishResultV1 = WorkGovernancePublishAckV1 | { outco
 export interface WorkGovernanceJetStreamPortsV1 {
   getStreamConfig(stream: typeof WORK_GOVERNANCE_STREAM_V1): Promise<unknown>;
   getLastMessage(stream: typeof WORK_GOVERNANCE_STREAM_V1, subject: string): Promise<WorkGovernanceStoredMessageV1 | null>;
-  getSubjectHistory(stream: typeof WORK_GOVERNANCE_STREAM_V1, subject: string, maximum: number): Promise<WorkGovernanceStoredMessageV1[]>;
+  getSubjectHistory(
+    stream: typeof WORK_GOVERNANCE_STREAM_V1,
+    subject: string,
+    maximumEvents: number,
+    maximumBytes: number
+  ): Promise<WorkGovernanceStoredMessageV1[]>;
   publish(subject: string, data: Uint8Array, request: WorkGovernancePublishRequestV1): Promise<WorkGovernancePublishResultV1>;
 }
 
@@ -176,10 +182,18 @@ export function workGovernanceJetStreamPortsV1(
       const message = await manager.streams.getMessage(stream, { last_by_subj: subject });
       return message === null ? null : { sequence: message.seq, data: message.data };
     },
-    async getSubjectHistory(stream, subject, maximum) {
+    async getSubjectHistory(stream, subject, maximumEvents, maximumBytes) {
+      if (!safePositiveInteger(maximumEvents) || maximumEvents > WORK_GOVERNANCE_MAX_RECOVERY_EVENTS_V1 ||
+          !safePositiveInteger(maximumBytes) || maximumBytes > WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1) fail("YKP-WORK-JS-003");
       const messages: WorkGovernanceStoredMessageV1[] = [];
-      const batch = await manager.direct.getBatch(stream, { seq: 1, batch: maximum, next_by_subj: subject });
-      for await (const message of batch) messages.push({ sequence: message.seq, data: message.data });
+      let bytes = 0;
+      const batch = await manager.direct.getBatch(stream, { seq: 1, batch: maximumEvents, next_by_subj: subject });
+      for await (const message of batch) {
+        if (messages.length >= maximumEvents || !(message.data instanceof Uint8Array) ||
+            message.data.byteLength > maximumBytes - bytes) fail("YKP-WORK-JS-003");
+        bytes += message.data.byteLength;
+        messages.push({ sequence: message.seq, data: message.data });
+      }
       return messages;
     },
     async publish(subject, data, request) {
@@ -247,10 +261,12 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
     let history: WorkGovernanceStoredMessageV1[];
     try {
       history = await options.ports.getSubjectHistory(
-        WORK_GOVERNANCE_STREAM_V1, subject, tailEvent.aggregate.revision
+        WORK_GOVERNANCE_STREAM_V1, subject, tailEvent.aggregate.revision, WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1
       );
     } catch { fail(failureCode); }
-    if (!Array.isArray(history) || history.length !== tailEvent.aggregate.revision) fail(failureCode);
+    if (!Array.isArray(history) || history.length !== tailEvent.aggregate.revision ||
+        history.reduce((bytes, message) => bytes + (message.data instanceof Uint8Array ? message.data.byteLength : WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1 + 1), 0) >
+          WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1) fail(failureCode);
     let previous: WorkGovernanceEventV1 | undefined;
     let exact: WorkGovernanceStoredMessageV1 | null = null;
     for (let index = 0; index < history.length; index++) {
