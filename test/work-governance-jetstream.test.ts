@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
+import type { JetStreamClient, JetStreamManager } from "@nats-io/jetstream";
 import {
+  WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1,
+  WORK_GOVERNANCE_MAX_RECOVERY_EVENTS_V1,
   WORK_GOVERNANCE_STREAM_V1,
   WORK_GOVERNANCE_PUBLISH_TIMEOUT_MILLIS_V1,
   WorkGovernanceJetStreamError,
   createWorkGovernanceJetStreamAppenderV1,
+  workGovernanceJetStreamPortsV1,
   workGovernanceJetStreamConfigV1,
   workGovernanceJetStreamSubjectV1,
   verifyWorkGovernanceJetStreamConfigV1,
@@ -12,7 +17,12 @@ import {
   type WorkGovernancePublishRequestV1,
   type WorkGovernanceEventV1
 } from "../src/index.js";
-import { createInMemoryWorkGovernanceEventStoreV1, encodeWorkGovernanceEventV1, type WorkGovernanceCommandV1 } from "../src/work-governance-events.js";
+import {
+  canonicalWorkGovernanceJson,
+  createInMemoryWorkGovernanceEventStoreV1,
+  encodeWorkGovernanceEventV1,
+  type WorkGovernanceCommandV1
+} from "../src/work-governance-events.js";
 
 const ids = [
   "018f0000-0000-7000-8000-000000000001",
@@ -52,12 +62,27 @@ function isCode(code: string) {
     error.message === "work-governance JetStream append failed";
 }
 
-function fakePorts(last: WorkGovernanceEventV1 | null, lastSequence = 0) {
+function redigest(event: Omit<WorkGovernanceEventV1, "event_digest">): WorkGovernanceEventV1 {
+  return {
+    ...event,
+    event_digest: `sha-256:${createHash("sha256").update(canonicalWorkGovernanceJson(event), "utf8").digest("hex")}`
+  };
+}
+
+function fakePorts(
+  last: WorkGovernanceEventV1 | null,
+  lastSequence = 0,
+  history: Array<{ event: WorkGovernanceEventV1; sequence: number }> = last === null ? [] : [{ event: last, sequence: lastSequence }]
+) {
   const calls: Array<{ subject: string; data: Uint8Array; request: WorkGovernancePublishRequestV1 }> = [];
   const ports: WorkGovernanceJetStreamPortsV1 = {
     async getStreamConfig() { return workGovernanceJetStreamConfigV1(stream); },
     async getLastMessage() {
       return last === null ? null : { sequence: lastSequence, data: new TextEncoder().encode(encodeWorkGovernanceEventV1(last)) };
+    },
+    async getSubjectHistory(_stream, _subject, maximum) {
+      return history.slice(0, maximum).map(({ event, sequence }) =>
+        ({ sequence, data: new TextEncoder().encode(encodeWorkGovernanceEventV1(event)) }));
     },
     async publish(subject, data, request) {
       calls.push({ subject, data, request });
@@ -74,7 +99,7 @@ test("builds a fixed append-only file stream configuration", () => {
   assert.equal(config.storage, "file"); assert.equal(config.retention, "limits"); assert.equal(config.discard, "new");
   assert.equal(config.max_msgs, -1); assert.equal(config.max_msgs_per_subject, -1); assert.equal(config.max_age, 0);
   assert.equal(config.deny_delete, true); assert.equal(config.deny_purge, true); assert.equal(config.allow_rollup_hdrs, false);
-  assert.equal(config.allow_direct, false); assert.equal(config.allow_msg_ttl, false); assert.equal(config.persist_mode, "default");
+  assert.equal(config.allow_direct, true); assert.equal(config.allow_msg_ttl, false); assert.equal(config.persist_mode, "default");
   assert.throws(() => workGovernanceJetStreamConfigV1({ maxBytes: 1024, replicas: 2 }), isCode("YKP-WORK-JS-001"));
   assert.doesNotThrow(() => verifyWorkGovernanceJetStreamConfigV1(config, stream));
   assert.throws(
@@ -132,14 +157,116 @@ test("replays an exact existing event without publishing", async () => {
   assert.equal(result.outcome, "replayed"); assert.deepEqual(result.persistence, { stream_sequence: 17 }); assert.equal(fake.calls.length, 0);
 });
 
-test("rejects stale chains and corrupted stored messages before publishing", async () => {
+test("replays an exact historical event after the aggregate tail advances", async () => {
+  const { first, second } = events(); let publishes = 0;
+  const subject = workGovernanceJetStreamSubjectV1(first);
+  const ports: WorkGovernanceJetStreamPortsV1 = {
+    async getStreamConfig() { return workGovernanceJetStreamConfigV1(stream); },
+    async getLastMessage() { return { sequence: 9, data: new TextEncoder().encode(encodeWorkGovernanceEventV1(second)) }; },
+    async getSubjectHistory(_stream, candidate, maximum) {
+      assert.equal(candidate, subject); assert.equal(maximum, 2);
+      return [first, second].map((event, index) =>
+        ({ sequence: index === 0 ? 4 : 9, data: new TextEncoder().encode(encodeWorkGovernanceEventV1(event)) }));
+    },
+    async publish() { publishes++; throw new Error("must not publish"); }
+  };
+  const result = await createWorkGovernanceJetStreamAppenderV1({ storageEpoch: 7, stream, ports }).append(first);
+  assert.equal(result.outcome, "replayed"); assert.deepEqual(result.persistence, { stream_sequence: 4 }); assert.equal(publishes, 0);
+});
+
+test("resolves a duplicate acknowledgement race only after observing the exact event", async () => {
+  const { first } = events(); let reads = 0;
+  const ports: WorkGovernanceJetStreamPortsV1 = {
+    async getStreamConfig() { return workGovernanceJetStreamConfigV1(stream); },
+    async getLastMessage() {
+      if (reads++ === 0) return null;
+      return { sequence: 9, data: new TextEncoder().encode(encodeWorkGovernanceEventV1(first)) };
+    },
+    async getSubjectHistory() { return []; },
+    async publish() { return { outcome: "acknowledged", stream: WORK_GOVERNANCE_STREAM_V1, sequence: 9, duplicate: true }; }
+  };
+  const result = await createWorkGovernanceJetStreamAppenderV1({ storageEpoch: 7, stream, ports }).append(first);
+  assert.equal(result.outcome, "replayed"); assert.deepEqual(result.persistence, { stream_sequence: 9 });
+});
+
+test("replays stale exact events and rejects corrupted stored messages before publishing", async () => {
   const { first, second, other } = events();
-  await assert.rejects(
-    createWorkGovernanceJetStreamAppenderV1({ storageEpoch: 7, stream, ports: fakePorts(second, 12).ports }).append(first),
-    isCode("YKP-WORK-JS-002")
-  );
+  const replay = await createWorkGovernanceJetStreamAppenderV1({
+    storageEpoch: 7, stream,
+    ports: fakePorts(second, 12, [{ event: first, sequence: 4 }, { event: second, sequence: 12 }]).ports
+  }).append(first);
+  assert.equal(replay.outcome, "replayed"); assert.equal(replay.persistence.stream_sequence, 4);
   await assert.rejects(
     createWorkGovernanceJetStreamAppenderV1({ storageEpoch: 7, stream, ports: fakePorts(other, 12).ports }).append(second),
+    isCode("YKP-WORK-JS-003")
+  );
+});
+
+test("historical recovery rejects missing, duplicate, and broken aggregate links", async () => {
+  const { first, second } = events();
+  const { event_digest: _digest, ...unsignedSecond } = second;
+  const broken = redigest({ ...unsignedSecond, previous: { event_id: ids[2]!, digest: first.event_digest } });
+  const cases = [
+    { tail: second, history: [{ event: second, sequence: 12 }] },
+    { tail: second, history: [{ event: first, sequence: 4 }, { event: first, sequence: 12 }] },
+    { tail: broken, history: [{ event: first, sequence: 4 }, { event: broken, sequence: 12 }] }
+  ];
+  for (const { tail, history } of cases) {
+    await assert.rejects(
+      createWorkGovernanceJetStreamAppenderV1({ storageEpoch: 7, stream, ports: fakePorts(tail, 12, history).ports }).append(first),
+      isCode("YKP-WORK-JS-003")
+    );
+  }
+});
+
+test("historical recovery fails closed before an oversized subject read", async () => {
+  const { first, second } = events();
+  const { event_digest: _digest, ...unsignedSecond } = second;
+  const oversized = redigest({
+    ...unsignedSecond,
+    aggregate: { ...unsignedSecond.aggregate, revision: WORK_GOVERNANCE_MAX_RECOVERY_EVENTS_V1 + 1 },
+    command: { ...unsignedSecond.command, expected_revision: WORK_GOVERNANCE_MAX_RECOVERY_EVENTS_V1 }
+  });
+  let reads = 0;
+  const ports = fakePorts(oversized, 9).ports;
+  ports.getSubjectHistory = async () => { reads++; return []; };
+  await assert.rejects(
+    createWorkGovernanceJetStreamAppenderV1({ storageEpoch: 7, stream, ports }).append(first),
+    isCode("YKP-WORK-JS-003")
+  );
+  assert.equal(reads, 0);
+});
+
+test("direct history enforces local event and byte limits against over-return", async () => {
+  const stored = (sequence: number, data: Uint8Array) => ({ seq: sequence, data });
+  const portsFor = (messages: Array<{ seq: number; data: Uint8Array }>) => workGovernanceJetStreamPortsV1(
+    { publish() {} } as unknown as JetStreamClient,
+    {
+      streams: { getMessage() {} },
+      direct: {
+        async getBatch(_stream: string, options: { callback?: (done: null, message: { seq: number; data: Uint8Array }) => void }) {
+          for (const message of messages) options.callback?.(null, message);
+          const iterator = (async function* () {})();
+          return Object.assign(iterator, { stop() {} });
+        }
+      }
+    } as unknown as JetStreamManager
+  );
+  const exact = new Uint8Array(WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1);
+  assert.equal((await portsFor([stored(1, exact)]).getSubjectHistory(
+    WORK_GOVERNANCE_STREAM_V1, "ykp.v1.events.synthetic", 1, WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1
+  )).length, 1);
+  await assert.rejects(
+    portsFor([stored(1, new Uint8Array(1)), stored(2, new Uint8Array(1))]).getSubjectHistory(
+      WORK_GOVERNANCE_STREAM_V1, "ykp.v1.events.synthetic", 1, WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1
+    ),
+    isCode("YKP-WORK-JS-003")
+  );
+  const halfPlusOne = new Uint8Array(WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1 / 2 + 1);
+  await assert.rejects(
+    portsFor([stored(1, halfPlusOne), stored(2, halfPlusOne)]).getSubjectHistory(
+      WORK_GOVERNANCE_STREAM_V1, "ykp.v1.events.synthetic", 2, WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1
+    ),
     isCode("YKP-WORK-JS-003")
   );
 });
@@ -149,6 +276,7 @@ test("redacts transport failures and fails closed on invalid acknowledgements", 
   const unavailable: WorkGovernanceJetStreamPortsV1 = {
     async getStreamConfig() { return workGovernanceJetStreamConfigV1(stream); },
     async getLastMessage() { throw new Error("opaque transport detail 7319"); },
+    async getSubjectHistory() { return []; },
     async publish() { throw new Error("unreachable"); }
   };
   await assert.rejects(
@@ -158,6 +286,7 @@ test("redacts transport failures and fails closed on invalid acknowledgements", 
   const completionUnknown: WorkGovernanceJetStreamPortsV1 = {
     async getStreamConfig() { return workGovernanceJetStreamConfigV1(stream); },
     async getLastMessage() { return null; },
+    async getSubjectHistory() { return []; },
     async publish() { throw new Error("opaque publication outcome 8421"); }
   };
   await assert.rejects(
@@ -167,15 +296,17 @@ test("redacts transport failures and fails closed on invalid acknowledgements", 
   const invalidAck: WorkGovernanceJetStreamPortsV1 = {
     async getStreamConfig() { return workGovernanceJetStreamConfigV1(stream); },
     async getLastMessage() { return null; },
+    async getSubjectHistory() { return []; },
     async publish() { return { outcome: "acknowledged", stream: "WRONG", sequence: 1, duplicate: false }; }
   };
   await assert.rejects(
     createWorkGovernanceJetStreamAppenderV1({ storageEpoch: 7, stream, ports: invalidAck }).append(first),
-    isCode("YKP-WORK-JS-003")
+    isCode("YKP-WORK-JS-006")
   );
   const conflict: WorkGovernanceJetStreamPortsV1 = {
     async getStreamConfig() { return workGovernanceJetStreamConfigV1(stream); },
     async getLastMessage() { return null; },
+    async getSubjectHistory() { return []; },
     async publish() { return { outcome: "conflict" }; }
   };
   await assert.rejects(
@@ -189,6 +320,7 @@ test("checks the existing stream once and rejects unsafe configuration before re
   const ports: WorkGovernanceJetStreamPortsV1 = {
     async getStreamConfig() { configReads++; return { ...workGovernanceJetStreamConfigV1(stream), max_age: 1 }; },
     async getLastMessage() { eventReads++; return null; },
+    async getSubjectHistory() { throw new Error("must not scan"); },
     async publish() { throw new Error("must not publish"); }
   };
   const appender = createWorkGovernanceJetStreamAppenderV1({ storageEpoch: 7, stream, ports });

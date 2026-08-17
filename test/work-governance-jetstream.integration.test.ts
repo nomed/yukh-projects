@@ -1,12 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { jetstream, jetstreamManager } from "@nats-io/jetstream";
+import { Kvm } from "@nats-io/kv";
 import { connect } from "@nats-io/transport-node";
 import {
   createInMemoryWorkGovernanceEventStoreV1,
+  createWorkGovernanceCommandAppendCoordinatorV1,
+  createWorkGovernanceCommandReceiptStoreV1,
   createWorkGovernanceJetStreamAppenderV1,
+  openWorkGovernanceCommandReceiptKvPortsV1,
+  workGovernanceCommandReceiptKvConfigV1,
   workGovernanceJetStreamConfigV1,
   workGovernanceJetStreamPortsV1,
+  WorkGovernanceJetStreamError,
   type WorkGovernanceCommandV1
 } from "../src/index.js";
 
@@ -96,6 +102,8 @@ test("qualifies interleaved aggregate appends against local JetStream", { skip: 
         await bothRead;
         return current;
       },
+      getSubjectHistory: (name, subject, maximumEvents, maximumBytes) =>
+        ports.getSubjectHistory(name, subject, maximumEvents, maximumBytes),
       publish: (subject, data, request) => ports.publish(subject, data, request)
     });
     const contenders = [left.second, right.second].map((event) =>
@@ -108,6 +116,58 @@ test("qualifies interleaved aggregate appends against local JetStream", { skip: 
     assert.equal(rejected.reason?.code, "YKP-WORK-JS-002");
     const winner = results[0]!.status === "fulfilled" ? left.second : right.second;
     assert.equal((await appender.append(winner)).outcome, "replayed");
+
+    const receiptBucket = { maxBytes: 1024 * 1024, replicas: 1 } as const;
+    await new Kvm(jetstream(connection)).create(
+      "YKP_COMMAND_RECEIPTS_V1",
+      workGovernanceCommandReceiptKvConfigV1(receiptBucket)
+    );
+    const receiptStore = createWorkGovernanceCommandReceiptStoreV1({
+      storageEpoch: 19, bucket: receiptBucket,
+      ports: await openWorkGovernanceCommandReceiptKvPortsV1(jetstream(connection), receiptBucket)
+    });
+    let receiptEventIndex = 0;
+    const receiptEventIds = [
+      "018f4000-0000-7000-8000-000000000001",
+      "018f4000-0000-7000-8000-000000000003"
+    ];
+    const receiptEvents = createInMemoryWorkGovernanceEventStoreV1({
+      storageEpoch: 19,
+      eventId: () => receiptEventIds[receiptEventIndex++]!,
+      occurredAt: () => receiptEventIndex === 1 ? "2026-08-17T14:02:00.000Z" : "2026-08-17T14:02:01.000Z"
+    });
+    const receiptCommand = command("018f4000-0000-7000-8000-000000000002", "work-item:receipt", 0);
+    const receiptEvent = receiptEvents.append({
+      command: receiptCommand, event_type: "work_item.created.v1", data: { title: "Receipt" }
+    }).event;
+    const reservations = await Promise.all([
+      receiptStore.reserve(receiptCommand, receiptEvent), receiptStore.reserve(receiptCommand, receiptEvent)
+    ]);
+    assert.deepEqual(new Set(reservations.map((result) => result.outcome)), new Set(["reserved", "existing"]));
+
+    let ambiguous = true;
+    const receiptCoordinator = createWorkGovernanceCommandAppendCoordinatorV1({
+      receipts: receiptStore,
+      appender: { storageProfile: appender.storageProfile, async append(event) {
+        const result = await appender.append(event);
+        if (ambiguous) { ambiguous = false; throw new WorkGovernanceJetStreamError("YKP-WORK-JS-005"); }
+        return result;
+      } }
+    });
+    await assert.rejects(
+      receiptCoordinator.resolveCompletionUnknown(receiptCommand, receiptEvent),
+      (error: unknown) => error instanceof WorkGovernanceJetStreamError && error.code === "YKP-WORK-JS-005"
+    );
+    const unknown = await receiptStore.reserve(receiptCommand, receiptEvent);
+    assert.equal(unknown.record.receipt.state, "completion_unknown");
+    const laterCommand = command("018f4000-0000-7000-8000-000000000004", "work-item:receipt", 1);
+    const laterEvent = receiptEvents.append({
+      command: laterCommand, event_type: "work_item.workflow_transitioned.v1", data: { to: "ready" }
+    }).event;
+    assert.equal((await appender.append(laterEvent)).outcome, "appended");
+    const resolved = await receiptCoordinator.resolveCompletionUnknown(receiptCommand, receiptEvent);
+    assert.equal(resolved.outcome, "replayed"); assert.equal(resolved.receipt.state, "appended");
+    assert.ok(resolved.receipt.stream_sequence! > 0);
   } finally {
     await connection.close();
   }
