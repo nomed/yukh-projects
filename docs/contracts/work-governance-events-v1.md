@@ -1,6 +1,7 @@
 # Work-governance events and JetStream persistence v1 — proposed specification
 
-- **Status:** Proposed
+- **Status:** Accepted
+- **Accepted:** 2026-08-17 by `@nomed`
 - **Proposed:** 2026-08-17
 - **Governing issue:** [#164](https://github.com/nomed/yukh-projects/issues/164)
 - **Implements:** [ADR 0004](../adr/0004-work-claims-governance.md)
@@ -26,7 +27,7 @@ The initial namespace contains these aggregates:
 | `namespace_graph` | one governed namespace | hierarchy and dependency edges |
 | `project_roadmap` | one project | epic placement, commitment, confidence, and outcomes |
 | `namespace_admission` | one governed namespace | claims, leases, grants, reservations, and usage |
-| `external_mapping` | one mapping | provider identity and reconciliation state |
+| `external_mapping` | one mapping | opaque adapter handle and reconciliation state |
 
 One graph aggregate per namespace serializes relationship changes, including
 cross-project edges. One admission aggregate per namespace serializes
@@ -127,6 +128,8 @@ omitted. Events are at most 64 KiB after UTF-8 encoding.
 Evidence contains immutable references and digests, never raw prompts,
 transcripts, provider payloads, credentials, approval material, or private
 observations. Event types and payloads use synthetic, consumer-neutral terms.
+An external mapping stores an adapter-issued opaque handle. Resolution to a raw
+provider identifier remains inside the consumer-owned adapter boundary.
 
 ## Optimistic concurrency and idempotency
 
