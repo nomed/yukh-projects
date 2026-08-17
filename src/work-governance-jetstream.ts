@@ -10,7 +10,6 @@ import {
   type StreamConfig
 } from "@nats-io/jetstream";
 import {
-  WorkGovernanceEventError,
   encodeWorkGovernanceEventV1,
   parseWorkGovernanceEventV1,
   workGovernancePartitionTokenV1,
@@ -19,12 +18,14 @@ import {
 
 export const WORK_GOVERNANCE_STREAM_V1 = "YKP_WORK_EVENTS_V1";
 export const WORK_GOVERNANCE_SUBJECT_PREFIX_V1 = "ykp.v1.events";
+export const WORK_GOVERNANCE_PUBLISH_TIMEOUT_MILLIS_V1 = 5_000;
 
 export type WorkGovernanceJetStreamErrorCode =
   | "YKP-WORK-JS-001"
   | "YKP-WORK-JS-002"
   | "YKP-WORK-JS-003"
-  | "YKP-WORK-JS-004";
+  | "YKP-WORK-JS-004"
+  | "YKP-WORK-JS-005";
 
 export class WorkGovernanceJetStreamError extends Error {
   constructor(readonly code: WorkGovernanceJetStreamErrorCode) {
@@ -42,32 +43,29 @@ export interface WorkGovernancePublishRequestV1 {
   stream: typeof WORK_GOVERNANCE_STREAM_V1;
   messageId: string;
   lastSubjectSequence: number;
+  timeoutMillis: typeof WORK_GOVERNANCE_PUBLISH_TIMEOUT_MILLIS_V1;
 }
 
 export interface WorkGovernancePublishAckV1 {
+  outcome: "acknowledged";
   stream: string;
   sequence: number;
   duplicate: boolean;
 }
+export type WorkGovernancePublishResultV1 = WorkGovernancePublishAckV1 | { outcome: "conflict" };
 
 export interface WorkGovernanceJetStreamPortsV1 {
+  getStreamConfig(stream: typeof WORK_GOVERNANCE_STREAM_V1): Promise<unknown>;
   getLastMessage(stream: typeof WORK_GOVERNANCE_STREAM_V1, subject: string): Promise<WorkGovernanceStoredMessageV1 | null>;
-  publish(subject: string, data: Uint8Array, request: WorkGovernancePublishRequestV1): Promise<WorkGovernancePublishAckV1>;
+  publish(subject: string, data: Uint8Array, request: WorkGovernancePublishRequestV1): Promise<WorkGovernancePublishResultV1>;
 }
 
 export interface WorkGovernanceJetStreamAppendResultV1 {
   outcome: "appended" | "replayed";
   event: WorkGovernanceEventV1;
-  receipt: {
-    stream: typeof WORK_GOVERNANCE_STREAM_V1;
-    subject: string;
-    sequence: number;
-    event_id: string;
-    event_digest: string;
-  };
+  /** Internal persistence position for projectors; this is not a public command receipt. */
+  persistence: { stream_sequence: number };
 }
-
-class SequenceConflict extends Error {}
 
 function fail(code: WorkGovernanceJetStreamErrorCode): never {
   throw new WorkGovernanceJetStreamError(code);
@@ -122,6 +120,41 @@ export function workGovernanceJetStreamConfigV1(options: { maxBytes: number; rep
   };
 }
 
+function optionalEmptyArray(value: unknown): boolean {
+  return value === undefined || (Array.isArray(value) && value.length === 0);
+}
+
+/** Fail closed if an existing stream differs from the reviewed append-only profile. */
+export function verifyWorkGovernanceJetStreamConfigV1(
+  source: unknown,
+  options: { maxBytes: number; replicas: number }
+): void {
+  const expected = workGovernanceJetStreamConfigV1(options);
+  try {
+    if (source === null || typeof source !== "object" || Array.isArray(source)) fail("YKP-WORK-JS-003");
+    const actual = source as Record<string, unknown>;
+    const subjects = actual.subjects;
+    if (actual.name !== expected.name || !Array.isArray(subjects) || subjects.length !== 1 ||
+        subjects[0] !== expected.subjects[0] || actual.retention !== expected.retention ||
+        actual.storage !== expected.storage || actual.discard !== expected.discard ||
+        actual.discard_new_per_subject === true ||
+        actual.max_msgs !== expected.max_msgs || actual.max_msgs_per_subject !== expected.max_msgs_per_subject ||
+        actual.max_age !== expected.max_age || actual.max_bytes !== expected.max_bytes ||
+        actual.max_msg_size !== expected.max_msg_size || actual.num_replicas !== expected.num_replicas ||
+        actual.deny_delete !== true || actual.deny_purge !== true || actual.allow_rollup_hdrs !== false ||
+        actual.allow_direct !== false || actual.mirror_direct !== false || actual.allow_msg_ttl === true ||
+        actual.allow_msg_schedules === true || actual.allow_atomic === true || actual.allow_batched === true ||
+        actual.sealed !== false || (actual.persist_mode !== undefined && actual.persist_mode !== expected.persist_mode) || actual.no_ack === true ||
+        actual.republish !== undefined || actual.mirror !== undefined || actual.subject_transform !== undefined ||
+        !optionalEmptyArray(actual.sources)) {
+      fail("YKP-WORK-JS-003");
+    }
+  } catch (error) {
+    if (error instanceof WorkGovernanceJetStreamError) throw error;
+    fail("YKP-WORK-JS-003");
+  }
+}
+
 /** Bind already-authorized SDK clients. This layer never discovers URLs or credentials. */
 export function workGovernanceJetStreamPortsV1(
   client: JetStreamClient,
@@ -131,6 +164,9 @@ export function workGovernanceJetStreamPortsV1(
     fail("YKP-WORK-JS-001");
   }
   return {
+    async getStreamConfig(stream) {
+      return (await manager.streams.info(stream)).config;
+    },
     async getLastMessage(stream, subject) {
       const message = await manager.streams.getMessage(stream, { last_by_subj: subject });
       return message === null ? null : { sequence: message.seq, data: message.data };
@@ -139,12 +175,14 @@ export function workGovernanceJetStreamPortsV1(
       try {
         const acknowledgement = await client.publish(subject, data, {
           msgID: request.messageId,
+          timeout: request.timeoutMillis,
           expect: {
             streamName: request.stream,
             lastSubjectSequence: request.lastSubjectSequence
           }
         });
         return {
+          outcome: "acknowledged",
           stream: acknowledgement.stream,
           sequence: acknowledgement.seq,
           duplicate: acknowledgement.duplicate
@@ -153,7 +191,7 @@ export function workGovernanceJetStreamPortsV1(
         if (error instanceof JetStreamApiError &&
             (error.code === JetStreamApiCodes.StreamWrongLastSequence ||
              error.code === JetStreamApiCodes.StreamWrongLastSequenceUnknown)) {
-          throw new SequenceConflict();
+          return { outcome: "conflict" };
         }
         throw error;
       }
@@ -166,24 +204,26 @@ function sameAggregate(left: WorkGovernanceEventV1, right: WorkGovernanceEventV1
     left.aggregate.kind === right.aggregate.kind && left.aggregate.id === right.aggregate.id;
 }
 
-function receipt(event: WorkGovernanceEventV1, subject: string, sequence: number) {
-  return {
-    stream: WORK_GOVERNANCE_STREAM_V1,
-    subject,
-    sequence,
-    event_id: event.event_id,
-    event_digest: event.event_digest
-  } as const;
-}
-
 export function createWorkGovernanceJetStreamAppenderV1(options: {
   storageEpoch: number;
+  stream: { maxBytes: number; replicas: number };
   ports: WorkGovernanceJetStreamPortsV1;
 }) {
   if (!options || !safePositiveInteger(options.storageEpoch) || !options.ports ||
-      typeof options.ports.getLastMessage !== "function" || typeof options.ports.publish !== "function") {
+      typeof options.ports.getStreamConfig !== "function" || typeof options.ports.getLastMessage !== "function" ||
+      typeof options.ports.publish !== "function") {
     fail("YKP-WORK-JS-001");
   }
+  workGovernanceJetStreamConfigV1(options.stream);
+  let configuration: Promise<void> | undefined;
+  const verifyConfiguration = async () => {
+    configuration ??= options.ports.getStreamConfig(WORK_GOVERNANCE_STREAM_V1)
+      .then((actual) => verifyWorkGovernanceJetStreamConfigV1(actual, options.stream));
+    try { await configuration; } catch (error) {
+      if (error instanceof WorkGovernanceJetStreamError) throw error;
+      fail("YKP-WORK-JS-004");
+    }
+  };
   return {
     async append(input: WorkGovernanceEventV1): Promise<WorkGovernanceJetStreamAppendResultV1> {
       let event: WorkGovernanceEventV1;
@@ -198,6 +238,7 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
         fail("YKP-WORK-JS-001");
       }
       if (event.storage_epoch !== options.storageEpoch) fail("YKP-WORK-JS-002");
+      await verifyConfiguration();
 
       let current: WorkGovernanceStoredMessageV1 | null;
       try {
@@ -213,7 +254,7 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
         try { previous = parseWorkGovernanceEventV1(current.data); } catch { fail("YKP-WORK-JS-003"); }
         if (!sameAggregate(previous, event)) fail("YKP-WORK-JS-003");
         if (previous.event_id === event.event_id && previous.event_digest === event.event_digest) {
-          return { outcome: "replayed", event, receipt: receipt(event, subject, current.sequence) };
+          return { outcome: "replayed", event, persistence: { stream_sequence: current.sequence } };
         }
         if (event.aggregate.revision !== previous.aggregate.revision + 1 ||
             event.command.expected_revision !== previous.aggregate.revision ||
@@ -225,17 +266,17 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
         fail("YKP-WORK-JS-002");
       }
 
-      let acknowledgement: WorkGovernancePublishAckV1;
+      let publication: WorkGovernancePublishResultV1;
       try {
-        acknowledgement = await options.ports.publish(subject, encoded, {
+        publication = await options.ports.publish(subject, encoded, {
           stream: WORK_GOVERNANCE_STREAM_V1,
           messageId: event.event_id,
-          lastSubjectSequence: expectedSequence
+          lastSubjectSequence: expectedSequence,
+          timeoutMillis: WORK_GOVERNANCE_PUBLISH_TIMEOUT_MILLIS_V1
         });
-      } catch (error) {
-        if (error instanceof SequenceConflict) fail("YKP-WORK-JS-002");
-        fail("YKP-WORK-JS-004");
-      }
+      } catch { fail("YKP-WORK-JS-005"); }
+      if (publication.outcome === "conflict") fail("YKP-WORK-JS-002");
+      const acknowledgement = publication;
       if (acknowledgement.stream !== WORK_GOVERNANCE_STREAM_V1 || acknowledgement.duplicate ||
           !safePositiveInteger(acknowledgement.sequence) || acknowledgement.sequence <= expectedSequence) {
         fail("YKP-WORK-JS-003");
@@ -243,7 +284,7 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
       return {
         outcome: "appended",
         event,
-        receipt: receipt(event, subject, acknowledgement.sequence)
+        persistence: { stream_sequence: acknowledgement.sequence }
       };
     }
   };
