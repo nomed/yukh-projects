@@ -56,6 +56,26 @@ The dependency graph used for admission must be acyclic for blocking edge
 types. A parent does not imply a dependency, and a dependency does not imply
 containment.
 
+Each relationship records stable edge identity, source, target, semantic type,
+reason, creator, creation event, and revision. Blocking-edge creation uses the
+expected graph revision and fails closed if it would introduce a cycle,
+self-reference, unknown endpoint, or traversal beyond accepted bounds.
+
+Yukh Projects materializes two distinct navigable views:
+
+- a **hierarchy tree** showing the parent-child decomposition of a project,
+  run, epic, or other work item;
+- a **dependency tree** rooted at a selected item, showing transitive upstream
+  blockers, downstream blocked items, edge reasons, waivers, and the longest
+  or policy-selected critical path.
+
+The authoritative dependency structure is a graph, not a tree. A work item may
+therefore appear through multiple paths in the dependency-tree view and must
+retain the same canonical identity. Projections mark repeated nodes rather than
+copying them. Dependency summaries roll up to epics and roadmap health, and an
+unresolved blocking path prevents readiness unless an authorized policy waiver
+is recorded.
+
 Work-item kinds are policy-defined rather than hard-coded to one tracker.
 Kinds declare whether an item is executable, aggregating, or both. Execution
 claims normally target executable items. A manager may hold a planning claim
@@ -97,7 +117,45 @@ transition to `ClaimAdmitted`. Lease expiry or revocation never produces
 `done`; policy may move the item to `blocked` or back to `ready` through a new
 event. Removing a blocker likewise does not bypass the DoR gate.
 
-### 4. Separate work, resource, budget, and mutation authority
+### 4. Maintain an outcome-based epic roadmap
+
+Each project owns a versioned roadmap whose initial entries are epic work
+items. The roadmap is a strategic projection over the canonical work graph,
+not a separate task store. Every epic entry declares:
+
+- a theme or objective and a desired measurable outcome;
+- success metrics and their observation source;
+- horizon `now`, `next`, or `later`;
+- commitment `exploring`, `candidate`, or `committed`;
+- confidence `low`, `medium`, or `high`;
+- roadmap priority, health, owner, budget summary, dependency summary, and
+  last-review time;
+- an optional target window when commitment policy permits one.
+
+Horizon, workflow state, commitment, and confidence are independent. An epic
+may be `next`, `ready`, `candidate`, and `medium` confidence at the same time.
+Moving an epic between horizons never silently changes workflow state, grants
+a claim, reserves budget, or creates a delivery commitment.
+
+Project policy defines a work-in-progress limit for `now`. Entry into `now`
+requires the epic-level DoR, an admitted manager or delivery ownership claim,
+an accepted budget envelope, no unresolved critical blocker without waiver,
+and capacity under that limit. `Later` items do not carry exact delivery dates.
+Target windows become commitments only for `committed` epics under an explicit
+approval policy.
+
+Roadmap changes are durable events with expected roadmap revision, actor,
+policy version, bounded reason, and changed fields. The initial semantic events
+include `EpicRoadmapPlaced`, `EpicRoadmapMoved`, `EpicCommitmentChanged`,
+`EpicConfidenceChanged`, and `OutcomeObserved`. Historical roadmap snapshots
+are reproducible from events; current cards do not overwrite past decisions.
+
+The Control Plane exposes at least a Now-Next-Later view, a timeline restricted
+to committed target windows, an outcome view, and the epic dependency tree.
+Completing delivery does not prove the desired outcome; outcome observation
+continues after an epic reaches workflow state `done`.
+
+### 5. Separate work, resource, budget, and mutation authority
 
 One admitted claim may bind several independently inspectable grants:
 
@@ -114,7 +172,7 @@ Read-only analysis does not imply mutation authority. A provider mutation that
 already requires a separate approved plan continues to require it; a work lease
 cannot weaken or replace controlled-apply approval.
 
-### 5. Make compatibility explicit
+### 6. Make compatibility explicit
 
 Claims declare a compatibility mode:
 
@@ -127,7 +185,7 @@ Admission fails closed when scope overlap is ambiguous. Repository, branch, and
 path matching must use canonical provider-neutral identifiers supplied by a
 trusted adapter; untrusted free-form labels cannot establish disjointness.
 
-### 6. Derive scheduling priority from policy
+### 7. Derive scheduling priority from policy
 
 A work item may carry an owner-provided priority, but effective admission order
 is a deterministic policy result that can consider:
@@ -145,7 +203,7 @@ Agents may recommend priority changes but cannot raise their own effective
 priority or budget. Priority does not bypass approval, compatibility, or safety
 checks.
 
-### 7. Use bounded leases and governed handover
+### 8. Use bounded leases and governed handover
 
 Every active lease has a maximum lifetime, renewal policy, heartbeat deadline,
 and cancellation path. Renewal requires fresh liveness, unchanged bindings,
@@ -161,7 +219,7 @@ Rate deferral follows ADR 0003. A lease may survive deferral only when a durable
 wakeup and the accepted ownership conditions exist; otherwise Yukh records a
 governed handover.
 
-### 8. Treat results and artifacts as evidence, not success claims
+### 9. Treat results and artifacts as evidence, not success claims
 
 A result distinguishes `completed`, `partial`, `blocked`, `cancelled`,
 `preempted`, and `failed`. Completion requires work-item acceptance evidence,
@@ -174,7 +232,7 @@ The agent that produces an artifact should normally create its commit and
 identify that authorship. Review, merge, release, and deployment remain
 separate capabilities and may require different subjects or approvals.
 
-### 9. Use a JetStream-native persistence profile first
+### 10. Use a JetStream-native persistence profile first
 
 Yukh Projects owns the authoritative state of projects, runs, work items,
 relationships, workflows, claims, leases, budgets, results, and external
@@ -222,7 +280,7 @@ SQLite and PostgreSQL remain optional future storage or reporting profiles.
 Adding either requires a separate compatibility, migration, consistency,
 backup, and recovery contract; neither is required by the first implementation.
 
-### 10. Keep trackers behind adapters
+### 11. Keep trackers behind adapters
 
 GitHub Issues, GitHub Projects, Jira, Linear, and similar systems are external
 views and integration targets. Adapters may import, link, and reconcile their
@@ -230,13 +288,26 @@ records with Yukh work items and artifacts, but provider identifiers do not
 define the core model. Parent, child, dependency, workflow, and work-item-kind
 mappings must preserve their canonical semantics or fail closed.
 
+Every external mapping declares one authority mode per synchronized field:
+`yukh_authoritative`, `provider_authoritative`, `derived`, `provider_local`, or
+`reference_only`. Canonical identity, roadmap placement, workflow admission,
+claims, leases, effective priority, budget, policy, DoR, DoD, and governance
+evidence remain Yukh-authoritative. Provider identifiers, URLs, and unmapped
+local fields remain provider-owned.
+
+Title, description, and acceptance criteria may be provider-authoritative for
+an imported item and Yukh-authoritative for a Yukh-originated item. Provider
+changes are untrusted observations submitted through the adapter and evaluated
+as versioned commands. There is no implicit bidirectional mode or last-write-
+wins conflict resolution; ambiguous or stale conflicts fail closed.
+
 Interactive governance must not depend on GitHub Actions. Actions remain valid
 for CI, deployment, policy verification, scheduled reconciliation, and
 external-event ingestion. Managers, agents, the CLI, and the Control Plane use
 the same Yukh Projects application API; MCP tools expose that API rather than
 reimplementing governance.
 
-### 11. Keep skills separate from enforcement
+### 12. Keep skills separate from enforcement
 
 Skills explain how managers and workers should request claims, report progress,
 preserve evidence, and hand work over. They improve agent behavior but are not
@@ -250,14 +321,19 @@ The first implementation contract must define at least:
 
 - `Project`, `Run`, `WorkItem`, policy-defined kind, parent, and typed
   dependency edges;
+- graph revision, edge provenance, cycle guards, hierarchy projection,
+  dependency projection, and critical-path policy;
 - versioned workflow, canonical state, transition rules, DoR, DoD, and roll-up
   policy;
+- versioned epic roadmap, outcome, metric, horizon, commitment, confidence,
+  target window, health, WIP policy, and review history;
 - `Subject`, `Role`, and runtime placement;
 - `Claim`, requested scope, capabilities, and budget;
 - `Lease`, heartbeat, renewal, expiry, revocation, and handover;
 - `BudgetReservation` and immutable usage entries;
 - `Result`, `ArtifactReference`, and verification evidence;
-- `ExternalMapping` for provider adapters;
+- `ExternalMapping`, item origin, per-field authority, provider revision, and
+  conflict policy;
 - `PolicyDecision` with policy version and redacted reasons;
 - a versioned domain event envelope and aggregate revision;
 - projection checkpoints and deterministic rebuild metadata.
@@ -273,6 +349,10 @@ over-budget, or unauthorized transitions fail closed.
   inspectable authority instead of implicit permission from prompts.
 - The Control Plane can explain who is working, on what scope, under which
   policy, with what budget, and what evidence has been produced.
+- Epic roadmaps expose outcomes, honest confidence horizons, commitments, and
+  dependency health without converting speculative work into dated promises.
+- Hierarchy and dependency projections make decomposition, transitive blockers,
+  and critical paths inspectable without weakening graph invariants.
 - JetStream provides the initial durable event log and current-state
   projections, avoiding an additional database in the first deployment.
 - Coordination and Projects share infrastructure but retain separate APIs,
@@ -299,6 +379,12 @@ over-budget, or unauthorized transitions fail closed.
   contracts, permissions, retention, and recovery boundaries.
 - **Tracker records as the source of truth:** couples Yukh semantics and
   availability to one provider.
+- **Bidirectional last-write-wins synchronization:** makes field ownership and
+  governance outcomes depend on timing rather than explicit policy.
+- **Dated feature-list roadmap:** turns uncertain future work into commitments
+  and hides desired outcomes and confidence.
+- **Dependency tree as the canonical model:** cannot represent multiple
+  upstream paths without duplicating identity or losing graph semantics.
 - **Skills as enforcement:** callers and GitHub Actions may not load them, and
   instructions cannot provide an authorization boundary.
 - **Permanent ownership:** abandoned or unavailable agents would block work and
@@ -307,8 +393,9 @@ over-budget, or unauthorized transitions fail closed.
 ## Follow-up work
 
 1. Review and accept or revise this domain boundary under a governing issue.
-2. Define versioned work-item graph, workflow, DoR, DoD, roll-up, priority,
-   compatibility, and budget contracts using synthetic fixtures.
+2. Define versioned work-item graph, dependency-tree projection, epic roadmap,
+   workflow, DoR, DoD, roll-up, field authority, priority, compatibility, and
+   budget contracts using synthetic fixtures.
 3. Specify the JetStream event envelope, aggregate partitioning, expected
    sequence admission, KV buckets, projection rebuild, backup, and recovery.
 4. Expose a minimal application API through CLI and Yukh MCP.
