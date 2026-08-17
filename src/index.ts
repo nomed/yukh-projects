@@ -29,6 +29,7 @@ export * from "./release-plan.js";
 export * from "./protected-publisher.js";
 export * from "./aggregate-migration.js";
 export * from "./work-type-provider.js";
+export * from "./work-governance-events.js";
 export {
  runMcpEffectBControlledApplyV1,
  type McpEffectBControlledApplyInvocationV1,
