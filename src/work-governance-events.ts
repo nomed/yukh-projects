@@ -74,13 +74,17 @@ const AGGREGATE_KINDS = new Set<WorkGovernanceAggregateKind>(["project", "run", 
 
 function fail(code: WorkGovernanceEventErrorCode = "YKP-WORK-001"): never { throw new WorkGovernanceEventError(code); }
 function record(value: unknown): value is Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
+  try {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+    const prototype = Object.getPrototypeOf(value);
+    return prototype === Object.prototype || prototype === null;
+  } catch { return false; }
 }
 function exact(value: Record<string, unknown>, required: readonly string[], optional: readonly string[] = []): void {
-  const allowed = new Set([...required, ...optional]);
-  if (required.some((key) => !Object.hasOwn(value, key)) || Object.keys(value).some((key) => !allowed.has(key))) fail();
+  try {
+    const allowed = new Set([...required, ...optional]);
+    if (required.some((key) => !Object.hasOwn(value, key)) || Object.keys(value).some((key) => !allowed.has(key))) fail();
+  } catch (error) { if (error instanceof WorkGovernanceEventError) throw error; fail(); }
 }
 function unicode(value: string): boolean {
   for (let index = 0; index < value.length; index++) {
@@ -108,7 +112,7 @@ function timestamp(value: unknown): value is string {
 function canonical(value: unknown, seen: Set<object>, depth: number, count: { value: number }): string {
   if (++count.value > MAX_NODES || depth > MAX_DEPTH) fail();
   if (value === null || typeof value === "boolean") return JSON.stringify(value);
-  if (typeof value === "string") { if (!unicode(value)) fail(); return JSON.stringify(value); }
+  if (typeof value === "string") { if (value.length > MAX_BYTES || !unicode(value)) fail(); return JSON.stringify(value); }
   if (typeof value === "number") { if (!Number.isFinite(value)) fail(); return JSON.stringify(value); }
   if (Array.isArray(value)) {
     if (seen.has(value)) fail(); seen.add(value);
@@ -137,7 +141,11 @@ function canonical(value: unknown, seen: Set<object>, depth: number, count: { va
 
 /** RFC 8785 JSON canonicalization for bounded JSON-compatible values. */
 export function canonicalWorkGovernanceJson(value: unknown): string {
-  return canonical(value, new Set<object>(), 0, { value: 0 });
+  try {
+    const source = canonical(value, new Set<object>(), 0, { value: 0 });
+    if (Buffer.byteLength(source, "utf8") > MAX_BYTES) fail();
+    return source;
+  } catch (error) { if (error instanceof WorkGovernanceEventError) throw error; fail(); }
 }
 function sha256(value: string): string { return `sha-256:${createHash("sha256").update(value, "utf8").digest("hex")}`; }
 function boundedCanonical(value: unknown): string {
@@ -178,7 +186,10 @@ function parseEvidence(value: unknown): WorkGovernanceEvidenceV1[] {
 
 export function parseWorkGovernanceCommandV1(source: string | Uint8Array): WorkGovernanceCommandV1 {
   let textSource: string;
-  try { textSource = typeof source === "string" ? source : new TextDecoder("utf-8", { fatal: true }).decode(source); } catch { fail(); }
+  try {
+    if ((typeof source === "string" || source instanceof Uint8Array) && source.length > MAX_BYTES) fail();
+    textSource = typeof source === "string" ? source : new TextDecoder("utf-8", { fatal: true }).decode(source);
+  } catch (error) { if (error instanceof WorkGovernanceEventError) throw error; fail(); }
   if (Buffer.byteLength(textSource, "utf8") > MAX_BYTES) fail();
   let value: unknown; try { value = JSON.parse(textSource); } catch { fail(); }
   if (canonicalWorkGovernanceJson(value) !== textSource || !record(value)) fail();
@@ -216,7 +227,10 @@ function parseEventObject(value: unknown): WorkGovernanceEventV1 {
 }
 export function parseWorkGovernanceEventV1(source: string | Uint8Array): WorkGovernanceEventV1 {
   let textSource: string;
-  try { textSource = typeof source === "string" ? source : new TextDecoder("utf-8", { fatal: true }).decode(source); } catch { fail(); }
+  try {
+    if ((typeof source === "string" || source instanceof Uint8Array) && source.length > MAX_BYTES) fail();
+    textSource = typeof source === "string" ? source : new TextDecoder("utf-8", { fatal: true }).decode(source);
+  } catch (error) { if (error instanceof WorkGovernanceEventError) throw error; fail(); }
   if (Buffer.byteLength(textSource, "utf8") > MAX_BYTES) fail();
   let value: unknown; try { value = JSON.parse(textSource); } catch { fail(); }
   if (canonicalWorkGovernanceJson(value) !== textSource) fail();
@@ -241,15 +255,21 @@ export function workGovernancePartitionTokenV1(namespaceId: string, kind: WorkGo
   return base32(bytes);
 }
 
-export function createInMemoryWorkGovernanceEventStoreV1(options: { eventId: () => string; occurredAt: () => string }) {
-  if (!options || typeof options.eventId !== "function" || typeof options.occurredAt !== "function") fail();
+export function createInMemoryWorkGovernanceEventStoreV1(options: { storageEpoch: number; eventId: () => string; occurredAt: () => string }) {
+  let storageEpoch: number; let nextEventId: () => string; let nextOccurredAt: () => string;
+  try {
+    if (!options || !integer(options.storageEpoch, 1) || typeof options.eventId !== "function" || typeof options.occurredAt !== "function") fail();
+    storageEpoch = options.storageEpoch; nextEventId = options.eventId; nextOccurredAt = options.occurredAt;
+  } catch (error) { if (error instanceof WorkGovernanceEventError) throw error; fail(); }
   const aggregates = new Map<string, WorkGovernanceEventV1[]>();
   const receipts = new Map<string, { request_digest: string; event: WorkGovernanceEventV1 }>();
+  const eventIds = new Set<string>();
   const aggregateKey = (command: WorkGovernanceCommandV1) => `${command.namespace_id}\n${command.aggregate.kind}\n${command.aggregate.id}`;
   return {
     append(input: WorkGovernanceAppendV1): WorkGovernanceAppendResultV1 {
       if (!record(input)) fail(); exact(input, ["command", "event_type", "data"], ["evidence"]);
       const command = parseWorkGovernanceCommandV1(boundedCanonical(input.command));
+      if (command.storage_epoch !== storageEpoch) fail("YKP-WORK-002");
       if (typeof input.event_type !== "string" || !EVENT_TYPE.test(input.event_type)) fail();
       const evidence = parseEvidence(input.evidence ?? []); const data = parseData(input.data);
       const requestDigest = sha256(boundedCanonical({ command, event_type: input.event_type, evidence, data }));
@@ -261,8 +281,10 @@ export function createInMemoryWorkGovernanceEventStoreV1(options: { eventId: () 
       const key = aggregateKey(command); const events = aggregates.get(key) ?? []; const previous = events.at(-1);
       const currentRevision = previous?.aggregate.revision ?? 0;
       if (command.aggregate.expected_revision !== currentRevision) fail("YKP-WORK-002");
-      const eventId = options.eventId(); const occurredAt = options.occurredAt();
+      let eventId: string; let occurredAt: string;
+      try { eventId = nextEventId(); occurredAt = nextOccurredAt(); } catch { fail(); }
       if (!uuid(eventId) || !timestamp(occurredAt)) fail();
+      if (eventIds.has(eventId)) fail("YKP-WORK-003");
       const base = {
         schema: "yukh-projects-event-v1" as const, specversion: "1.0" as const, event_id: eventId,
         type: input.event_type, occurred_at: occurredAt, storage_epoch: command.storage_epoch,
@@ -276,7 +298,7 @@ export function createInMemoryWorkGovernanceEventStoreV1(options: { eventId: () 
         causation_id: command.causation_id, evidence, data
       };
       const event = parseWorkGovernanceEventV1(boundedCanonical({ ...base, event_digest: sha256(canonicalWorkGovernanceJson(base)) }));
-      events.push(event); aggregates.set(key, events); receipts.set(command.command_id, { request_digest: requestDigest, event });
+      events.push(event); aggregates.set(key, events); receipts.set(command.command_id, { request_digest: requestDigest, event }); eventIds.add(eventId);
       return { outcome: "appended", event: cloneJson(event) };
     },
     events(namespaceId: string, kind: WorkGovernanceAggregateKind, aggregateId: string): readonly WorkGovernanceEventV1[] {

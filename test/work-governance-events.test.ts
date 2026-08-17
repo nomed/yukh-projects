@@ -30,6 +30,7 @@ function command(revision = 0, commandId = ids[0]!): WorkGovernanceCommandV1 {
 function fixtureStore() {
   let sequence = 0;
   return createInMemoryWorkGovernanceEventStoreV1({
+    storageEpoch: 1,
     eventId: () => `018f0000-0000-7000-8000-${String(++sequence).padStart(12, "0")}`,
     occurredAt: () => `2026-08-17T12:00:0${sequence}.000Z`
   });
@@ -46,6 +47,8 @@ test("canonicalizes bounded JSON and rejects unsafe values", () => {
   const accessor = Object.defineProperty({}, "value", { enumerable: true, get: () => "not evaluated" });
   assert.throws(() => canonicalWorkGovernanceJson(accessor), isCode("YKP-WORK-001"));
   assert.throws(() => canonicalWorkGovernanceJson(new Array(1)), isCode("YKP-WORK-001"));
+  const hostile = new Proxy({}, { ownKeys: () => { throw new Error("private proxy failure"); } });
+  assert.throws(() => canonicalWorkGovernanceJson(hostile), isCode("YKP-WORK-001"));
 });
 
 test("strict command codec accepts canonical input and rejects aliases", () => {
@@ -72,6 +75,14 @@ test("exact retries replay while stale and divergent requests fail closed", () =
   assert.equal(replay.outcome, "replayed"); assert.deepEqual(replay.event, first.event); assert.equal(store.events("namespace:example", "work_item", "work-item:example").length, 1);
   assert.throws(() => store.append({ ...request, data: { title: "Changed" } }), isCode("YKP-WORK-003"));
   assert.throws(() => store.append({ command: command(0, ids[1]!), event_type: "work_item.content_updated.v1", data: {} }), isCode("YKP-WORK-002"));
+  assert.throws(() => store.append({ command: { ...command(1, ids[1]!), storage_epoch: 2 }, event_type: "work_item.content_updated.v1", data: {} }), isCode("YKP-WORK-002"));
+});
+
+test("rejects duplicate generated event ids across aggregates", () => {
+  const store = createInMemoryWorkGovernanceEventStoreV1({ storageEpoch: 1, eventId: () => ids[0]!, occurredAt: () => "2026-08-17T12:00:00.000Z" });
+  store.append({ command: command(), event_type: "work_item.created.v1", data: {} });
+  const other = { ...command(0, ids[1]!), aggregate: { kind: "project" as const, id: "project:other", expected_revision: 0 } };
+  assert.throws(() => store.append({ command: other, event_type: "project.created.v1", data: {} }), isCode("YKP-WORK-003"));
 });
 
 test("event codec rejects noncanonical, broken, and oversized events", () => {
