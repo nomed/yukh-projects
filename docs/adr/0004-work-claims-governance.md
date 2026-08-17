@@ -1,7 +1,8 @@
 # ADR 0004: Work claims as the governance core
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-17
+- **Accepted:** 2026-08-17 by `@nomed`
 - **Governing issue:** [#162](https://github.com/nomed/yukh-projects/issues/162)
 
 ## Context
@@ -415,14 +416,13 @@ over-budget, or unauthorized transitions fail closed.
 
 ## Follow-up work
 
-1. Review and accept or revise this domain boundary under a governing issue.
-2. Define versioned work-item graph, dependency-tree projection, epic roadmap,
+1. Define versioned work-item graph, dependency-tree projection, epic roadmap,
    workflow, DoR, DoD, roll-up, field authority, priority, compatibility, and
    budget contracts using synthetic fixtures.
-3. Specify the JetStream event envelope, aggregate partitioning, expected
+2. Specify the JetStream event envelope, aggregate partitioning, expected
    sequence admission, KV buckets, projection rebuild, backup, and recovery.
-4. Expose a minimal application API through CLI and Yukh MCP.
-5. Move current GitHub reconciliation behind the first external adapter without
+3. Expose a minimal application API through CLI and Yukh MCP.
+4. Move current GitHub reconciliation behind the first external adapter without
    changing its existing safety guarantees.
-6. Add a SQL profile only after measured query or deployment requirements
+5. Add a SQL profile only after measured query or deployment requirements
    justify it.
