@@ -61,6 +61,13 @@ reason, creator, creation event, and revision. Blocking-edge creation uses the
 expected graph revision and fails closed if it would introduce a cycle,
 self-reference, unknown endpoint, or traversal beyond accepted bounds.
 
+Dependencies may cross runs and projects inside the same governed namespace
+when explicit project policy permits both endpoints and the caller has the
+required relationship-mutation grant. Cross-namespace and cross-tenant edges
+are not admitted by the initial profile. If a previously admitted endpoint is
+unavailable or no longer observable, its blocking edge remains unresolved and
+cannot be treated as satisfied.
+
 Yukh Projects materializes two distinct navigable views:
 
 - a **hierarchy tree** showing the parent-child decomposition of a project,
@@ -74,7 +81,9 @@ therefore appear through multiple paths in the dependency-tree view and must
 retain the same canonical identity. Projections mark repeated nodes rather than
 copying them. Dependency summaries roll up to epics and roadmap health, and an
 unresolved blocking path prevents readiness unless an authorized policy waiver
-is recorded.
+is recorded. A critical path is derived only from the acyclic blocking graph
+and policy-selected time or cost estimates. Missing estimates produce an
+explicit incomplete result rather than a fabricated path.
 
 Work-item kinds are policy-defined rather than hard-coded to one tracker.
 Kinds declare whether an item is executable, aggregating, or both. Execution
@@ -128,14 +137,20 @@ not a separate task store. Every epic entry declares:
 - horizon `now`, `next`, or `later`;
 - commitment `exploring`, `candidate`, or `committed`;
 - confidence `low`, `medium`, or `high`;
-- roadmap priority, health, owner, budget summary, dependency summary, and
-  last-review time;
+- roadmap priority, derived health, accountable subject, budget summary,
+  dependency summary, and last-review time;
 - an optional target window when commitment policy permits one.
 
 Horizon, workflow state, commitment, and confidence are independent. An epic
 may be `next`, `ready`, `candidate`, and `medium` confidence at the same time.
 Moving an epic between horizons never silently changes workflow state, grants
 a claim, reserves budget, or creates a delivery commitment.
+
+Roadmap priority is a strategic input to scheduling policy, not the effective
+execution priority. Derived health reflects workflow, dependency, budget,
+outcome, and freshness signals. An authorized human or manager may record a
+bounded health override with reason and expiry, but cannot replace the
+underlying signals.
 
 Project policy defines a work-in-progress limit for `now`. Entry into `now`
 requires the epic-level DoR, an admitted manager or delivery ownership claim,
@@ -149,11 +164,17 @@ policy version, bounded reason, and changed fields. The initial semantic events
 include `EpicRoadmapPlaced`, `EpicRoadmapMoved`, `EpicCommitmentChanged`,
 `EpicConfidenceChanged`, and `OutcomeObserved`. Historical roadmap snapshots
 are reproducible from events; current cards do not overwrite past decisions.
+Changing roadmap placement, commitment, confidence, target window, or an
+override requires an explicit roadmap-mutation grant.
 
 The Control Plane exposes at least a Now-Next-Later view, a timeline restricted
 to committed target windows, an outcome view, and the epic dependency tree.
 Completing delivery does not prove the desired outcome; outcome observation
 continues after an epic reaches workflow state `done`.
+
+A portfolio roadmap may project epics from several project roadmaps and their
+cross-project dependency edges. It does not own separate copies of those epics
+or create another authority source.
 
 ### 5. Separate work, resource, budget, and mutation authority
 
@@ -322,11 +343,13 @@ The first implementation contract must define at least:
 - `Project`, `Run`, `WorkItem`, policy-defined kind, parent, and typed
   dependency edges;
 - graph revision, edge provenance, cycle guards, hierarchy projection,
-  dependency projection, and critical-path policy;
+  dependency projection, cross-project scope, and critical-path completeness
+  policy;
 - versioned workflow, canonical state, transition rules, DoR, DoD, and roll-up
   policy;
 - versioned epic roadmap, outcome, metric, horizon, commitment, confidence,
-  target window, health, WIP policy, and review history;
+  target window, derived health, override, WIP policy, portfolio projection,
+  and review history;
 - `Subject`, `Role`, and runtime placement;
 - `Claim`, requested scope, capabilities, and budget;
 - `Lease`, heartbeat, renewal, expiry, revocation, and handover;
