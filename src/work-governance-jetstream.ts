@@ -187,13 +187,39 @@ export function workGovernanceJetStreamPortsV1(
           !safePositiveInteger(maximumBytes) || maximumBytes > WORK_GOVERNANCE_MAX_RECOVERY_BYTES_V1) fail("YKP-WORK-JS-003");
       const messages: WorkGovernanceStoredMessageV1[] = [];
       let bytes = 0;
-      const batch = await manager.direct.getBatch(stream, { seq: 1, batch: maximumEvents, next_by_subj: subject });
-      for await (const message of batch) {
+      let limitFailure: WorkGovernanceJetStreamError | undefined;
+      let batch: Awaited<ReturnType<JetStreamManager["direct"]["getBatch"]>> | undefined;
+      const receive = (message: { seq: number; data: Uint8Array }) => {
+        if (limitFailure) return;
         if (messages.length >= maximumEvents || !(message.data instanceof Uint8Array) ||
-            message.data.byteLength > maximumBytes - bytes) fail("YKP-WORK-JS-003");
+            message.data.byteLength > maximumBytes - bytes) {
+          limitFailure = new WorkGovernanceJetStreamError("YKP-WORK-JS-003");
+          batch?.stop(limitFailure);
+          return;
+        }
         bytes += message.data.byteLength;
         messages.push({ sequence: message.seq, data: message.data });
+      };
+      batch = await manager.direct.getBatch(stream, {
+        seq: 1,
+        batch: maximumEvents,
+        max_bytes: maximumBytes,
+        next_by_subj: subject,
+        callback(done, message) {
+          if (done) {
+            if (done.err && !limitFailure) limitFailure = new WorkGovernanceJetStreamError("YKP-WORK-JS-003");
+            return;
+          }
+          receive(message);
+        }
+      });
+      if (limitFailure) batch.stop(limitFailure);
+      try {
+        for await (const unexpected of batch) receive(unexpected);
+      } catch (error) {
+        if (!limitFailure) throw error;
       }
+      if (limitFailure) throw limitFailure;
       return messages;
     },
     async publish(subject, data, request) {

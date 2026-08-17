@@ -244,8 +244,10 @@ test("direct history enforces local event and byte limits against over-return", 
     {
       streams: { getMessage() {} },
       direct: {
-        async getBatch() {
-          return (async function* () { for (const message of messages) yield message; })();
+        async getBatch(_stream: string, options: { callback?: (done: null, message: { seq: number; data: Uint8Array }) => void }) {
+          for (const message of messages) options.callback?.(null, message);
+          const iterator = (async function* () {})();
+          return Object.assign(iterator, { stop() {} });
         }
       }
     } as unknown as JetStreamManager
