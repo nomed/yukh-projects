@@ -132,6 +132,20 @@ test("replays an exact existing event without publishing", async () => {
   assert.equal(result.outcome, "replayed"); assert.deepEqual(result.persistence, { stream_sequence: 17 }); assert.equal(fake.calls.length, 0);
 });
 
+test("resolves a duplicate acknowledgement race only after observing the exact event", async () => {
+  const { first } = events(); let reads = 0;
+  const ports: WorkGovernanceJetStreamPortsV1 = {
+    async getStreamConfig() { return workGovernanceJetStreamConfigV1(stream); },
+    async getLastMessage() {
+      if (reads++ === 0) return null;
+      return { sequence: 9, data: new TextEncoder().encode(encodeWorkGovernanceEventV1(first)) };
+    },
+    async publish() { return { outcome: "acknowledged", stream: WORK_GOVERNANCE_STREAM_V1, sequence: 9, duplicate: true }; }
+  };
+  const result = await createWorkGovernanceJetStreamAppenderV1({ storageEpoch: 7, stream, ports }).append(first);
+  assert.equal(result.outcome, "replayed"); assert.deepEqual(result.persistence, { stream_sequence: 9 });
+});
+
 test("rejects stale chains and corrupted stored messages before publishing", async () => {
   const { first, second, other } = events();
   await assert.rejects(

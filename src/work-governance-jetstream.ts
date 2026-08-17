@@ -275,10 +275,35 @@ export function createWorkGovernanceJetStreamAppenderV1(options: {
           timeoutMillis: WORK_GOVERNANCE_PUBLISH_TIMEOUT_MILLIS_V1
         });
       } catch { fail("YKP-WORK-JS-005"); }
-      if (publication.outcome === "conflict") fail("YKP-WORK-JS-002");
+      if (publication.outcome === "conflict") {
+        let observed: WorkGovernanceStoredMessageV1 | null;
+        try { observed = await options.ports.getLastMessage(WORK_GOVERNANCE_STREAM_V1, subject); }
+        catch { fail("YKP-WORK-JS-004"); }
+        if (observed !== null && safePositiveInteger(observed.sequence) && observed.data instanceof Uint8Array) {
+          let stored: WorkGovernanceEventV1;
+          try { stored = parseWorkGovernanceEventV1(observed.data); } catch { fail("YKP-WORK-JS-003"); }
+          if (stored.event_id === event.event_id && stored.event_digest === event.event_digest) {
+            return { outcome: "replayed", event, persistence: { stream_sequence: observed.sequence } };
+          }
+        }
+        fail("YKP-WORK-JS-002");
+      }
       const acknowledgement = publication;
-      if (acknowledgement.stream !== WORK_GOVERNANCE_STREAM_V1 || acknowledgement.duplicate ||
+      if (acknowledgement.stream !== WORK_GOVERNANCE_STREAM_V1 ||
           !safePositiveInteger(acknowledgement.sequence) || acknowledgement.sequence <= expectedSequence) {
+        fail("YKP-WORK-JS-003");
+      }
+      if (acknowledgement.duplicate) {
+        let observed: WorkGovernanceStoredMessageV1 | null;
+        try { observed = await options.ports.getLastMessage(WORK_GOVERNANCE_STREAM_V1, subject); }
+        catch { fail("YKP-WORK-JS-004"); }
+        if (observed !== null && safePositiveInteger(observed.sequence) && observed.data instanceof Uint8Array) {
+          let stored: WorkGovernanceEventV1;
+          try { stored = parseWorkGovernanceEventV1(observed.data); } catch { fail("YKP-WORK-JS-003"); }
+          if (stored.event_id === event.event_id && stored.event_digest === event.event_digest) {
+            return { outcome: "replayed", event, persistence: { stream_sequence: observed.sequence } };
+          }
+        }
         fail("YKP-WORK-JS-003");
       }
       return {

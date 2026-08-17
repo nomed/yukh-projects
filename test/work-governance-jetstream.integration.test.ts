@@ -1,12 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { jetstream, jetstreamManager } from "@nats-io/jetstream";
+import { Kvm } from "@nats-io/kv";
 import { connect } from "@nats-io/transport-node";
 import {
   createInMemoryWorkGovernanceEventStoreV1,
+  createWorkGovernanceCommandAppendCoordinatorV1,
+  createWorkGovernanceCommandReceiptStoreV1,
   createWorkGovernanceJetStreamAppenderV1,
+  openWorkGovernanceCommandReceiptKvPortsV1,
+  workGovernanceCommandReceiptKvConfigV1,
   workGovernanceJetStreamConfigV1,
   workGovernanceJetStreamPortsV1,
+  WorkGovernanceJetStreamError,
   type WorkGovernanceCommandV1
 } from "../src/index.js";
 
@@ -108,6 +114,48 @@ test("qualifies interleaved aggregate appends against local JetStream", { skip: 
     assert.equal(rejected.reason?.code, "YKP-WORK-JS-002");
     const winner = results[0]!.status === "fulfilled" ? left.second : right.second;
     assert.equal((await appender.append(winner)).outcome, "replayed");
+
+    const receiptBucket = { maxBytes: 1024 * 1024, replicas: 1 } as const;
+    await new Kvm(jetstream(connection)).create(
+      "YKP_COMMAND_RECEIPTS_V1",
+      workGovernanceCommandReceiptKvConfigV1(receiptBucket)
+    );
+    const receiptStore = createWorkGovernanceCommandReceiptStoreV1({
+      storageEpoch: 19, bucket: receiptBucket,
+      ports: await openWorkGovernanceCommandReceiptKvPortsV1(jetstream(connection), receiptBucket)
+    });
+    const receiptEvents = createInMemoryWorkGovernanceEventStoreV1({
+      storageEpoch: 19,
+      eventId: () => "018f4000-0000-7000-8000-000000000001",
+      occurredAt: () => "2026-08-17T14:02:00.000Z"
+    });
+    const receiptCommand = command("018f4000-0000-7000-8000-000000000002", "work-item:receipt", 0);
+    const receiptEvent = receiptEvents.append({
+      command: receiptCommand, event_type: "work_item.created.v1", data: { title: "Receipt" }
+    }).event;
+    const reservations = await Promise.all([
+      receiptStore.reserve(receiptCommand, receiptEvent), receiptStore.reserve(receiptCommand, receiptEvent)
+    ]);
+    assert.deepEqual(new Set(reservations.map((result) => result.outcome)), new Set(["reserved", "existing"]));
+
+    let ambiguous = true;
+    const receiptCoordinator = createWorkGovernanceCommandAppendCoordinatorV1({
+      receipts: receiptStore,
+      appender: { async append(event) {
+        const result = await appender.append(event);
+        if (ambiguous) { ambiguous = false; throw new WorkGovernanceJetStreamError("YKP-WORK-JS-005"); }
+        return result;
+      } }
+    });
+    await assert.rejects(
+      receiptCoordinator.resolveCompletionUnknown(receiptCommand, receiptEvent),
+      (error: unknown) => error instanceof WorkGovernanceJetStreamError && error.code === "YKP-WORK-JS-005"
+    );
+    const unknown = await receiptStore.reserve(receiptCommand, receiptEvent);
+    assert.equal(unknown.record.receipt.state, "completion_unknown");
+    const resolved = await receiptCoordinator.resolveCompletionUnknown(receiptCommand, receiptEvent);
+    assert.equal(resolved.outcome, "replayed"); assert.equal(resolved.receipt.state, "appended");
+    assert.ok(resolved.receipt.stream_sequence! > 0);
   } finally {
     await connection.close();
   }
