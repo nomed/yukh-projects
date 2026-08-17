@@ -112,7 +112,7 @@ test("rejects stale chains and corrupted stored messages before publishing", asy
 test("redacts transport failures and fails closed on invalid acknowledgements", async () => {
   const { first } = events();
   const unavailable: WorkGovernanceJetStreamPortsV1 = {
-    async getLastMessage() { throw new Error("nats://secret.internal private-token"); },
+    async getLastMessage() { throw new Error("opaque transport detail 7319"); },
     async publish() { throw new Error("unreachable"); }
   };
   await assert.rejects(
