@@ -41,8 +41,11 @@ without granting runtime authority or coupling canonical state to a provider.
 - PR #189 is authoritative on `main` at `57e57b9`: local JetStream
   qualification publishes synthetic manager admission through the coordinated
   wrapper, command receipts, and real appender.
-- [#190](https://github.com/nomed/yukh-projects/issues/190) governs the first
-  synthetic manager admission runtime.
+- PR #191 is authoritative on `main` at `5b651ff`: the first synthetic manager
+  admission runtime composes plan, preview, command candidate, event, and
+  coordinated append into a redacted runtime result.
+- [#192](https://github.com/nomed/yukh-projects/issues/192) governs the first
+  synthetic manager orchestration handoff boundary.
 - The projector explicitly observes catalogued events for other aggregate
   views, projects only supported work-item events, and stops on unknown or
   unsupported work-item event types.
@@ -55,12 +58,12 @@ without granting runtime authority or coupling canonical state to a provider.
 
 ## Next
 
-1. Implement a synthetic manager admission runtime over plan → preview →
-   command candidate → event → coordinated append.
+1. Implement a provider-neutral manager orchestration handoff over admitted
+   runtime results.
 2. Keep provisioning, model invocation, live workers, provider adapters,
    release, deployment, and control-plane UI outside this increment.
-3. Use the runtime as the API boundary for future control-plane and manager
-   orchestration work.
+3. Use the handoff as the boundary where a future control plane, yukh-mcp, or
+   SDK adapter may start admitted sessions.
 
 ## Invariants
 
@@ -93,6 +96,10 @@ without granting runtime authority or coupling canonical state to a provider.
   only injected coordinator, evidence, identifiers, and policy inputs; it does
   not provision infrastructure, invoke models, launch workers, or call
   providers.
+- Manager orchestration handoff is provider-neutral intent only: it may name an
+  external transport class such as MCP, SDK, CLI, or control plane, but it does
+  not import provider clients, call tools, open sessions, or include private
+  task bodies.
 - The v1 reducer registry is internal and fixed; projection and checkpoint
   records bind its computed implementation digest. Callers cannot inject
   closure state or alternate helpers, and a code change requires rebuild.
