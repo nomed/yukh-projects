@@ -31,8 +31,10 @@ without granting runtime authority or coupling canonical state to a provider.
 - PR #181 is authoritative on `main` at `0c302fe`: the first synthetic manager
   admission preview returns deterministic admit or reject decisions without
   appending events.
-- [#182](https://github.com/nomed/yukh-projects/issues/182) governs the first
-  manager admission command candidate.
+- PR #183 is authoritative on `main` at `3d12dee`: an admitted manager preview
+  can produce an inspectable `claim.admitted.v1` command candidate.
+- [#184](https://github.com/nomed/yukh-projects/issues/184) governs the first
+  in-memory manager admission append simulator.
 - The projector explicitly observes catalogued events for other aggregate
   views, projects only supported work-item events, and stops on unknown or
   unsupported work-item event types.
@@ -45,12 +47,13 @@ without granting runtime authority or coupling canonical state to a provider.
 
 ## Next
 
-1. Implement a deterministic command candidate for an admitted manager preview.
-2. Keep event append, receipt reservation, model invocation, live claims,
+1. Implement an in-memory append simulator for manager admission command
+   candidates.
+2. Keep JetStream append, receipt reservation, model invocation, live claims,
    provider adapters, provisioning, release, deployment, and control-plane UI
    outside this increment.
-3. Use the command candidate as the next review boundary before appending a
-   real `claim.admitted.v1` event.
+3. Use the simulator to validate command-to-event shape before admitting real
+   JetStream append.
 
 ## Invariants
 
@@ -72,6 +75,9 @@ without granting runtime authority or coupling canonical state to a provider.
 - Manager admission command candidates are inspectable command envelopes only:
   they do not reserve receipts, append events, launch agents, or create live
   claims.
+- The in-memory admission simulator may append to a synthetic event store for
+  tests, but it does not reserve receipts, use JetStream, call providers, or
+  launch workers.
 - The v1 reducer registry is internal and fixed; projection and checkpoint
   records bind its computed implementation digest. Callers cannot inject
   closure state or alternate helpers, and a code change requires rebuild.
