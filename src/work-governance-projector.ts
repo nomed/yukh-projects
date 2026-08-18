@@ -20,7 +20,6 @@ const DIGEST = /^sha-256:[0-9a-f]{64}$/u;
 const UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const OPAQUE_ID = /^[a-z][a-z0-9_-]{0,31}:[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$/u;
 const KEY = /^[0-9a-f]{64}$/u;
-const TOKEN = /^[a-z][a-z0-9_-]{0,63}$/u;
 
 export const WORK_GOVERNANCE_EVENT_CATALOG_V1: Readonly<Record<string, WorkGovernanceAggregateKind>> = Object.freeze({
   "project.created.v1": "project",
@@ -107,13 +106,6 @@ export type WorkGovernanceWorkItemReducerV1 = (
   event: Readonly<WorkGovernanceEventV1>
 ) => { [key: string]: WorkGovernanceJson };
 
-export interface WorkGovernanceWorkItemReducerDescriptorV1 {
-  version: string;
-  reduce: WorkGovernanceWorkItemReducerV1;
-}
-
-export type WorkGovernanceWorkItemReducerRegistryV1 = Readonly<Record<string, WorkGovernanceWorkItemReducerDescriptorV1>>;
-
 type BucketProfile = {
   bucket: typeof WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1 | typeof WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1;
   description: string;
@@ -140,6 +132,26 @@ function timestamp(value: unknown): value is string {
 }
 function sha256(value: string): string { return `sha-256:${createHash("sha256").update(value, "utf8").digest("hex")}`; }
 function clone<T>(value: T): T { return JSON.parse(canonicalWorkGovernanceJson(value)) as T; }
+function reduceWorkItemCreatedV1(
+  current: Readonly<{ [key: string]: WorkGovernanceJson }> | null,
+  event: Readonly<WorkGovernanceEventV1>
+): { [key: string]: WorkGovernanceJson } {
+  if (current !== null || (event.data.title !== undefined && typeof event.data.title !== "string")) {
+    throw new TypeError("invalid work-item creation");
+  }
+  return { title: typeof event.data.title === "string" ? event.data.title : "", workflow_state: "proposed" };
+}
+function reduceWorkItemWorkflowTransitionedV1(
+  current: Readonly<{ [key: string]: WorkGovernanceJson }> | null,
+  event: Readonly<WorkGovernanceEventV1>
+): { [key: string]: WorkGovernanceJson } {
+  if (current === null || typeof event.data.to !== "string") throw new TypeError("invalid workflow transition");
+  return { ...current, workflow_state: event.data.to };
+}
+const WORK_ITEM_REDUCERS_V1 = Object.freeze([
+  Object.freeze({ type: "work_item.created.v1", version: "created-v1", reduce: reduceWorkItemCreatedV1 }),
+  Object.freeze({ type: "work_item.workflow_transitioned.v1", version: "transition-v1", reduce: reduceWorkItemWorkflowTransitionedV1 })
+]);
 function reducerImplementationDigest(reducer: WorkGovernanceWorkItemReducerV1): string {
   try {
     const source = Function.prototype.toString.call(reducer);
@@ -378,45 +390,20 @@ export function createWorkGovernanceWorkItemProjectorV1(options: {
   checkpointBucket: { maxBytes: number; replicas: number };
   projections: WorkGovernanceProjectorKvPortsV1;
   checkpoints: WorkGovernanceProjectorKvPortsV1;
-  reducers: WorkGovernanceWorkItemReducerRegistryV1;
 }) {
-  if (!options || !positive(options.storageEpoch) || !options.projections || !options.checkpoints || !object(options.reducers) ||
+  if (!object(options) || !exact(options, ["storageEpoch", "bucket", "checkpointBucket", "projections", "checkpoints"]) ||
+      !positive(options.storageEpoch) || !options.projections || !options.checkpoints ||
       options.bucket.replicas !== options.checkpointBucket.replicas) fail("YKP-WORK-PROJECTOR-001");
   workGovernanceProjectorKvConfigV1(WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1, options.bucket);
   workGovernanceProjectorKvConfigV1(WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1, options.checkpointBucket);
-  let reducerEntries: Array<[string, WorkGovernanceWorkItemReducerDescriptorV1]>;
-  try {
-    const keys = Reflect.ownKeys(options.reducers);
-    if (keys.some((key) => typeof key !== "string")) fail("YKP-WORK-PROJECTOR-001");
-    reducerEntries = (keys as string[]).map((key) => {
-      const descriptor = Object.getOwnPropertyDescriptor(options.reducers, key);
-      if (!descriptor || !("value" in descriptor) || !descriptor.enumerable || !object(descriptor.value) ||
-          !exact(descriptor.value, ["version", "reduce"])) {
-        fail("YKP-WORK-PROJECTOR-001");
-      }
-      const entries = ["version", "reduce"].map((field) =>
-        Object.getOwnPropertyDescriptor(descriptor.value, field));
-      if (entries.some((entry) => !entry || !("value" in entry) || !entry.enumerable)) fail("YKP-WORK-PROJECTOR-001");
-      const value = descriptor.value as unknown as WorkGovernanceWorkItemReducerDescriptorV1;
-      if (!TOKEN.test(value.version) || typeof value.reduce !== "function") {
-        fail("YKP-WORK-PROJECTOR-001");
-      }
-      reducerImplementationDigest(value.reduce);
-      return [key, value];
-    });
-  } catch (error) {
-    if (error instanceof WorkGovernanceProjectorError) throw error;
-    fail("YKP-WORK-PROJECTOR-001");
-  }
-  if (reducerEntries.length === 0 || reducerEntries.length > 32 ||
-      reducerEntries.some(([type]) => WORK_GOVERNANCE_EVENT_CATALOG_V1[type] !== "work_item")) {
-    fail("YKP-WORK-PROJECTOR-001");
-  }
-  reducerEntries.sort(([left], [right]) => left.localeCompare(right));
-  const reducerSetDigest = sha256(canonicalWorkGovernanceJson(reducerEntries.map(([type, descriptor]) => ({
-    type, version: descriptor.version, implementation_digest: reducerImplementationDigest(descriptor.reduce)
+  const reducerEntries = [...WORK_ITEM_REDUCERS_V1].sort((left, right) => left.type.localeCompare(right.type));
+  const reducerSetDigest = sha256(canonicalWorkGovernanceJson(reducerEntries.map((descriptor) => ({
+    type: descriptor.type, version: descriptor.version,
+    implementation_digest: reducerImplementationDigest(descriptor.reduce)
   }))));
-  const reducers = new Map(reducerEntries.map(([type, descriptor]) => [type, descriptor.reduce]));
+  const reducers = new Map<string, WorkGovernanceWorkItemReducerV1>(
+    reducerEntries.map((descriptor) => [descriptor.type, descriptor.reduce])
+  );
   let configured: Promise<void> | undefined;
   const ready = async () => {
     configured ??= Promise.all([

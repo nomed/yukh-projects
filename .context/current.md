@@ -46,9 +46,9 @@ without granting runtime authority or coupling canonical state to a provider.
   mismatches, malformed values, and divergent CAS winners stop processing.
 - Projection keys are opaque hashes and projection state is canonical and
   digest-bound.
-- Projection and checkpoint records bind a reducer-set digest computed from
-  each versioned reducer's actual function source; a changed implementation
-  requires an explicit rebuild rather than silent reuse.
+- The v1 reducer registry is internal and fixed; projection and checkpoint
+  records bind its computed implementation digest. Callers cannot inject
+  closure state or alternate helpers, and a code change requires rebuild.
 - No provider identifier, credential, private context, mutation authority, or
   live external effect enters the persistence record.
 
