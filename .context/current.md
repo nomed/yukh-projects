@@ -28,8 +28,11 @@ without granting runtime authority or coupling canonical state to a provider.
 - PR #179 is authoritative on `main` at `9e70b73`: the first synthetic manager
   activation plan declares roles, model capabilities, budgets, and evidence
   before execution.
-- [#180](https://github.com/nomed/yukh-projects/issues/180) governs the first
-  synthetic manager admission preview.
+- PR #181 is authoritative on `main` at `0c302fe`: the first synthetic manager
+  admission preview returns deterministic admit or reject decisions without
+  appending events.
+- [#182](https://github.com/nomed/yukh-projects/issues/182) governs the first
+  manager admission command candidate.
 - The projector explicitly observes catalogued events for other aggregate
   views, projects only supported work-item events, and stops on unknown or
   unsupported work-item event types.
@@ -42,13 +45,12 @@ without granting runtime authority or coupling canonical state to a provider.
 
 ## Next
 
-1. Implement a deterministic synthetic admission preview for manager activation
-   plans.
-2. Keep event append, model invocation, live claims, provider adapters,
-   provisioning, release, deployment, and control-plane UI outside this
-   increment.
-3. Use the preview as the next boundary before admitting real manager or worker
-   execution.
+1. Implement a deterministic command candidate for an admitted manager preview.
+2. Keep event append, receipt reservation, model invocation, live claims,
+   provider adapters, provisioning, release, deployment, and control-plane UI
+   outside this increment.
+3. Use the command candidate as the next review boundary before appending a
+   real `claim.admitted.v1` event.
 
 ## Invariants
 
@@ -67,6 +69,9 @@ without granting runtime authority or coupling canonical state to a provider.
   a provider.
 - Manager admission preview may derive candidate claim and lease identifiers,
   but it does not append events or grant authority.
+- Manager admission command candidates are inspectable command envelopes only:
+  they do not reserve receipts, append events, launch agents, or create live
+  claims.
 - The v1 reducer registry is internal and fixed; projection and checkpoint
   records bind its computed implementation digest. Callers cannot inject
   closure state or alternate helpers, and a code change requires rebuild.
