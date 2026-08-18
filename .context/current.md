@@ -25,9 +25,11 @@ without granting runtime authority or coupling canonical state to a provider.
 - PR #177 is authoritative on `main` at `916aaa7`: the first bounded activation
   runner drives the durable projector consumer and returns a redacted runtime
   status record.
-- [#178](https://github.com/nomed/yukh-projects/issues/178) governs the first
-  synthetic manager activation plan for roles, model capabilities, budgets, and
-  evidence before execution.
+- PR #179 is authoritative on `main` at `9e70b73`: the first synthetic manager
+  activation plan declares roles, model capabilities, budgets, and evidence
+  before execution.
+- [#180](https://github.com/nomed/yukh-projects/issues/180) governs the first
+  synthetic manager admission preview.
 - The projector explicitly observes catalogued events for other aggregate
   views, projects only supported work-item events, and stops on unknown or
   unsupported work-item event types.
@@ -40,11 +42,12 @@ without granting runtime authority or coupling canonical state to a provider.
 
 ## Next
 
-1. Implement the synthetic manager activation plan parser, validator, and
-   redacted summary.
-2. Keep model invocation, live claims, provider adapters, provisioning, release,
-   deployment, and control-plane UI outside this increment.
-3. Use the plan as the next boundary before admitting real manager or worker
+1. Implement a deterministic synthetic admission preview for manager activation
+   plans.
+2. Keep event append, model invocation, live claims, provider adapters,
+   provisioning, release, deployment, and control-plane UI outside this
+   increment.
+3. Use the preview as the next boundary before admitting real manager or worker
    execution.
 
 ## Invariants
@@ -62,6 +65,8 @@ without granting runtime authority or coupling canonical state to a provider.
 - Manager activation plans are declarations only: role, model capability,
   skills, evidence, and budgets do not launch an agent, admit a claim, or call
   a provider.
+- Manager admission preview may derive candidate claim and lease identifiers,
+  but it does not append events or grant authority.
 - The v1 reducer registry is internal and fixed; projection and checkpoint
   records bind its computed implementation digest. Callers cannot inject
   closure state or alternate helpers, and a code change requires rebuild.
