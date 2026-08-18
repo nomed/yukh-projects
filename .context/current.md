@@ -1,7 +1,8 @@
 # Current context
 
 **Status:** work-governance event log, command receipts, projector foundation,
-and durable projector consumer are authoritative on `main`
+durable projector consumer, and bounded activation runner are authoritative on
+`main`
 **Project:** Yukh Projects
 **Visibility:** public
 
@@ -21,8 +22,12 @@ without granting runtime authority or coupling canonical state to a provider.
 - PR #175 is authoritative on `main` at `f38ad8f`: the first durable
   pull-consumer runtime feeds the work-item projector and acknowledges only
   after projector application completes.
-- [#176](https://github.com/nomed/yukh-projects/issues/176) governs the first
-  bounded activation runner and consumer-neutral runtime status record.
+- PR #177 is authoritative on `main` at `916aaa7`: the first bounded activation
+  runner drives the durable projector consumer and returns a redacted runtime
+  status record.
+- [#178](https://github.com/nomed/yukh-projects/issues/178) governs the first
+  synthetic manager activation plan for roles, model capabilities, budgets, and
+  evidence before execution.
 - The projector explicitly observes catalogued events for other aggregate
   views, projects only supported work-item events, and stops on unknown or
   unsupported work-item event types.
@@ -35,10 +40,12 @@ without granting runtime authority or coupling canonical state to a provider.
 
 ## Next
 
-1. Implement the bounded activation runner around the durable consumer.
-2. Qualify real JetStream activation over the existing consumer loop.
-3. Keep admission, command handling, provider adapters, provisioning, release,
+1. Implement the synthetic manager activation plan parser, validator, and
+   redacted summary.
+2. Keep model invocation, live claims, provider adapters, provisioning, release,
    deployment, and control-plane UI outside this increment.
+3. Use the plan as the next boundary before admitting real manager or worker
+   execution.
 
 ## Invariants
 
@@ -52,6 +59,9 @@ without granting runtime authority or coupling canonical state to a provider.
 - Durable consumer acknowledgement occurs only after projector application
   returns, and activation budget exhaustion stops processing without widening
   authority.
+- Manager activation plans are declarations only: role, model capability,
+  skills, evidence, and budgets do not launch an agent, admit a claim, or call
+  a provider.
 - The v1 reducer registry is internal and fixed; projection and checkpoint
   records bind its computed implementation digest. Callers cannot inject
   closure state or alternate helpers, and a code change requires rebuild.
