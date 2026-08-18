@@ -33,6 +33,7 @@ export * from "./work-governance-events.js";
 export * from "./work-governance-jetstream.js";
 export * from "./work-governance-command-receipts.js";
 export * from "./work-governance-projector.js";
+export * from "./work-governance-projector-consumer.js";
 export {
  runMcpEffectBControlledApplyV1,
  type McpEffectBControlledApplyInvocationV1,

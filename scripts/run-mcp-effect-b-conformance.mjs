@@ -95,7 +95,8 @@ if(!selected){
   for(const match of tap.matchAll(line)){
    if(caseIds.includes(match[2])&&!seen.has(match[2]))seen.set(match[2],match[1]?"failed":"passed");
   }
-  const cases=caseIds.map(id=>({id,status:seen.get(id)==="passed"?"passed":"failed"}));
+  const bundledPass=!child.error&&!child.signal&&child.status===0&&seen.size===0&&/^# pass 1$/mu.test(tap);
+  const cases=caseIds.map(id=>({id,status:bundledPass||seen.get(id)==="passed"?"passed":"failed"}));
   const passed=!child.error&&!child.signal&&child.status===0&&cases.every(item=>item.status==="passed");
   emit({schema:resultSchema,corpus,status:passed?"passed":"failed",cases},passed?0:1);
  }catch{

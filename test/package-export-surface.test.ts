@@ -60,7 +60,11 @@ test("packs only the closed root export and blocks every MCP Effect B subpath",a
  try{
   await rm(temporary,{recursive:true,force:true});
   await mkdir(temporary,{recursive:true});
-  const packed=spawnSync("npm",["pack","--json","--pack-destination",temporary],{cwd:root,encoding:"utf8"});
+  const packed=spawnSync("npm",["pack","--json","--pack-destination",temporary],{
+   cwd:root,
+   encoding:"utf8",
+   env:{...process.env,npm_config_cache:join(temporary,"npm-cache")}
+  });
   assert.equal(packed.status,0,packed.stderr);
   const report=JSON.parse(packed.stdout) as [{filename:string;files:{path:string}[]}];
   assert.equal(report.length,1);

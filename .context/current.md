@@ -1,7 +1,7 @@
 # Current context
 
-**Status:** work-governance event log and command receipts are authoritative on
-`main`; the first work-item projector foundation is under review
+**Status:** work-governance event log, command receipts, and the first
+work-item projector foundation are authoritative on `main`
 **Project:** Yukh Projects
 **Visibility:** public
 
@@ -15,10 +15,11 @@ without granting runtime authority or coupling canonical state to a provider.
 - PR #171 is authoritative on `main` at `805c090`: commands have durable,
   fail-closed JetStream KV receipts with CAS reservation, replay, and
   completion-unknown recovery.
-- [#172](https://github.com/nomed/yukh-projects/issues/172) governs the first
-  projector foundation: strict work-item projections and projector checkpoints,
-  bind-only KV ports, digest-bound deterministic reducer sets, global stream
-  ordering, CAS, and crash replay.
+- PR #173 is authoritative on `main` at `674249b`: strict work-item
+  projections and projector checkpoints, bind-only KV ports, digest-bound
+  deterministic reducer sets, global stream ordering, CAS, and crash replay.
+- [#174](https://github.com/nomed/yukh-projects/issues/174) governs the first
+  durable pull-consumer runtime for the work-item projector.
 - The projector explicitly observes catalogued events for other aggregate
   views, projects only supported work-item events, and stops on unknown or
   unsupported work-item event types.
@@ -31,9 +32,9 @@ without granting runtime authority or coupling canonical state to a provider.
 
 ## Next
 
-1. Obtain independent review of the #172 implementation candidate.
-2. After merge, implement the durable pull-consumer runtime that feeds this
-   projector and acknowledges only after its checkpoint is durable.
+1. Implement the durable pull-consumer runtime that feeds the projector and
+   acknowledges only after its checkpoint is durable.
+2. Qualify real JetStream redelivery and recovery for the consumer loop.
 3. Keep admission, command handling, provider adapters, provisioning,
    activation, release, and deployment outside this increment.
 
