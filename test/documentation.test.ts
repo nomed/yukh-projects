@@ -8,11 +8,12 @@ test("the public site follows the task-first documentation structure", async () 
   const config = await read("mkdocs.yml");
   const home = await read("docs/index.md");
 
-  for (const section of ["Tutorial", "How-to", "Reference", "Explanation"]) {
+  for (const section of ["Tutorial", "How-to", "Operations", "Reference", "Explanation"]) {
     assert.match(config, new RegExp(`- ${section}:`));
   }
   assert.match(home, /Run the first dry-run/);
   assert.match(home, /not production-ready/);
+  assert.match(home, /Projects, Coordination, and JetStream layout/);
 });
 
 test("the site uses the black header and canonical component mark", async () => {
