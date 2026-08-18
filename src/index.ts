@@ -39,6 +39,7 @@ export * from "./work-governance-manager-activation-plan.js";
 export * from "./work-governance-manager-admission-preview.js";
 export * from "./work-governance-manager-admission-command-candidate.js";
 export * from "./work-governance-manager-admission-inmemory-append.js";
+export * from "./work-governance-manager-admission-coordinated-append.js";
 export {
  runMcpEffectBControlledApplyV1,
  type McpEffectBControlledApplyInvocationV1,
