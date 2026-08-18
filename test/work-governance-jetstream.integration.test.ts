@@ -4,13 +4,16 @@ import { jetstream, jetstreamManager } from "@nats-io/jetstream";
 import { Kvm } from "@nats-io/kv";
 import { connect } from "@nats-io/transport-node";
 import {
+  appendWorkGovernanceManagerAdmissionCoordinatedV1,
   createInMemoryWorkGovernanceEventStoreV1,
+  createWorkGovernanceManagerAdmissionCommandCandidateV1,
   createWorkGovernanceCommandAppendCoordinatorV1,
   createWorkGovernanceCommandReceiptStoreV1,
   createWorkGovernanceJetStreamAppenderV1,
   createWorkGovernanceWorkItemProjectorActivationRunnerV1,
   createWorkGovernanceWorkItemProjectorV1,
   createWorkGovernanceWorkItemProjectorConsumerV1,
+  previewWorkGovernanceManagerAdmissionV1,
   openWorkGovernanceProjectorKvPortsV1,
   openWorkGovernanceProjectorConsumerPortsV1,
   openWorkGovernanceCommandReceiptKvPortsV1,
@@ -182,6 +185,82 @@ test("qualifies interleaved aggregate appends against local JetStream", { skip: 
     const resolved = await receiptCoordinator.resolveCompletionUnknown(receiptCommand, receiptEvent);
     assert.equal(resolved.outcome, "replayed"); assert.equal(resolved.receipt.state, "appended");
     assert.ok(resolved.receipt.stream_sequence! > 0);
+
+    const admissionPreview = previewWorkGovernanceManagerAdmissionV1({
+      schema: "yukh-projects-manager-activation-plan-v1",
+      plan_id: "018f5000-0000-7000-8000-000000000001",
+      namespace_id: "namespace:qualification",
+      project_id: "project:qualification",
+      run_id: "run:qualification",
+      work_item_id: "work-item:qualification",
+      manager_subject_id: "subject:qualification-manager",
+      worker_subject_id: "subject:qualification-worker",
+      role: "backend_developer",
+      model: { family: "codex", capability: "coding-agent" },
+      skills: ["github", "yukh-projects"],
+      task: {
+        objective: "Qualify synthetic manager admission without launching a worker.",
+        acceptance: ["Durable admission event is appended.", "No provider is contacted."]
+      },
+      evidence_required: [{ kind: "test", uri: "urn:example:evidence:manager-admission", digest }],
+      budgets: {
+        max_turns: 2,
+        max_input_tokens: 8_000,
+        max_output_tokens: 4_000,
+        max_wall_clock_seconds: 600
+      },
+      activation: {
+        max_ticks: 4,
+        max_acknowledgements: 8,
+        max_idle_ticks: 1
+      }
+    });
+    const admissionCandidate = createWorkGovernanceManagerAdmissionCommandCandidateV1({
+      preview: admissionPreview,
+      command_id: "018f5000-0000-7000-8000-000000000002",
+      storage_epoch: 19,
+      namespace_admission_id: "admission:qualification",
+      expected_revision: 0,
+      policy: { version: "qualification-v1", digest },
+      correlation_id: "018f5000-0000-7000-8000-000000000003",
+      causation_id: "018f5000-0000-7000-8000-000000000004"
+    });
+    const admissionEventStore = createInMemoryWorkGovernanceEventStoreV1({
+      storageEpoch: 19,
+      eventId: () => "018f5000-0000-7000-8000-000000000005",
+      occurredAt: () => "2026-08-17T14:02:02.000Z"
+    });
+    const admissionEvent = admissionEventStore.append({
+      command: admissionCandidate.command,
+      event_type: "claim.admitted.v1",
+      evidence: [{ kind: "decision", uri: "urn:example:evidence:manager-admission-decision", digest }],
+      data: admissionCandidate.command.data
+    }).event;
+    const admissionPublished = await appendWorkGovernanceManagerAdmissionCoordinatedV1({
+      candidate: admissionCandidate,
+      event: admissionEvent,
+      coordinator: receiptCoordinator
+    });
+    assert.equal(admissionPublished.outcome, "appended");
+    assert.equal(admissionPublished.receipt_state, "appended");
+    assert.ok(admissionPublished.stream_sequence! > 0);
+    const admissionReplay = await appendWorkGovernanceManagerAdmissionCoordinatedV1({
+      candidate: admissionCandidate,
+      event: admissionEvent,
+      coordinator: receiptCoordinator
+    });
+    assert.equal(admissionReplay.outcome, "replayed");
+    assert.equal(admissionReplay.event_digest, admissionPublished.event_digest);
+    const admissionSequence = admissionPublished.stream_sequence;
+    assert.ok(admissionSequence !== undefined && admissionSequence > 0);
+    const admissionMessage = await manager.streams.getMessage(WORK_GOVERNANCE_STREAM_V1, {
+      seq: admissionSequence
+    });
+    if (admissionMessage === null) assert.fail("missing manager admission event");
+    const decodedAdmission = parseWorkGovernanceEventV1(admissionMessage.data);
+    assert.equal(decodedAdmission.type, "claim.admitted.v1");
+    assert.equal(decodedAdmission.aggregate.kind, "namespace_admission");
+    assert.equal(decodedAdmission.aggregate.id, "admission:qualification");
 
     const projectionBucket = { maxBytes: 2 * 1024 * 1024, replicas: 1 } as const;
     const checkpointBucket = { maxBytes: 1024 * 1024, replicas: 1 } as const;

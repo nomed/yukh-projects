@@ -35,8 +35,11 @@ without granting runtime authority or coupling canonical state to a provider.
   can produce an inspectable `claim.admitted.v1` command candidate.
 - PR #185 is authoritative on `main` at `933da8c`: manager admission command
   candidates can be appended to an in-memory synthetic event store.
-- [#186](https://github.com/nomed/yukh-projects/issues/186) governs the first
-  coordinated manager admission append wrapper.
+- PR #187 is authoritative on `main` at `29727b0`: manager admission command
+  candidates can publish through an injected command receipt/appender
+  coordinator after candidate/event binding verification.
+- [#188](https://github.com/nomed/yukh-projects/issues/188) governs local
+  JetStream qualification for synthetic manager admission publication.
 - The projector explicitly observes catalogued events for other aggregate
   views, projects only supported work-item events, and stops on unknown or
   unsupported work-item event types.
@@ -49,12 +52,12 @@ without granting runtime authority or coupling canonical state to a provider.
 
 ## Next
 
-1. Implement a coordinated append wrapper for manager admission command
-   candidates over the existing command receipt/appender boundary.
+1. Qualify synthetic manager admission publication on local JetStream through
+   the coordinated wrapper, command receipts, and real appender.
 2. Keep provisioning, model invocation, live workers, provider adapters,
    release, deployment, and control-plane UI outside this increment.
-3. Use the wrapper as the next boundary before local JetStream qualification of
-   real `claim.admitted.v1` publication.
+3. Use the qualification as the next boundary before adding an explicit manager
+   admission runtime.
 
 ## Invariants
 
@@ -81,6 +84,8 @@ without granting runtime authority or coupling canonical state to a provider.
   launch workers.
 - The coordinated append wrapper requires an injected command append
   coordinator and verifies candidate/event binding before publication.
+- Local JetStream qualification may publish synthetic manager admission events
+  only; it grants no live worker or provider authority.
 - The v1 reducer registry is internal and fixed; projection and checkpoint
   records bind its computed implementation digest. Callers cannot inject
   closure state or alternate helpers, and a code change requires rebuild.
