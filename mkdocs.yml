@@ -54,6 +54,8 @@ nav:
       - Run the first dry-run: tutorials/first-dry-run.md
   - How-to:
       - Configure repository policy: how-to/configure-policy.md
+  - Operations:
+      - Projects, Coordination, and JetStream layout: operations/projects-coordination-jetstream-layout.md
   - Reference:
       - Dry-run Action: reference/dry-run-action.md
       - Contracts: reference/contracts.md

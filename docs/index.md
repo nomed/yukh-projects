@@ -25,6 +25,9 @@ Add one policy, one issue contract, and a manual workflow. The Action returns:
 [Run the first dry-run](tutorials/first-dry-run.md){ .md-button .md-button--primary }
 [Review the Action inputs](reference/dry-run-action.md){ .md-button }
 
+For suite-level runtime placement, see
+[Projects, Coordination, and JetStream layout](operations/projects-coordination-jetstream-layout.md).
+
 ## Current boundary
 
 The public dry-run can inspect one bound repository, Project, and issue. It
