@@ -9,9 +9,14 @@ import {
   createWorkGovernanceCommandReceiptStoreV1,
   createWorkGovernanceJetStreamAppenderV1,
   createWorkGovernanceWorkItemProjectorV1,
+  createWorkGovernanceWorkItemProjectorConsumerV1,
   openWorkGovernanceProjectorKvPortsV1,
+  openWorkGovernanceProjectorConsumerPortsV1,
   openWorkGovernanceCommandReceiptKvPortsV1,
+  parseWorkGovernanceProjectorCheckpointV1,
   parseWorkGovernanceEventV1,
+  workGovernanceProjectorCheckpointKeyV1,
+  workGovernanceProjectorConsumerConfigV1,
   workGovernanceProjectorKvConfigV1,
   workGovernanceCommandReceiptKvConfigV1,
   workGovernanceJetStreamConfigV1,
@@ -220,6 +225,40 @@ test("qualifies interleaved aggregate appends against local JetStream", { skip: 
       stream_sequence: lastSequence,
       event: parseWorkGovernanceEventV1(lastMessage.data)
     })).outcome, "replayed");
+
+    await (await kvm.open(WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1)).destroy();
+    await (await kvm.open(WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1)).destroy();
+    await kvm.create(WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1,
+      workGovernanceProjectorKvConfigV1(WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1, projectionBucket));
+    await kvm.create(WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1,
+      workGovernanceProjectorKvConfigV1(WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1, checkpointBucket));
+    await manager.consumers.add(WORK_GOVERNANCE_STREAM_V1,
+      workGovernanceProjectorConsumerConfigV1({ replicas: 1 }));
+    const consumerProjections = await openWorkGovernanceProjectorKvPortsV1(
+      jetstream(connection), WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1, projectionBucket);
+    const consumerCheckpoints = await openWorkGovernanceProjectorKvPortsV1(
+      jetstream(connection), WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1, checkpointBucket);
+    const consumerRuntime = createWorkGovernanceWorkItemProjectorConsumerV1({
+      storageEpoch: 19, stream, consumer: { replicas: 1 },
+      ports: await openWorkGovernanceProjectorConsumerPortsV1(
+        jetstream(connection), manager, { stream, consumer: { replicas: 1 } }),
+      projector: createWorkGovernanceWorkItemProjectorV1({
+        storageEpoch: 19, bucket: projectionBucket, checkpointBucket,
+        projections: consumerProjections, checkpoints: consumerCheckpoints
+      })
+    });
+    let acknowledged = 0;
+    let consumed;
+    while (acknowledged < lastSequence) {
+      consumed = await consumerRuntime.runOnce({ maxMessages: lastSequence });
+      assert.equal(consumed.outcome, "processed");
+      assert.equal(consumed.acknowledged, 1);
+      acknowledged += consumed.acknowledged;
+    }
+    assert.equal(consumed?.last_stream_sequence, lastSequence);
+    const checkpoint = await consumerCheckpoints.get(workGovernanceProjectorCheckpointKeyV1());
+    if (checkpoint === null) assert.fail("missing consumer checkpoint");
+    assert.equal(parseWorkGovernanceProjectorCheckpointV1(checkpoint.data).stream_sequence, lastSequence);
   } finally {
     await connection.close();
   }
