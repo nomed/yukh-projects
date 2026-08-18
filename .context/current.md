@@ -1,7 +1,7 @@
 # Current context
 
-**Status:** work-governance event log, command receipts, and the first
-work-item projector foundation are authoritative on `main`
+**Status:** work-governance event log, command receipts, projector foundation,
+and durable projector consumer are authoritative on `main`
 **Project:** Yukh Projects
 **Visibility:** public
 
@@ -18,8 +18,11 @@ without granting runtime authority or coupling canonical state to a provider.
 - PR #173 is authoritative on `main` at `674249b`: strict work-item
   projections and projector checkpoints, bind-only KV ports, digest-bound
   deterministic reducer sets, global stream ordering, CAS, and crash replay.
-- [#174](https://github.com/nomed/yukh-projects/issues/174) governs the first
-  durable pull-consumer runtime for the work-item projector.
+- PR #175 is authoritative on `main` at `f38ad8f`: the first durable
+  pull-consumer runtime feeds the work-item projector and acknowledges only
+  after projector application completes.
+- [#176](https://github.com/nomed/yukh-projects/issues/176) governs the first
+  bounded activation runner and consumer-neutral runtime status record.
 - The projector explicitly observes catalogued events for other aggregate
   views, projects only supported work-item events, and stops on unknown or
   unsupported work-item event types.
@@ -32,11 +35,10 @@ without granting runtime authority or coupling canonical state to a provider.
 
 ## Next
 
-1. Implement the durable pull-consumer runtime that feeds the projector and
-   acknowledges only after its checkpoint is durable.
-2. Qualify real JetStream redelivery and recovery for the consumer loop.
-3. Keep admission, command handling, provider adapters, provisioning,
-   activation, release, and deployment outside this increment.
+1. Implement the bounded activation runner around the durable consumer.
+2. Qualify real JetStream activation over the existing consumer loop.
+3. Keep admission, command handling, provider adapters, provisioning, release,
+   deployment, and control-plane UI outside this increment.
 
 ## Invariants
 
@@ -47,6 +49,9 @@ without granting runtime authority or coupling canonical state to a provider.
   mismatches, malformed values, and divergent CAS winners stop processing.
 - Projection keys are opaque hashes and projection state is canonical and
   digest-bound.
+- Durable consumer acknowledgement occurs only after projector application
+  returns, and activation budget exhaustion stops processing without widening
+  authority.
 - The v1 reducer registry is internal and fixed; projection and checkpoint
   records bind its computed implementation digest. Callers cannot inject
   closure state or alternate helpers, and a code change requires rebuild.
