@@ -15,6 +15,8 @@ import {
   parseWorkGovernanceProjectionV1,
   parseWorkGovernanceProjectorCheckpointV1,
   verifyWorkGovernanceProjectorKvConfigV1,
+  workGovernanceProjectorKvConfigV1,
+  workGovernanceProjectorKvPortsV1,
   workGovernanceProjectionKeyV1,
   workGovernanceProjectorCheckpointKeyV1,
   type WorkGovernanceCommandV1,
@@ -27,6 +29,7 @@ import {
 
 const digest = (value: string) => `sha-256:${createHash("sha256").update(value, "utf8").digest("hex")}`;
 const policyDigest = `sha-256:${"a".repeat(64)}`;
+const reducerDigest = `sha-256:${"b".repeat(64)}`;
 const bucket = { maxBytes: 2 * 1024 * 1024, replicas: 1 } as const;
 const checkpointBucket = { maxBytes: 1024 * 1024, replicas: 1 } as const;
 const ids = [
@@ -62,14 +65,14 @@ function events() {
 }
 
 const reducers: WorkGovernanceWorkItemReducerRegistryV1 = {
-  "work_item.created.v1": (current, event) => {
+  "work_item.created.v1": { version: "created-v1", digest: reducerDigest, reduce: (current, event) => {
     if (current !== null || typeof event.data.title !== "string") throw new TypeError("invalid create");
     return { title: event.data.title, workflow_state: "proposed" };
-  },
-  "work_item.workflow_transitioned.v1": (current, event) => {
+  } },
+  "work_item.workflow_transitioned.v1": { version: "transition-v1", digest: reducerDigest, reduce: (current, event) => {
     if (current === null || typeof event.data.to !== "string") throw new TypeError("invalid transition");
     return { ...current, workflow_state: event.data.to };
-  }
+  } }
 };
 
 function profile(bucketName: typeof WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1 | typeof WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1) {
@@ -150,10 +153,12 @@ test("encodes strict projection and checkpoint envelopes with opaque keys", () =
     namespace_id: created.namespace_id, project_id: created.project_id,
     aggregate: { kind: "work_item", id: created.aggregate.id, revision: 1 },
     last_event_id: created.event_id, last_event_digest: created.event_digest, stream_sequence: 1,
+    reducer_set_digest: reducerDigest,
     state_digest: digest(canonicalWorkGovernanceJson(state)), updated_at: created.occurred_at, state
   };
   const checkpoint: WorkGovernanceProjectorCheckpointV1 = {
     schema: "yukh-projects-projector-checkpoint-v1", projector_id: "work-items-v1", storage_epoch: 29,
+    reducer_set_digest: reducerDigest,
     stream_sequence: 1, last_event_id: created.event_id, last_event_digest: created.event_digest,
     updated_at: created.occurred_at
   };
@@ -176,6 +181,21 @@ test("verifies exact file-backed history-one projection buckets", () => {
     { ...profile(WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1), streamInfo: { config: { ...profile(WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1).streamInfo.config, sealed: true } } }
   ]) assert.throws(() => verifyWorkGovernanceProjectorKvConfigV1(unsafe, WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1, bucket),
     isCode("YKP-WORK-PROJECTOR-003"));
+});
+
+test("rejects unknown runtime buckets and invalid CAS port writes", async () => {
+  assert.throws(() => workGovernanceProjectorKvConfigV1("YKP_OTHER" as never, bucket),
+    isCode("YKP-WORK-PROJECTOR-001"));
+  const kv = {
+    async status() { return profile(WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1); },
+    async get() { return null; },
+    async create() { return 1; },
+    async update() { return 2; }
+  };
+  const ports = workGovernanceProjectorKvPortsV1(kv as never, WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1);
+  await assert.rejects(ports.create("not-opaque", new Uint8Array([1])), isCode("YKP-WORK-PROJECTOR-001"));
+  await assert.rejects(ports.create("a".repeat(64), new Uint8Array()), isCode("YKP-WORK-PROJECTOR-001"));
+  await assert.rejects(ports.update("a".repeat(64), new Uint8Array([1]), 0), isCode("YKP-WORK-PROJECTOR-001"));
 });
 
 test("projects ordered events and deterministic rebuilds byte-identically", async () => {
@@ -230,12 +250,85 @@ test("repairs a crash after projection durability without rerunning the reducer"
   };
   const value = createWorkGovernanceWorkItemProjectorV1({
     storageEpoch: 29, bucket, checkpointBucket, projections, checkpoints,
-    reducers: { "work_item.created.v1": (_current, event) => { reducerCalls++; return { title: event.data.title! }; } }
+    reducers: { "work_item.created.v1": { version: "created-v1", digest: reducerDigest,
+      reduce: (_current, event) => { reducerCalls++; return { title: event.data.title! }; } } }
   });
   await assert.rejects(value.apply({ stream_sequence: 1, event: created }), isCode("YKP-WORK-PROJECTOR-004"));
   assert.equal(projections.writes, 1); assert.equal(reducerCalls, 1);
   const recovered = await value.apply({ stream_sequence: 1, event: created });
   assert.equal(recovered.outcome, "recovered"); assert.equal(reducerCalls, 1); assert.equal(base.writes, 1);
+});
+
+test("concurrent exact projectors converge through projection and checkpoint CAS conflicts", async () => {
+  const { created } = events();
+  const projections = memoryPorts(WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1);
+  const checkpoints = memoryPorts(WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1);
+  const race = (base: MemoryPorts): WorkGovernanceProjectorKvPortsV1 => {
+    let arrivals = 0; let release!: () => void;
+    const both = new Promise<void>((resolve) => { release = resolve; });
+    return { ...base, async create(key, data) {
+      if (++arrivals === 2) release();
+      await both;
+      return base.create(key, data);
+    } };
+  };
+  const projectionRace = race(projections);
+  const checkpointRace = race(checkpoints);
+  const left = createWorkGovernanceWorkItemProjectorV1({
+    storageEpoch: 29, bucket, checkpointBucket, projections: projectionRace, checkpoints: checkpointRace, reducers
+  });
+  const right = createWorkGovernanceWorkItemProjectorV1({
+    storageEpoch: 29, bucket, checkpointBucket, projections: projectionRace, checkpoints: checkpointRace, reducers
+  });
+  const results = await Promise.all([
+    left.apply({ stream_sequence: 1, event: created }),
+    right.apply({ stream_sequence: 1, event: created })
+  ]);
+  assert.deepEqual(results.map((result) => result.outcome), ["projected", "projected"]);
+  assert.equal(projections.writes, 1);
+  assert.equal(checkpoints.writes, 1);
+});
+
+test("rejects divergent CAS winners and a changed reducer set", async () => {
+  const { created } = events();
+  const base = memoryPorts(WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1);
+  let conflictedWrite = false;
+  const divergent: WorkGovernanceProjectorKvPortsV1 = {
+    ...base,
+    async create() { conflictedWrite = true; return { outcome: "conflict" }; },
+    async get() { return conflictedWrite ? { data: new TextEncoder().encode("{}"), revision: 1 } : null; }
+  };
+  const conflicted = createWorkGovernanceWorkItemProjectorV1({
+    storageEpoch: 29, bucket, checkpointBucket, projections: divergent,
+    checkpoints: memoryPorts(WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1), reducers
+  });
+  await assert.rejects(conflicted.apply({ stream_sequence: 1, event: created }),
+    isCode("YKP-WORK-PROJECTOR-005"));
+
+  const durableProjection = memoryPorts(WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1);
+  const checkpointBase = memoryPorts(WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1);
+  let checkpointConflict = false;
+  const divergentCheckpoint: WorkGovernanceProjectorKvPortsV1 = {
+    ...checkpointBase,
+    async create() { checkpointConflict = true; return { outcome: "conflict" }; },
+    async get() { return checkpointConflict ? { data: new TextEncoder().encode("{}"), revision: 1 } : null; }
+  };
+  const checkpointConflicted = createWorkGovernanceWorkItemProjectorV1({
+    storageEpoch: 29, bucket, checkpointBucket, projections: durableProjection,
+    checkpoints: divergentCheckpoint, reducers
+  });
+  await assert.rejects(checkpointConflicted.apply({ stream_sequence: 1, event: created }),
+    isCode("YKP-WORK-PROJECTOR-005"));
+  assert.equal(durableProjection.writes, 1);
+
+  const stable = projector();
+  await stable.value.apply({ stream_sequence: 1, event: created });
+  const changed = createWorkGovernanceWorkItemProjectorV1({
+    storageEpoch: 29, bucket, checkpointBucket, projections: stable.projections, checkpoints: stable.checkpoints,
+    reducers: { ...reducers, "work_item.created.v1": { ...reducers["work_item.created.v1"]!, version: "created-v2" } }
+  });
+  await assert.rejects(changed.apply({ stream_sequence: 1, event: created }),
+    isCode("YKP-WORK-PROJECTOR-002"));
 });
 
 test("fails closed on gaps, broken links, epochs, and unsupported events before mutation", async () => {
@@ -266,6 +359,12 @@ test("fails closed on gaps, broken links, epochs, and unsupported events before 
   const target = projector();
   await assert.rejects(target.value.apply({ stream_sequence: 1, event: unsupported }), isCode("YKP-WORK-PROJECTOR-006"));
   assert.equal(target.projections.writes + target.checkpoints.writes, 0);
+
+  const unknown = redigest(unsupported, { type: "work_item.unknown.v1" });
+  const unknownTarget = projector();
+  await assert.rejects(unknownTarget.value.apply({ stream_sequence: 1, event: unknown }),
+    isCode("YKP-WORK-PROJECTOR-006"));
+  assert.equal(unknownTarget.projections.writes + unknownTarget.checkpoints.writes, 0);
 });
 
 test("rejects unsafe reducer registries and outputs", async () => {
@@ -278,7 +377,8 @@ test("rejects unsafe reducer registries and outputs", async () => {
   const { created } = events();
   const invalid = createWorkGovernanceWorkItemProjectorV1({
     storageEpoch: 29, bucket, checkpointBucket, projections, checkpoints,
-    reducers: { "work_item.created.v1": () => ({ unsafe: undefined as unknown as string }) }
+    reducers: { "work_item.created.v1": { version: "created-v1", digest: reducerDigest,
+      reduce: () => ({ unsafe: undefined as unknown as string }) } }
   });
   await assert.rejects(invalid.apply({ stream_sequence: 1, event: created }), isCode("YKP-WORK-PROJECTOR-006"));
   assert.equal(projections.writes + checkpoints.writes, 0);

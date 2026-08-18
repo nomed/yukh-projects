@@ -200,15 +200,15 @@ test("qualifies interleaved aggregate appends against local JetStream", { skip: 
       storageEpoch: 19, bucket: projectionBucket, checkpointBucket,
       projections: projectionPorts, checkpoints: crashOnceCheckpoints,
       reducers: {
-        "work_item.created.v1": (current, event) => {
+        "work_item.created.v1": { version: "created-v1", digest: `sha-256:${"b".repeat(64)}`, reduce: (current, event) => {
           assert.equal(current, null);
           return { title: typeof event.data.title === "string" ? event.data.title : "", workflow_state: "proposed" };
-        },
-        "work_item.workflow_transitioned.v1": (current, event) => {
+        } },
+        "work_item.workflow_transitioned.v1": { version: "transition-v1", digest: `sha-256:${"c".repeat(64)}`, reduce: (current, event) => {
           assert.ok(current);
           assert.equal(typeof event.data.to, "string");
           return { ...current, workflow_state: event.data.to! };
-        }
+        } }
       }
     });
     const lastSequence = (await manager.streams.info(WORK_GOVERNANCE_STREAM_V1)).state.last_seq;

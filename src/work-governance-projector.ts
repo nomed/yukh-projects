@@ -20,6 +20,7 @@ const DIGEST = /^sha-256:[0-9a-f]{64}$/u;
 const UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const OPAQUE_ID = /^[a-z][a-z0-9_-]{0,31}:[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$/u;
 const KEY = /^[0-9a-f]{64}$/u;
+const TOKEN = /^[a-z][a-z0-9_-]{0,63}$/u;
 
 export const WORK_GOVERNANCE_EVENT_CATALOG_V1: Readonly<Record<string, WorkGovernanceAggregateKind>> = Object.freeze({
   "project.created.v1": "project",
@@ -77,6 +78,7 @@ export interface WorkGovernanceProjectionV1 {
   last_event_id: string;
   last_event_digest: string;
   stream_sequence: number;
+  reducer_set_digest: string;
   state_digest: string;
   updated_at: string;
   state: { [key: string]: WorkGovernanceJson };
@@ -86,6 +88,7 @@ export interface WorkGovernanceProjectorCheckpointV1 {
   schema: "yukh-projects-projector-checkpoint-v1";
   projector_id: typeof WORK_GOVERNANCE_WORK_ITEM_PROJECTOR_ID_V1;
   storage_epoch: number;
+  reducer_set_digest: string;
   stream_sequence: number;
   last_event_id: string;
   last_event_digest: string;
@@ -104,7 +107,13 @@ export type WorkGovernanceWorkItemReducerV1 = (
   event: Readonly<WorkGovernanceEventV1>
 ) => { [key: string]: WorkGovernanceJson };
 
-export type WorkGovernanceWorkItemReducerRegistryV1 = Readonly<Record<string, WorkGovernanceWorkItemReducerV1>>;
+export interface WorkGovernanceWorkItemReducerDescriptorV1 {
+  version: string;
+  digest: string;
+  reduce: WorkGovernanceWorkItemReducerV1;
+}
+
+export type WorkGovernanceWorkItemReducerRegistryV1 = Readonly<Record<string, WorkGovernanceWorkItemReducerDescriptorV1>>;
 
 type BucketProfile = {
   bucket: typeof WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1 | typeof WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1;
@@ -133,9 +142,13 @@ function timestamp(value: unknown): value is string {
 function sha256(value: string): string { return `sha-256:${createHash("sha256").update(value, "utf8").digest("hex")}`; }
 function clone<T>(value: T): T { return JSON.parse(canonicalWorkGovernanceJson(value)) as T; }
 function profile(bucket: BucketProfile["bucket"]): BucketProfile {
-  return bucket === WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1
-    ? { bucket, description: "Yukh Projects work-item projections v1", maxValueSize: WORK_GOVERNANCE_PROJECTION_MAX_BYTES_V1 }
-    : { bucket, description: "Yukh Projects projector checkpoints v1", maxValueSize: WORK_GOVERNANCE_CHECKPOINT_MAX_BYTES_V1 };
+  if (bucket === WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1) {
+    return { bucket, description: "Yukh Projects work-item projections v1", maxValueSize: WORK_GOVERNANCE_PROJECTION_MAX_BYTES_V1 };
+  }
+  if (bucket === WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1) {
+    return { bucket, description: "Yukh Projects projector checkpoints v1", maxValueSize: WORK_GOVERNANCE_CHECKPOINT_MAX_BYTES_V1 };
+  }
+  fail("YKP-WORK-PROJECTOR-001");
 }
 
 export function workGovernanceProjectorKvConfigV1(
@@ -198,9 +211,15 @@ function conflict(error: unknown): boolean {
      error.code === JetStreamApiCodes.StreamWrongLastSequenceUnknown);
 }
 
-export function workGovernanceProjectorKvPortsV1(kv: KV): WorkGovernanceProjectorKvPortsV1 {
+export function workGovernanceProjectorKvPortsV1(kv: KV, bucket: BucketProfile["bucket"]): WorkGovernanceProjectorKvPortsV1 {
+  const selected = profile(bucket);
   if (!kv || typeof kv.status !== "function" || typeof kv.get !== "function" ||
       typeof kv.create !== "function" || typeof kv.update !== "function") fail("YKP-WORK-PROJECTOR-001");
+  const write = (key: string, data: Uint8Array) => {
+    if (!KEY.test(key) || !(data instanceof Uint8Array) || data.byteLength === 0 || data.byteLength > selected.maxValueSize) {
+      fail("YKP-WORK-PROJECTOR-001");
+    }
+  };
   return {
     status: () => kv.status(),
     async get(key) {
@@ -209,10 +228,13 @@ export function workGovernanceProjectorKvPortsV1(kv: KV): WorkGovernanceProjecto
       return found === null ? null : { data: found.value, revision: found.revision };
     },
     async create(key, data) {
+      write(key, data);
       try { return { outcome: "created", revision: await kv.create(key, data) }; }
       catch (error) { if (conflict(error)) return { outcome: "conflict" }; throw error; }
     },
     async update(key, data, revision) {
+      write(key, data);
+      if (!positive(revision)) fail("YKP-WORK-PROJECTOR-001");
       try { return { outcome: "updated", revision: await kv.update(key, data, revision) }; }
       catch (error) { if (conflict(error)) return { outcome: "conflict" }; throw error; }
     }
@@ -227,7 +249,7 @@ export async function openWorkGovernanceProjectorKvPortsV1(
 ): Promise<WorkGovernanceProjectorKvPortsV1> {
   try {
     const kv = await new Kvm(client).open(bucket, { allow_direct: false });
-    const ports = workGovernanceProjectorKvPortsV1(kv);
+    const ports = workGovernanceProjectorKvPortsV1(kv, bucket);
     verifyWorkGovernanceProjectorKvConfigV1(await ports.status(), bucket, options);
     return ports;
   } catch (error) {
@@ -259,7 +281,7 @@ export function parseWorkGovernanceProjectionV1(source: string | Uint8Array): Wo
     const text = typeof source === "string" ? source : new TextDecoder("utf-8", { fatal: true }).decode(source);
     const value: unknown = JSON.parse(text);
     if (canonicalWorkGovernanceJson(value) !== text || !object(value) ||
-        !exact(value, ["schema", "storage_epoch", "namespace_id", "aggregate", "last_event_id", "last_event_digest", "stream_sequence", "state_digest", "updated_at", "state"], ["project_id"]) ||
+        !exact(value, ["schema", "storage_epoch", "namespace_id", "aggregate", "last_event_id", "last_event_digest", "stream_sequence", "reducer_set_digest", "state_digest", "updated_at", "state"], ["project_id"]) ||
         value.schema !== "yukh-projects-projection-v1" || !positive(value.storage_epoch) ||
         typeof value.namespace_id !== "string" || !OPAQUE_ID.test(value.namespace_id) ||
         (value.project_id !== undefined && (typeof value.project_id !== "string" || !OPAQUE_ID.test(value.project_id))) ||
@@ -267,7 +289,8 @@ export function parseWorkGovernanceProjectionV1(source: string | Uint8Array): Wo
         value.aggregate.kind !== "work_item" || typeof value.aggregate.id !== "string" || !OPAQUE_ID.test(value.aggregate.id) ||
         !positive(value.aggregate.revision) || typeof value.last_event_id !== "string" || !UUID_V7.test(value.last_event_id) ||
         typeof value.last_event_digest !== "string" || !DIGEST.test(value.last_event_digest) ||
-        !positive(value.stream_sequence) || typeof value.state_digest !== "string" || !DIGEST.test(value.state_digest) ||
+        !positive(value.stream_sequence) || typeof value.reducer_set_digest !== "string" || !DIGEST.test(value.reducer_set_digest) ||
+        typeof value.state_digest !== "string" || !DIGEST.test(value.state_digest) ||
         !timestamp(value.updated_at)) fail("YKP-WORK-PROJECTOR-003");
     const state = parseState(value.state);
     if (sha256(canonicalWorkGovernanceJson(state)) !== value.state_digest) fail("YKP-WORK-PROJECTOR-003");
@@ -298,9 +321,10 @@ export function parseWorkGovernanceProjectorCheckpointV1(source: string | Uint8A
     const text = typeof source === "string" ? source : new TextDecoder("utf-8", { fatal: true }).decode(source);
     const value: unknown = JSON.parse(text);
     if (canonicalWorkGovernanceJson(value) !== text || !object(value) ||
-        !exact(value, ["schema", "projector_id", "storage_epoch", "stream_sequence", "last_event_id", "last_event_digest", "updated_at"]) ||
+        !exact(value, ["schema", "projector_id", "storage_epoch", "reducer_set_digest", "stream_sequence", "last_event_id", "last_event_digest", "updated_at"]) ||
         value.schema !== "yukh-projects-projector-checkpoint-v1" ||
         value.projector_id !== WORK_GOVERNANCE_WORK_ITEM_PROJECTOR_ID_V1 || !positive(value.storage_epoch) ||
+        typeof value.reducer_set_digest !== "string" || !DIGEST.test(value.reducer_set_digest) ||
         !positive(value.stream_sequence) || typeof value.last_event_id !== "string" || !UUID_V7.test(value.last_event_id) ||
         typeof value.last_event_digest !== "string" || !DIGEST.test(value.last_event_digest) || !timestamp(value.updated_at)) {
       fail("YKP-WORK-PROJECTOR-003");
@@ -349,25 +373,38 @@ export function createWorkGovernanceWorkItemProjectorV1(options: {
       options.bucket.replicas !== options.checkpointBucket.replicas) fail("YKP-WORK-PROJECTOR-001");
   workGovernanceProjectorKvConfigV1(WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1, options.bucket);
   workGovernanceProjectorKvConfigV1(WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1, options.checkpointBucket);
-  let reducerEntries: Array<[string, WorkGovernanceWorkItemReducerV1]>;
+  let reducerEntries: Array<[string, WorkGovernanceWorkItemReducerDescriptorV1]>;
   try {
     const keys = Reflect.ownKeys(options.reducers);
     if (keys.some((key) => typeof key !== "string")) fail("YKP-WORK-PROJECTOR-001");
     reducerEntries = (keys as string[]).map((key) => {
       const descriptor = Object.getOwnPropertyDescriptor(options.reducers, key);
-      if (!descriptor || !("value" in descriptor) || !descriptor.enumerable || typeof descriptor.value !== "function") {
+      if (!descriptor || !("value" in descriptor) || !descriptor.enumerable || !object(descriptor.value) ||
+          !exact(descriptor.value, ["version", "digest", "reduce"])) {
         fail("YKP-WORK-PROJECTOR-001");
       }
-      return [key, descriptor.value as WorkGovernanceWorkItemReducerV1];
+      const entries = ["version", "digest", "reduce"].map((field) =>
+        Object.getOwnPropertyDescriptor(descriptor.value, field));
+      if (entries.some((entry) => !entry || !("value" in entry) || !entry.enumerable)) fail("YKP-WORK-PROJECTOR-001");
+      const value = descriptor.value as unknown as WorkGovernanceWorkItemReducerDescriptorV1;
+      if (!TOKEN.test(value.version) || !DIGEST.test(value.digest) || typeof value.reduce !== "function") {
+        fail("YKP-WORK-PROJECTOR-001");
+      }
+      return [key, value];
     });
   } catch (error) {
     if (error instanceof WorkGovernanceProjectorError) throw error;
     fail("YKP-WORK-PROJECTOR-001");
   }
   if (reducerEntries.length === 0 || reducerEntries.length > 32 ||
-      reducerEntries.some(([type, reducer]) => WORK_GOVERNANCE_EVENT_CATALOG_V1[type] !== "work_item" ||
-        typeof reducer !== "function")) fail("YKP-WORK-PROJECTOR-001");
-  const reducers = new Map(reducerEntries);
+      reducerEntries.some(([type]) => WORK_GOVERNANCE_EVENT_CATALOG_V1[type] !== "work_item")) {
+    fail("YKP-WORK-PROJECTOR-001");
+  }
+  reducerEntries.sort(([left], [right]) => left.localeCompare(right));
+  const reducerSetDigest = sha256(canonicalWorkGovernanceJson(reducerEntries.map(([type, descriptor]) => ({
+    type, version: descriptor.version, digest: descriptor.digest
+  }))));
+  const reducers = new Map(reducerEntries.map(([type, descriptor]) => [type, descriptor.reduce]));
   let configured: Promise<void> | undefined;
   const ready = async () => {
     configured ??= Promise.all([
@@ -438,6 +475,8 @@ export function createWorkGovernanceWorkItemProjectorV1(options: {
       const checkpoint = await readCheckpoint();
       const key = relevant ? workGovernanceProjectionKeyV1(event.namespace_id, event.aggregate.id) : null;
       const current = key === null ? null : await readProjection(key);
+      if (checkpoint && checkpoint.value.reducer_set_digest !== reducerSetDigest) fail("YKP-WORK-PROJECTOR-002");
+      if (current && current.value.reducer_set_digest !== reducerSetDigest) fail("YKP-WORK-PROJECTOR-002");
       if (checkpoint) {
         if (checkpoint.value.storage_epoch !== options.storageEpoch) fail("YKP-WORK-PROJECTOR-002");
         if (input.stream_sequence === checkpoint.value.stream_sequence) {
@@ -482,6 +521,7 @@ export function createWorkGovernanceWorkItemProjectorV1(options: {
           last_event_id: event.event_id,
           last_event_digest: event.event_digest,
           stream_sequence: input.stream_sequence,
+          reducer_set_digest: reducerSetDigest,
           state_digest: sha256(canonicalWorkGovernanceJson(state)),
           updated_at: event.occurred_at,
           state
@@ -496,6 +536,7 @@ export function createWorkGovernanceWorkItemProjectorV1(options: {
         schema: "yukh-projects-projector-checkpoint-v1",
         projector_id: WORK_GOVERNANCE_WORK_ITEM_PROJECTOR_ID_V1,
         storage_epoch: event.storage_epoch,
+        reducer_set_digest: reducerSetDigest,
         stream_sequence: input.stream_sequence,
         last_event_id: event.event_id,
         last_event_digest: event.event_digest,

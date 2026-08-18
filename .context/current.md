@@ -17,8 +17,8 @@ without granting runtime authority or coupling canonical state to a provider.
   completion-unknown recovery.
 - [#172](https://github.com/nomed/yukh-projects/issues/172) governs the first
   projector foundation: strict work-item projections and projector checkpoints,
-  bind-only KV ports, deterministic reducers, global stream ordering, CAS, and
-  crash replay.
+  bind-only KV ports, digest-bound deterministic reducer sets, global stream
+  ordering, CAS, and crash replay.
 - The projector explicitly observes catalogued events for other aggregate
   views, projects only supported work-item events, and stops on unknown or
   unsupported work-item event types.
@@ -46,6 +46,8 @@ without granting runtime authority or coupling canonical state to a provider.
   mismatches, malformed values, and divergent CAS winners stop processing.
 - Projection keys are opaque hashes and projection state is canonical and
   digest-bound.
+- Projection and checkpoint records bind the exact reviewed reducer-set digest;
+  a changed reducer set requires an explicit rebuild rather than silent reuse.
 - No provider identifier, credential, private context, mutation authority, or
   live external effect enters the persistence record.
 
