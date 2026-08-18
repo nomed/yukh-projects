@@ -33,8 +33,10 @@ without granting runtime authority or coupling canonical state to a provider.
   appending events.
 - PR #183 is authoritative on `main` at `3d12dee`: an admitted manager preview
   can produce an inspectable `claim.admitted.v1` command candidate.
-- [#184](https://github.com/nomed/yukh-projects/issues/184) governs the first
-  in-memory manager admission append simulator.
+- PR #185 is authoritative on `main` at `933da8c`: manager admission command
+  candidates can be appended to an in-memory synthetic event store.
+- [#186](https://github.com/nomed/yukh-projects/issues/186) governs the first
+  coordinated manager admission append wrapper.
 - The projector explicitly observes catalogued events for other aggregate
   views, projects only supported work-item events, and stops on unknown or
   unsupported work-item event types.
@@ -47,13 +49,12 @@ without granting runtime authority or coupling canonical state to a provider.
 
 ## Next
 
-1. Implement an in-memory append simulator for manager admission command
-   candidates.
-2. Keep JetStream append, receipt reservation, model invocation, live claims,
-   provider adapters, provisioning, release, deployment, and control-plane UI
-   outside this increment.
-3. Use the simulator to validate command-to-event shape before admitting real
-   JetStream append.
+1. Implement a coordinated append wrapper for manager admission command
+   candidates over the existing command receipt/appender boundary.
+2. Keep provisioning, model invocation, live workers, provider adapters,
+   release, deployment, and control-plane UI outside this increment.
+3. Use the wrapper as the next boundary before local JetStream qualification of
+   real `claim.admitted.v1` publication.
 
 ## Invariants
 
@@ -78,6 +79,8 @@ without granting runtime authority or coupling canonical state to a provider.
 - The in-memory admission simulator may append to a synthetic event store for
   tests, but it does not reserve receipts, use JetStream, call providers, or
   launch workers.
+- The coordinated append wrapper requires an injected command append
+  coordinator and verifies candidate/event binding before publication.
 - The v1 reducer registry is internal and fixed; projection and checkpoint
   records bind its computed implementation digest. Callers cannot inject
   closure state or alternate helpers, and a code change requires rebuild.
