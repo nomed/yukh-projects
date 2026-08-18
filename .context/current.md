@@ -1,8 +1,8 @@
 # Current context
 
 **Status:** work-governance event log, command receipts, projector foundation,
-durable projector consumer, and bounded activation runner are authoritative on
-`main`
+durable projector consumer, bounded activation runner, and synthetic manager
+admission publication are authoritative on `main`
 **Project:** Yukh Projects
 **Visibility:** public
 
@@ -38,8 +38,11 @@ without granting runtime authority or coupling canonical state to a provider.
 - PR #187 is authoritative on `main` at `29727b0`: manager admission command
   candidates can publish through an injected command receipt/appender
   coordinator after candidate/event binding verification.
-- [#188](https://github.com/nomed/yukh-projects/issues/188) governs local
-  JetStream qualification for synthetic manager admission publication.
+- PR #189 is authoritative on `main` at `57e57b9`: local JetStream
+  qualification publishes synthetic manager admission through the coordinated
+  wrapper, command receipts, and real appender.
+- [#190](https://github.com/nomed/yukh-projects/issues/190) governs the first
+  synthetic manager admission runtime.
 - The projector explicitly observes catalogued events for other aggregate
   views, projects only supported work-item events, and stops on unknown or
   unsupported work-item event types.
@@ -52,12 +55,12 @@ without granting runtime authority or coupling canonical state to a provider.
 
 ## Next
 
-1. Qualify synthetic manager admission publication on local JetStream through
-   the coordinated wrapper, command receipts, and real appender.
+1. Implement a synthetic manager admission runtime over plan → preview →
+   command candidate → event → coordinated append.
 2. Keep provisioning, model invocation, live workers, provider adapters,
    release, deployment, and control-plane UI outside this increment.
-3. Use the qualification as the next boundary before adding an explicit manager
-   admission runtime.
+3. Use the runtime as the API boundary for future control-plane and manager
+   orchestration work.
 
 ## Invariants
 
@@ -86,6 +89,10 @@ without granting runtime authority or coupling canonical state to a provider.
   coordinator and verifies candidate/event binding before publication.
 - Local JetStream qualification may publish synthetic manager admission events
   only; it grants no live worker or provider authority.
+- Manager admission runtime composes existing reviewed boundaries and accepts
+  only injected coordinator, evidence, identifiers, and policy inputs; it does
+  not provision infrastructure, invoke models, launch workers, or call
+  providers.
 - The v1 reducer registry is internal and fixed; projection and checkpoint
   records bind its computed implementation digest. Callers cannot inject
   closure state or alternate helpers, and a code change requires rebuild.
