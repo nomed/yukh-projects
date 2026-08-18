@@ -8,6 +8,7 @@ import {
   createWorkGovernanceCommandAppendCoordinatorV1,
   createWorkGovernanceCommandReceiptStoreV1,
   createWorkGovernanceJetStreamAppenderV1,
+  createWorkGovernanceWorkItemProjectorActivationRunnerV1,
   createWorkGovernanceWorkItemProjectorV1,
   createWorkGovernanceWorkItemProjectorConsumerV1,
   openWorkGovernanceProjectorKvPortsV1,
@@ -247,15 +248,20 @@ test("qualifies interleaved aggregate appends against local JetStream", { skip: 
         projections: consumerProjections, checkpoints: consumerCheckpoints
       })
     });
-    let acknowledged = 0;
-    let consumed;
-    while (acknowledged < lastSequence) {
-      consumed = await consumerRuntime.runOnce({ maxMessages: lastSequence });
-      assert.equal(consumed.outcome, "processed");
-      assert.equal(consumed.acknowledged, 1);
-      acknowledged += consumed.acknowledged;
-    }
-    assert.equal(consumed?.last_stream_sequence, lastSequence);
+    let tick = 0;
+    const activation = createWorkGovernanceWorkItemProjectorActivationRunnerV1({
+      consumer: consumerRuntime,
+      now: () => `2026-08-17T14:03:${String(tick++).padStart(2, "0")}.000Z`
+    });
+    const activated = await activation.run({
+      maxTicks: lastSequence + 1,
+      maxAcknowledgements: lastSequence + 1,
+      maxIdleTicks: 1,
+      maxMessagesPerTick: lastSequence
+    });
+    assert.equal(activated.status, "processed");
+    assert.equal(activated.counters.acknowledged, lastSequence);
+    assert.equal(activated.last_stream_sequence, lastSequence);
     const checkpoint = await consumerCheckpoints.get(workGovernanceProjectorCheckpointKeyV1());
     if (checkpoint === null) assert.fail("missing consumer checkpoint");
     assert.equal(parseWorkGovernanceProjectorCheckpointV1(checkpoint.data).stream_sequence, lastSequence);
