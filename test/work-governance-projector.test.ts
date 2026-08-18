@@ -65,11 +65,11 @@ function events() {
 }
 
 const reducers: WorkGovernanceWorkItemReducerRegistryV1 = {
-  "work_item.created.v1": { version: "created-v1", digest: reducerDigest, reduce: (current, event) => {
+  "work_item.created.v1": { version: "created-v1", reduce: (current, event) => {
     if (current !== null || typeof event.data.title !== "string") throw new TypeError("invalid create");
     return { title: event.data.title, workflow_state: "proposed" };
   } },
-  "work_item.workflow_transitioned.v1": { version: "transition-v1", digest: reducerDigest, reduce: (current, event) => {
+  "work_item.workflow_transitioned.v1": { version: "transition-v1", reduce: (current, event) => {
     if (current === null || typeof event.data.to !== "string") throw new TypeError("invalid transition");
     return { ...current, workflow_state: event.data.to };
   } }
@@ -250,7 +250,7 @@ test("repairs a crash after projection durability without rerunning the reducer"
   };
   const value = createWorkGovernanceWorkItemProjectorV1({
     storageEpoch: 29, bucket, checkpointBucket, projections, checkpoints,
-    reducers: { "work_item.created.v1": { version: "created-v1", digest: reducerDigest,
+    reducers: { "work_item.created.v1": { version: "created-v1",
       reduce: (_current, event) => { reducerCalls++; return { title: event.data.title! }; } } }
   });
   await assert.rejects(value.apply({ stream_sequence: 1, event: created }), isCode("YKP-WORK-PROJECTOR-004"));
@@ -325,7 +325,8 @@ test("rejects divergent CAS winners and a changed reducer set", async () => {
   await stable.value.apply({ stream_sequence: 1, event: created });
   const changed = createWorkGovernanceWorkItemProjectorV1({
     storageEpoch: 29, bucket, checkpointBucket, projections: stable.projections, checkpoints: stable.checkpoints,
-    reducers: { ...reducers, "work_item.created.v1": { ...reducers["work_item.created.v1"]!, version: "created-v2" } }
+    reducers: { ...reducers, "work_item.created.v1": { ...reducers["work_item.created.v1"]!,
+      reduce: (current, event) => ({ title: String(event.data.title), previous: current === null }) } }
   });
   await assert.rejects(changed.apply({ stream_sequence: 1, event: created }),
     isCode("YKP-WORK-PROJECTOR-002"));
@@ -377,7 +378,7 @@ test("rejects unsafe reducer registries and outputs", async () => {
   const { created } = events();
   const invalid = createWorkGovernanceWorkItemProjectorV1({
     storageEpoch: 29, bucket, checkpointBucket, projections, checkpoints,
-    reducers: { "work_item.created.v1": { version: "created-v1", digest: reducerDigest,
+    reducers: { "work_item.created.v1": { version: "created-v1",
       reduce: () => ({ unsafe: undefined as unknown as string }) } }
   });
   await assert.rejects(invalid.apply({ stream_sequence: 1, event: created }), isCode("YKP-WORK-PROJECTOR-006"));

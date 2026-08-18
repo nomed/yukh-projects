@@ -109,7 +109,6 @@ export type WorkGovernanceWorkItemReducerV1 = (
 
 export interface WorkGovernanceWorkItemReducerDescriptorV1 {
   version: string;
-  digest: string;
   reduce: WorkGovernanceWorkItemReducerV1;
 }
 
@@ -141,6 +140,18 @@ function timestamp(value: unknown): value is string {
 }
 function sha256(value: string): string { return `sha-256:${createHash("sha256").update(value, "utf8").digest("hex")}`; }
 function clone<T>(value: T): T { return JSON.parse(canonicalWorkGovernanceJson(value)) as T; }
+function reducerImplementationDigest(reducer: WorkGovernanceWorkItemReducerV1): string {
+  try {
+    const source = Function.prototype.toString.call(reducer);
+    if (source.length === 0 || Buffer.byteLength(source, "utf8") > 64 * 1024 || source.includes("[native code]")) {
+      fail("YKP-WORK-PROJECTOR-001");
+    }
+    return sha256(canonicalWorkGovernanceJson({ language: "ecmascript-function-source-v1", source }));
+  } catch (error) {
+    if (error instanceof WorkGovernanceProjectorError) throw error;
+    fail("YKP-WORK-PROJECTOR-001");
+  }
+}
 function profile(bucket: BucketProfile["bucket"]): BucketProfile {
   if (bucket === WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1) {
     return { bucket, description: "Yukh Projects work-item projections v1", maxValueSize: WORK_GOVERNANCE_PROJECTION_MAX_BYTES_V1 };
@@ -380,16 +391,17 @@ export function createWorkGovernanceWorkItemProjectorV1(options: {
     reducerEntries = (keys as string[]).map((key) => {
       const descriptor = Object.getOwnPropertyDescriptor(options.reducers, key);
       if (!descriptor || !("value" in descriptor) || !descriptor.enumerable || !object(descriptor.value) ||
-          !exact(descriptor.value, ["version", "digest", "reduce"])) {
+          !exact(descriptor.value, ["version", "reduce"])) {
         fail("YKP-WORK-PROJECTOR-001");
       }
-      const entries = ["version", "digest", "reduce"].map((field) =>
+      const entries = ["version", "reduce"].map((field) =>
         Object.getOwnPropertyDescriptor(descriptor.value, field));
       if (entries.some((entry) => !entry || !("value" in entry) || !entry.enumerable)) fail("YKP-WORK-PROJECTOR-001");
       const value = descriptor.value as unknown as WorkGovernanceWorkItemReducerDescriptorV1;
-      if (!TOKEN.test(value.version) || !DIGEST.test(value.digest) || typeof value.reduce !== "function") {
+      if (!TOKEN.test(value.version) || typeof value.reduce !== "function") {
         fail("YKP-WORK-PROJECTOR-001");
       }
+      reducerImplementationDigest(value.reduce);
       return [key, value];
     });
   } catch (error) {
@@ -402,7 +414,7 @@ export function createWorkGovernanceWorkItemProjectorV1(options: {
   }
   reducerEntries.sort(([left], [right]) => left.localeCompare(right));
   const reducerSetDigest = sha256(canonicalWorkGovernanceJson(reducerEntries.map(([type, descriptor]) => ({
-    type, version: descriptor.version, digest: descriptor.digest
+    type, version: descriptor.version, implementation_digest: reducerImplementationDigest(descriptor.reduce)
   }))));
   const reducers = new Map(reducerEntries.map(([type, descriptor]) => [type, descriptor.reduce]));
   let configured: Promise<void> | undefined;
