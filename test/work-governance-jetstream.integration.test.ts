@@ -8,11 +8,19 @@ import {
   createWorkGovernanceCommandAppendCoordinatorV1,
   createWorkGovernanceCommandReceiptStoreV1,
   createWorkGovernanceJetStreamAppenderV1,
+  createWorkGovernanceWorkItemProjectorV1,
+  openWorkGovernanceProjectorKvPortsV1,
   openWorkGovernanceCommandReceiptKvPortsV1,
+  parseWorkGovernanceEventV1,
+  workGovernanceProjectorKvConfigV1,
   workGovernanceCommandReceiptKvConfigV1,
   workGovernanceJetStreamConfigV1,
   workGovernanceJetStreamPortsV1,
   WorkGovernanceJetStreamError,
+  WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1,
+  WORK_GOVERNANCE_STREAM_V1,
+  WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1,
+  type WorkGovernanceProjectorKvPortsV1,
   type WorkGovernanceCommandV1
 } from "../src/index.js";
 
@@ -168,6 +176,61 @@ test("qualifies interleaved aggregate appends against local JetStream", { skip: 
     const resolved = await receiptCoordinator.resolveCompletionUnknown(receiptCommand, receiptEvent);
     assert.equal(resolved.outcome, "replayed"); assert.equal(resolved.receipt.state, "appended");
     assert.ok(resolved.receipt.stream_sequence! > 0);
+
+    const projectionBucket = { maxBytes: 2 * 1024 * 1024, replicas: 1 } as const;
+    const checkpointBucket = { maxBytes: 1024 * 1024, replicas: 1 } as const;
+    const kvm = new Kvm(jetstream(connection));
+    await kvm.create(WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1,
+      workGovernanceProjectorKvConfigV1(WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1, projectionBucket));
+    await kvm.create(WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1,
+      workGovernanceProjectorKvConfigV1(WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1, checkpointBucket));
+    const projectionPorts = await openWorkGovernanceProjectorKvPortsV1(
+      jetstream(connection), WORK_GOVERNANCE_WORK_ITEMS_BUCKET_V1, projectionBucket);
+    const durableCheckpoints = await openWorkGovernanceProjectorKvPortsV1(
+      jetstream(connection), WORK_GOVERNANCE_PROJECTOR_CHECKPOINTS_BUCKET_V1, checkpointBucket);
+    let injectCrash = true;
+    const crashOnceCheckpoints: WorkGovernanceProjectorKvPortsV1 = {
+      ...durableCheckpoints,
+      async create(key, data) {
+        if (injectCrash) { injectCrash = false; throw new Error("simulated crash boundary"); }
+        return durableCheckpoints.create(key, data);
+      }
+    };
+    const projector = createWorkGovernanceWorkItemProjectorV1({
+      storageEpoch: 19, bucket: projectionBucket, checkpointBucket,
+      projections: projectionPorts, checkpoints: crashOnceCheckpoints,
+      reducers: {
+        "work_item.created.v1": (current, event) => {
+          assert.equal(current, null);
+          return { title: typeof event.data.title === "string" ? event.data.title : "", workflow_state: "proposed" };
+        },
+        "work_item.workflow_transitioned.v1": (current, event) => {
+          assert.ok(current);
+          assert.equal(typeof event.data.to, "string");
+          return { ...current, workflow_state: event.data.to! };
+        }
+      }
+    });
+    const lastSequence = (await manager.streams.info(WORK_GOVERNANCE_STREAM_V1)).state.last_seq;
+    const firstMessage = await manager.streams.getMessage(WORK_GOVERNANCE_STREAM_V1, { seq: 1 });
+    if (firstMessage === null) assert.fail("missing first work event");
+    const firstInput = { stream_sequence: 1, event: parseWorkGovernanceEventV1(firstMessage.data) };
+    await assert.rejects(projector.apply(firstInput), (error: unknown) =>
+      Boolean(error && typeof error === "object" && "code" in error && error.code === "YKP-WORK-PROJECTOR-004"));
+    assert.equal((await projector.apply(firstInput)).outcome, "recovered");
+    let final;
+    for (let streamSequence = 2; streamSequence <= lastSequence; streamSequence++) {
+      const message = await manager.streams.getMessage(WORK_GOVERNANCE_STREAM_V1, { seq: streamSequence });
+      if (message === null) assert.fail(`missing work event ${streamSequence}`);
+      final = await projector.apply({ stream_sequence: streamSequence, event: parseWorkGovernanceEventV1(message.data) });
+    }
+    assert.equal(final?.checkpoint.stream_sequence, lastSequence);
+    const lastMessage = await manager.streams.getMessage(WORK_GOVERNANCE_STREAM_V1, { seq: lastSequence });
+    if (lastMessage === null) assert.fail("missing last work event");
+    assert.equal(final && (await projector.apply({
+      stream_sequence: lastSequence,
+      event: parseWorkGovernanceEventV1(lastMessage.data)
+    })).outcome, "replayed");
   } finally {
     await connection.close();
   }
